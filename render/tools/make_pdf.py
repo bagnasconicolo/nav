@@ -205,6 +205,111 @@ def cover(path, n, total):
     return im
 
 
+def foot_holes_page(views_dir, n, total):
+    """Piede: faces with the screw holes, positions and sizes dimensioned (1:1)."""
+    info = json.load(open(os.path.join(views_dir, 'piede.json')))
+    sx, sy, sz = info['size']
+    sc = info['scale']
+    k = PX * sc
+    m = 3.0
+    im = page()
+    header(im, 'Tavola: Piede, forature', 'Faccia interna (inserti M4 per le culle) e faccia inferiore (viti M5, gommini). Quote in mm.', n, total)
+    d = ImageDraw.Draw(im)
+    d.rectangle((mm(10), mm(27), A4[0] - mm(10), A4[1] - mm(13)), outline=INK, width=mm(0.35))
+    bk = Image.open(os.path.join(views_dir, 'piede_back.png')).convert('RGB')
+    bt = Image.open(os.path.join(views_dir, 'piede_bottom.png')).convert('RGB')
+    xa, ya = mm(40), mm(44)
+    yb = ya + bk.height + mm(30)
+    im.paste(bk, (xa, ya))
+    im.paste(bt, (xa, yb))
+    d.text((xa + mm(m), ya - mm(4)), 'Faccia interna (verso la traversa), vista di fronte', font=f(2.8, True), fill=INK)
+    d.text((xa + mm(m), yb - mm(4)), 'Faccia inferiore (sul tavolo), vista da sotto', font=f(2.8, True), fill=INK)
+
+    def P(view, u, v):          # part coords (u right, v up, centred) -> page px
+        W, H = (sx + 2 * m), (sz + 2 * m) if view == 'back' else (sy + 2 * m)
+        x0, y0 = (xa, ya) if view == 'back' else (xa, yb)
+        return x0 + (u + W / 2) * k, y0 + (H / 2 - v) * k
+
+    zc = sz / 2
+    # --- inner face: 4 insert holes at y = +-28 (z 8) and +-50 (z 4.4)
+    bl = P('back', -sx / 2, -zc)[1]
+    for u, z in ((-50, 4.4), (-28, 8.0), (28, 8.0), (50, 4.4)):
+        cx, cy = P('back', u, z - zc)
+        d.line((cx, cy - mm(4), cx, bl + mm(18)), fill=ACCENT, width=mm(0.15))
+    y1 = bl + mm(10)
+    dim_h(d, *[P('back', u, 0)[0] for u in (-28, 28)], y1, bl, 56, above=False)
+    dim_h(d, *[P('back', u, 0)[0] for u in (-50, 50)], y1 + mm(9), bl, 100, above=False)
+    xr = P('back', sx / 2, 0)[0] + mm(10)
+    for z, dx in ((8.0, 0), (4.4, mm(13))):
+        cy = P('back', 0, z - zc)[1]
+        txt, pos = dim_v(d, cy, bl, xr + dx, P('back', 50 if z < 5 else 28, 0)[0], z)
+        im.paste(txt, pos, txt)
+    cx, cy = P('back', 50, 4.4 - zc)
+    d.line((cx, cy, cx + mm(30), cy - mm(16)), fill=INK, width=mm(0.18))
+    d.text((cx + mm(31), cy - mm(19)), '4× Ø5,6 prof. 10 (foro a goccia)\ninserto a caldo M4 × 8,1\n2 per lato: piede reversibile', font=f(2.7), fill=INK)
+    # --- bottom face: M5 for the upright (30 from the inner face), M5 for the cross-member (9), pads
+    top_edge = P('bottom', 0, sy / 2)[1]
+    for v_in, lab, ofs in ((30.0, 'Ø5,5 passante, lamatura Ø9,5 × 5\nvite M5×16 nel montante', 0),
+                           (9.0, 'Ø5,5 passante, lamatura Ø10,2 × 3\nvite M5×8 nel dado a T della traversa', 1)):
+        v = sy / 2 - v_in - 0.4
+        cx, cy = P('bottom', 0, v)
+        lx = P('bottom', sx / 2, 0)[0] + mm(8)
+        ly = P('bottom', 0, sy / 2)[1] + mm(2 + 16 * (1 - ofs))
+        d.line((cx, cy, lx - mm(1), ly + mm(2.5)), fill=INK, width=mm(0.18))
+        d.text((lx, ly), lab, font=f(2.7), fill=INK)
+        xl = P('bottom', -sx / 2, 0)[0] - mm(8 + 9 * ofs)
+        txt, pos = dim_v(d, top_edge, cy, xl, cx, v_in)
+        im.paste(txt, pos, txt)
+    bb = P('bottom', 0, -sy / 2)[1]
+    vp = sy / 2 - 30.0 - 0.4
+    dim_h(d, P('bottom', -60, vp)[0], P('bottom', 60, vp)[0], bb + mm(10), bb, 120, above=False)
+    cx, cy = P('bottom', 60, vp)
+    lx = P('bottom', sx / 2, 0)[0] + mm(8)
+    ly = P('bottom', 0, sy / 2)[1] + mm(36)
+    d.line((cx, cy, lx - mm(1), ly + mm(2.5)), fill=INK, width=mm(0.18))
+    d.text((lx, ly), '2× Ø12,6 × 1\ngommino adesivo Ø12', font=f(2.7), fill=INK)
+    d.text((mm(14), A4[1] - mm(19)), 'Scala 1:1 (stampare al 100%). I fori degli inserti sono a goccia per stamparli senza supporti: '
+           'l\'inserto, scaldato, riempie la punta.', font=f(2.6), fill=INK)
+    return im
+
+
+def inserts_page(n, total):
+    im = page()
+    header(im, 'Inserti filettati a caldo', 'Come si montano, e dove vanno', n, total)
+    d = ImageDraw.Draw(im)
+    x, y = mm(14), mm(32)
+    steps = [
+        'Serve: saldatore regolabile da almeno 60 W con punta per inserti (kit M2,5 / M3 / M4), inserti corti tipo Ruthex o CNC Kitchen,',
+        'una piastrina metallica piatta. Lavoro da laboratorio: in classe arrivano i pezzi con gli inserti già montati.',
+        '',
+        '1.  Saldatore a circa 240 °C per il PETG (210–220 °C per il PLA).',
+        '2.  Foro in verticale: i piedi vanno appoggiati sul fianco, perché i fori M4 sono orizzontali.',
+        '3.  Inserto appoggiato dritto sul foro, lato stretto in basso.',
+        '4.  Punta dentro l\'inserto, pressione leggera e in asse: scende in 3–5 secondi. Non spingere forte e non ruotare.',
+        '5.  Fermarsi a 0,5 mm dal filo, togliere il saldatore e premere subito la piastrina finché la plastica si raffredda.',
+        '6.  Pulire i fili di plastica e provare la vite a pezzo freddo. Un inserto storto si riscalda e si estrae.',
+        '',
+        'Gli inserti delle culle e del ponte reggono la scheda: controllare che siano dritti usando la scheda stessa come dima.',
+    ]
+    for t in steps:
+        d.text((x, y), t, font=f(3.1), fill=INK)
+        y += mm(5.6)
+    y += mm(4)
+    rows = [('Inserto', 'Ø foro', 'Prof.', 'Q.tà', 'Dove'),
+            ('M4 × 8,1', '5,6', '10', '8', 'piedi, fianco interno: 4 per piede (si usano i 2 anteriori), per i pomelli delle culle'),
+            ('M3 × 5,7', '4,0', '6', '4', 'culle laterali: 2 per culla, sotto i distanziali della scheda'),
+            ('M3 × 5,7', '4,0', '6', '4', 'ponte centrale, sotto i distanziali della scheda'),
+            ('M3 × 5,7', '4,0', '7', '3', 'scatola del modulo di calcolo, viti del coperchio'),
+            ('M2,5 × 4', '3,6', '5', '4', 'scatola del modulo di calcolo, distanziali del Pi Zero 2 W')]
+    cols = [mm(14), mm(44), mm(66), mm(84), mm(100)]
+    for i, r in enumerate(rows):
+        for c, t in zip(cols, r):
+            d.text((c, y), t, font=f(3.1, i == 0), fill=INK)
+        y += mm(7)
+        d.line((mm(14), y - mm(1.5), A4[0] - mm(14), y - mm(1.5)), fill=GREY if i else INK, width=mm(0.15 if i else 0.3))
+    return im
+
+
 def main(rdir, pdir, vdir, out):
     overview = [
         ('prototipo_v12_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda staccabile, modulo di calcolo'),
@@ -214,7 +319,8 @@ def main(rdir, pdir, vdir, out):
     ]
     overview = [o for o in overview if os.path.exists(os.path.join(rdir, o[0]))]
     parts = [p for p in PARTS if os.path.exists(os.path.join(vdir, p[0] + '.json'))]
-    total = 1 + len(overview) + 2 * len(parts)
+    extra = os.path.exists(os.path.join(vdir, 'piede_back.png'))
+    total = 1 + len(overview) + 2 * len(parts) + 1 + (1 if extra else 0)
     pages = [cover(os.path.join(rdir, overview[0][0]), 1, total)]
     n = 2
     for fn, t, sub in overview:
@@ -224,6 +330,9 @@ def main(rdir, pdir, vdir, out):
             pages.append(part_page(stem, name, qty, notes, pdir, n, total)); n += 1
     for stem, name, qty, notes in parts:
         pages.append(drawing_page(stem, name, qty, notes, vdir, pdir, n, total)); n += 1
+        if stem == 'piede' and extra:
+            pages.append(foot_holes_page(vdir, n, total)); n += 1
+    pages.append(inserts_page(n, total)); n += 1
     pages[0].save(out, save_all=True, append_images=pages[1:], resolution=DPI, quality=92)
     print(out, len(pages), 'pagine')
 

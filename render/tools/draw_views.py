@@ -83,6 +83,9 @@ views = {  # name: (camera direction from the part, horizontal extent, vertical 
     'top': (Vector((0, 0, 1)), size.x, size.y),
     'left': (Vector((-1, 0, 0)), size.y, size.z),
 }
+if len(argv) > 3 and argv[3] == 'extra':          # faces with the screw holes
+    views['back'] = (Vector((0, 1, 0)), size.x, size.z)
+    views['bottom'] = (Vector((0, 0, -1)), size.x, size.y)
 info = {'name': name, 'size': [size.x, size.y, size.z], 'scale': SCALE, 'views': {}}
 for vn, (d, wmm, hmm) in views.items():
     W, H = wmm + 2 * MARGIN, hmm + 2 * MARGIN
@@ -91,8 +94,12 @@ for vn, (d, wmm, hmm) in views.items():
     sc.render.resolution_y = max(8, round(H * PXMM))
     sc.render.resolution_percentage = 100
     cam.location = d * 1000
-    up = Vector((0, 1, 0)) if vn == 'top' else Vector((0, 0, 1))
-    cam.rotation_euler = (-d).to_track_quat('-Z', 'Y').to_euler() if vn != 'top' else (0, 0, 0)
+    if vn == 'top':
+        cam.rotation_euler = (0, 0, 0)
+    elif vn == 'bottom':                          # looking up, image up = +y, image right = -x
+        cam.rotation_euler = (0, math.pi, 0)
+    else:
+        cam.rotation_euler = (-d).to_track_quat('-Z', 'Y').to_euler()
     sc.render.filepath = os.path.join(OUT, f'{name}_{vn}.png')
     bpy.ops.render.render(write_still=True)
     info['views'][vn] = {'w_mm': W, 'h_mm': H, 'px': [sc.render.resolution_x, sc.render.resolution_y]}
