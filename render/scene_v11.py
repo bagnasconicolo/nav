@@ -1235,8 +1235,9 @@ for o in COMPUTE:
     if o.name.startswith('pi_fan') or o.name.startswith('pi_dark'):
         LID_PARTS.append(o)
 
-# GPIO harness head: 2x8 IDC housing on pins 1-16 + printed strain-relief hood; pins 17-40 stay free
-HZ0, HZ1 = PIN[1][1] - 1.6, PIN[16][1] + 1.6
+# GPIO harness head: 2x8 IDC housing on pins 3-18 + printed strain-relief hood;
+# pins 1-2 and 19-40 stay free (the fan takes 5 V from pin 2 and GND from pin 20)
+HZ0, HZ1 = PIN[3][1] - 1.6, PIN[18][1] + 1.6
 idc = box('idc', PT + 2.6, PT + 11.0, PY(26.5) - 2.9, PY(26.5) + 2.9, HZ0, HZ1)
 bevel(idc, 0.3, 1)
 setmat(idc, BM_MATS['plastic'])
