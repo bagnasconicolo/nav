@@ -31,7 +31,7 @@ def mm(v):
 
 PARTS = [  # file stem, display name, quantity, notes
     ('piede', 'Piede', '2', 'Stesso pezzo a destra e a sinistra (ruotato di 180°). 4 inserti M4 sul fianco interno.'),
-    ('aggancio', 'Aggancio barra', '6 (2 per numero)', 'Stampare in piedi. Numero 1, 2 o 3 inciso sulla faccia anteriore.'),
+    ('aggancio_2', 'Aggancio barra', '6: 2 × aggancio_1, 2 × aggancio_2, 2 × aggancio_3', 'Stampare in piedi. I tre file differiscono solo per il numero inciso.'),
     ('distanziale_24', 'Distanziale 24 mm', '2', 'Sotto l\'aggancio 1.'),
     ('distanziale_50', 'Distanziale 50 mm', '4', 'Tra un aggancio e l\'altro.'),
     ('distanziale_44', 'Distanziale 44 mm', '2', 'Sopra l\'aggancio 3, bloccato dal tappo.'),
