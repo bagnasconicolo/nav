@@ -191,7 +191,7 @@ def cover(path, n, total):
     im = page()
     d = ImageDraw.Draw(im)
     src = Image.open(path).convert('RGB')
-    s = fit(src, mm(190), mm(170))
+    s = fit(src, mm(168), mm(160))
     im.paste(s, (A4[0] - mm(10) - s.width, (A4[1] - s.height) // 2))
     d.text((mm(16), mm(40)), 'MuLab', font=f(16, True), fill=INK)
     d.text((mm(16), mm(60)), 'Rivelatore di muoni', font=f(7), fill=INK)
