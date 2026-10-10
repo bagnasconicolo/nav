@@ -1,90 +1,101 @@
-# Telaio per barre di scintillatore: note su design e stampa
+# MuLab: telaio per barre di scintillatore, note di design e stampa (v12)
 
-## Struttura (v4)
+Pensato per l'uso nelle scuole: robusto, smontabile e stampabile su una **Ender 3** senza
+supporti. Il modello completo è generato da `scene_v12.py`, gli STL sono in `pezzi/` già
+nell'orientamento di stampa.
 
-La base non è più un pezzo stampato grande: la traversa longitudinale è un **profilo Bosch
-20 × 20 × 300 mm**, uguale ai montanti (20 × 20 × 250 mm). Stampati restano solo due piedi
-compatti, che tengono sia il montante sia l'estremità della traversa.
+## Regole di progetto seguite
+
+1. **Niente filetti nella plastica.** Ogni vite va in un **inserto in ottone a caldo**:
+   M3 nella scheda e nella scatola del Pi, M4 nei piedi.
+2. **Niente perni sottili stampati.** La scheda appoggia su distanziali in ottone, non su
+   pioli di plastica.
+3. **Pareti di almeno 3 mm** nei pezzi strutturali, 2 mm nelle coperture. Raccordi da
+   1,5–2,5 mm su tutti gli spigoli che si toccano.
+4. **Faccia sul piatto con smusso a 45° da 0,6 mm**, non raccordata: un raccordo appoggiato al
+   piatto stamperebbe a sbalzo, mentre lo smusso compensa anche l'elephant foot.
+5. **Nessun supporto.**
+   - I fori orizzontali sono **a goccia**, con punta a 45°.
+   - Le finestre di alleggerimento hanno il **tetto a punta a 45°**.
+   - I ponti sono corti, al massimo 16 mm (lo verifica `tools/check_print.py`).
+6. **Tutto entra nel piatto 220 × 220 mm.** Il pezzo più grande è il piede: 55 × 150 × 30 mm.
 
 ## Pezzi stampati
 
-| Pezzo | Q.tà | Ingombro (mm) | Orientamento di stampa | File |
+| File | Q.tà | Ingombro (mm) | Come va sul piatto | Note |
 |---|---|---|---|---|
-| Piede | 2, identici (uno ruotato di 180°) | 54 × 150 × 30 | piatto, faccia inferiore sul piatto | `pezzi/piede.stl` |
-| Aggancio | 6, identici | 51 × 18 × 20 (con linguetta) | come montato: linguetta verticale | `pezzi/aggancio.stl` |
-| Distanziale da 10 mm | 24 (12 per lato) | 26 × 8,5 × 9,9 (passo 10) | come montato: linguetta verticale | `pezzi/distanziale.stl` |
-| Tappo | 2 | 20 × 20 × 10 | capovolto, faccia superiore sul piatto | `pezzi/tappo.stl` |
+| `piede.stl` | 2 | 55 × 150 × 30 | faccia inferiore | stesso pezzo a destra e a sinistra (ruotato di 180°); 4 inserti M4 sul fianco interno |
+| `aggancio.stl` | 6 | 18 × 52 × 20 | in piedi, come montato | il tetto della tasca è un ponte da 10 mm; numero 1–3 inciso |
+| `distanziale_24.stl` | 2 | 8,5 × 26 × 24 | in piedi | sotto l'aggancio 1 |
+| `distanziale_50.stl` | 4 | 8,5 × 26 × 50 | in piedi | tra un aggancio e l'altro |
+| `distanziale_44.stl` | 2 | 8,5 × 26 × 44 | in piedi | sopra l'aggancio 3, bloccato dal tappo |
+| `tappo.stl` | 2 | 20 × 20 × 7 | capovolto (faccia superiore sul piatto) | vite M5 svasata nel foro assiale |
+| `copertura.stl` | 3 | 28 × 33 × 5,4 | capovolta | copre il circuito della barra, lascia libero il KK |
+| `culla_laterale.stl` | 2 | 39 × 128 × 28 | faccia inferiore | una delle due va **specchiata** nello slicer |
+| `ponte_centrale.stl` | 1 | 70 × 128 × 28 | faccia inferiore | sostiene il centro della scheda |
+| `scatola_calcolo.stl` | 1 | 128 × 50 × 23 | dorso sul piatto | Pi Zero 2 W, ventola 30 mm |
+| `coperchio_calcolo.stl` | 1 | 104 × 50 × 3 | faccia esterna sul piatto | 3 viti M3 svasate |
+| `cuffia_gpio.stl` | 1 | 24 × 10 × 15 | faccia superiore sul piatto | scarico della trazione del connettore GPIO |
 
-Ogni piede ha:
-- una sede verticale 20 × 20 per il montante, fissato dal basso con una vite M5 nel foro assiale;
-- una tasca laterale in cui entrano 16 mm della traversa, fissata dal basso con una vite M5 a
-  testa bombata in un dado a T (Nutenstein M5) infilato nella scanalatura inferiore della traversa;
-- due nervature di rinforzo e due sedi da 12,6 mm di diametro per i gommini antiscivolo.
+Esito di `python tools/check_print.py pezzi/*.stl`:
 
-Nell'STL il distanziale è alto 9,9 mm: il decimo di gioco serve a non far crescere la pila
-se la stampa esce leggermente più alta. Se misuri i pezzi esatti, scalalo in Z a 10 mm.
+| pezzo | piatto | sbalzi oltre 45° | luce massima dei ponti |
+|---|---|---|---|
+| aggancio | ok | 1 mm² | 9,6 mm |
+| piede | ok | 7 mm² (bordi delle lettere del logo in rilievo, 0,8 mm) | 16,2 mm (lamature e sedi dei gommini) |
+| scatola_calcolo | ok | 0 | 5,5 mm |
+| tutti gli altri | ok | 0 | ≤ 1,2 mm |
 
-## Materiale da acquistare
+## Impostazioni di stampa (Ender 3, ugello 0,4 mm)
 
-- Profilo Bosch 20 × 20: 2 × 250 mm (montanti) + 1 × 300 mm (traversa), tagli a 90° sbavati
-- 2 × M5×16 ISO 4762 (montanti, dal basso nel foro assiale filettato)
-- 2 × M5×8 ISO 7380 a testa bombata + 2 dadi a T M5 per scanalatura da 20 (traversa)
-- 4 gommini adesivi Ø 12 × 2–3 mm
-- 2 tappi per profilo 20 × 20, se non li stampi
+- **Materiale:** PETG per tutto, in antracite più un colore d'accento per agganci e cuffia.
+  Il PETG è più tenace e scorre meno sotto carico del PLA, e regge meglio un'aula d'estate.
+- **Strato da 0,2 mm, 4 pareti, 5 strati sopra e sotto.** Riempimento gyroid al 40% per
+  agganci, distanziali, tappi e culle; al 25% per piedi e scatola.
+- **Ventola al 100% sui ponti** (agganci, piedi); per il resto, ventola al 30–50% per il PETG.
+- **Niente brim**, solo uno skirt.
+- **Prima prova:** stampa un aggancio e un distanziale, provali nel profilo vero e regola la
+  linguetta (larghezza del collo 5,5 mm, testa 7,4 mm) prima di stampare la serie.
 
-## Consigli sul design
+## Inserti e minuteria
 
-1. **Verifica le misure del profilo prima di stampare.** Nel modello la scanalatura ha
-   un'apertura di 6 mm, labbri da 1,8 mm e un foro assiale di 4,2 mm. Misura con il calibro il
-   profilo che hai, oppure prendi le misure dal datasheet del fornitore. La linguetta a T va
-   adattata a quelle quote.
-2. **Il foro assiale va filettato M5.** La vite dal basso non tiene se l'estremità del profilo
-   non è maschiata. Se il foro è già M5, ok; altrimenti serve un maschio M5.
-3. **Bloccaggio in quota.** La pila di distanziali sostiene gli agganci, ma niente impedisce alla
-   colonna di sollevarsi. Due soluzioni:
-   - riempire la scanalatura fino in cima e far premere il tappo sull'ultimo distanziale
-     (servono distanziali anche da 5 mm per chiudere il gioco);
-   - mettere un grano M4 nella piastra posteriore dell'aggancio, che spinge sul fondo della
-     scanalatura.
-4. **Meno pezzi.** 24 distanziali da 10 mm sono tanti e la tolleranza si somma: 5 pezzi a
-   ±0,1 mm fanno ±0,5 mm. Puoi usare distanziali di altezze diverse (5, 10, 20 e 50 mm) oppure
-   un unico distanziale da 50 mm tra un aggancio e l'altro.
-5. **Inserimento solo dall'alto.** Per cambiare la barra in basso devi sfilare tutto quello che
-   sta sopra. Una linguetta a rotazione (testa più stretta in un verso, si inserisce di fronte
-   e si gira di 90°, come i dadi a T drop-in) permette di montare ogni pezzo a qualunque
-   altezza.
-6. **Barre nelle tasche.** La pellicola ha uno spessore variabile. Conviene un invito
-   smussato da 0,5–1 mm all'imbocco della tasca e una piccola nervatura schiacciabile o un
-   pezzetto di gommapiuma sul fondo, così la barra non balla. Stampa prima un campione di
-   tasca con gioco 0,2 / 0,3 / 0,4 mm per lato.
-7. **Squadratura della base.** Se la tasca del piede è stretta sulla traversa (gioco 0,15 mm),
-   è la traversa a mettere in squadra i due montanti. Per una rigidità maggiore puoi aggiungere
-   due squadrette Bosch 20 tra traversa e montanti, nascoste sul lato posteriore. Se vuoi
-   fissare il telaio al banco, aggiungi un foro passante in ciascun piede.
-8. **Cavi.** Una clip stampata da agganciare nella scanalatura anteriore del montante sinistro
-   tiene i fili fermi. Fissa il cavo vicino al circuito con una fascetta, così il morsetto
-   non lavora a strappo.
-9. **Tappi.** I tappi originali per profili 20 × 20 costano poco e hanno alette elastiche
-   migliori. Se li stampi, le alette sono sottili e lavorano tra gli strati: stampali in PETG.
+| Cosa | Q.tà | Dove |
+|---|---|---|
+| inserti in ottone M4 (Ø esterno 5,6 mm) | 8 | piedi, 4 per piede (si usano i 2 anteriori) |
+| inserti in ottone M3 (Ø esterno 4,0 mm) | 11 | culle (4), ponte (4), scatola del Pi (3, coperchio) |
+| inserti in ottone M2,5 | 4 | piastrine del Pi nella scatola |
+| distanziali in ottone M3 maschio-femmina 8 mm + viti M3×6 | 8 | scheda a 3 canali |
+| viti M4 a testa zigrinata, lunghe circa 45 mm (o M4×45 + pomello) | 4 | culle → piedi |
+| viti M5 svasate M5×10 (ISO 10642) | 2 | tappi |
+| viti M5×16 ISO 4762 | 2 | montanti, dal basso |
+| viti M5×8 ISO 7380 + dadi a T M5 | 2 | traversa |
+| viti M5 a testa zigrinata + dadi a T M5 a inserimento frontale | 2 | scatola del Pi |
+| viti M3×8 svasate | 3 | coperchio della scatola |
+| distanziali M2,5 maschio-femmina 6 mm + viti M2,5×5 | 4 | Pi Zero 2 W |
+| ventola 30 × 30 × 10 mm a 5 V | 1 | coperchio della scatola |
+| gommini adesivi Ø 12 mm | 12 | 4 sotto i piedi, 8 sotto culle e ponte |
 
-## Consigli di stampa (Ender 3, ugello 0,4 mm)
+**Profili Bosch 20 × 20:** 2 × 250 mm (montanti) e 1 × 300 mm (traversa). Le estremità dei
+montanti vanno **maschiate M5 in entrambi i lati**: sotto per la vite del piede, sopra per il
+tappo.
 
-- **Materiale:** PETG per agganci e distanziali (più tenace e con meno scorrimento sotto
-  carico del PLA). PLA o PETG per i piedi (meglio PETG, se il telaio resta sotto carico a lungo).
-- **Strati e pareti:** strato da 0,2 mm. Agganci e distanziali con 4 pareti e 40% di
-  riempimento (la linguetta a T così è quasi piena). Piedi con 4 pareti e 30% gyroid.
-- **Primo strato:** compensa l'elephant foot (0,1–0,2 mm), altrimenti la linguetta non entra
-  nella scanalatura e i distanziali impilati si sommano in altezza.
-- **Tolleranze:** sulla Ender 3 i fori escono di solito più stretti. Nel modello la sede del
-  montante ha 0,15 mm di gioco per lato: se è troppo stretta, porta il gioco a 0,25 mm o usa
-  l'espansione orizzontale per i fori nello slicer.
-- **Lamatura delle viti M5:** si apre sulla faccia a contatto con il piatto. Il gradino tra la
-  lamatura e il foro passante (sia per le M5×16 sia per le M5×8) è un piccolo ponte: stampalo così oppure aggiungi uno strato
-  sacrificale da forare dopo.
-- **Piede:** la tasca della traversa si apre di lato e il suo tetto è un ponte di 20 mm, che
-  si stampa senza supporti. Le nervature a 45° sono autoportanti.
-- **Aggancio:** stampato come montato, il tetto della tasca è un ponte da circa 46 mm. Con la
-  ventola al 100% esce pulito. La linguetta a T sta nel piano degli strati, quindi lavora nel
-  verso forte.
-- **Prima di stampare tutto:** stampa un solo aggancio e un distanziale, provali nel profilo
-  vero e poi correggi le quote.
+## Come si monta
+
+1. Inserti a caldo in tutti i pezzi stampati (saldatore a 220 °C con punta per inserti).
+2. Montanti nei piedi, viti M5×16 dal basso; traversa nelle tasche dei piedi, viti M5×8 nei
+   dadi a T.
+3. In ciascun montante, dal basso verso l'alto (infilando i pezzi dalla cima): distanziale 24, aggancio 1, distanziale 50, aggancio 2,
+   distanziale 50, aggancio 3, distanziale 44. Le barre vanno nelle tasche degli agganci
+   mentre si impila.
+4. Tappo con vite M5 svasata: chiudendolo si blocca tutta la colonna.
+5. Modulo scheda: culle e ponte sotto la scheda (distanziali in ottone), poi si avvicina il
+   modulo ai piedi e si stringono i 4 pomelli M4. Per toglierlo basta svitare i 4 pomelli e
+   scollegare i KK.
+6. Modulo di calcolo: due pomelli M5 nei dadi a T a inserimento frontale, nella scanalatura
+   esterna del montante destro.
+
+## Punti ancora da verificare con i pezzi veri
+
+- Quote della scanalatura del profilo che usi (apertura 6 mm, labbri 1,8 mm, nel modello).
+- Gioco della tasca dell'aggancio sulla barra rivestita (0,5 mm per lato nel modello).
+- Lunghezza effettiva dei pomelli M4 una volta stampate le culle.
