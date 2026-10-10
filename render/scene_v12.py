@@ -1604,6 +1604,8 @@ else:
         ('piede', 'foot_L', (-0.62, -0.75, 0.55), None),
         ('aggancio_retro', 'clipL1', (-0.80, -0.45, 0.55), None),
         ('aggancio_fronte', 'clipL1', (0.80, -0.45, 0.55), None),
+        ('aggancio_1', 'clipL0', (-0.80, -0.45, 0.55), None),
+        ('aggancio_3', 'clipL2', (-0.80, -0.45, 0.55), None),
         ('distanziale_24', 'spacer0', (-0.70, -0.55, 0.60), None),
         ('distanziale_50', 'spacer1', (-0.70, -0.55, 0.60), None),
         ('distanziale_44', 'spacer3', (-0.70, -0.55, 0.60), None),
@@ -1618,6 +1620,9 @@ else:
     for ob in scene.objects:
         if ob.type in ('MESH', 'CURVE') and ob.name != 'floor':
             ob.hide_render = True
+    ONLY = sys.argv[sys.argv.index('--') + 5].split(',') if len(sys.argv) > sys.argv.index('--') + 5 else None
+    if ONLY:
+        jobs = [j for j in jobs if j[0] in ONLY]
     for fname, src, vdir, tf in jobs:
         o = bpy.data.objects[src]
         c = o.copy()
