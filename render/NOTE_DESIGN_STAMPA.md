@@ -1,7 +1,7 @@
-# MuLab: telaio per barre di scintillatore, note di design e stampa (v12)
+# MuLab: telaio per barre di scintillatore, note di design e stampa (v13)
 
 Pensato per l'uso nelle scuole: robusto, smontabile e stampabile su una **Ender 3** senza
-supporti. Il modello completo è generato da `scene_v12.py`, gli STL sono in `pezzi/` già
+supporti. Il modello completo è generato da `scene_v13.py`, gli STL sono in `pezzi/` già
 nell'orientamento di stampa.
 
 ## Regole di progetto seguite
@@ -20,6 +20,15 @@ nell'orientamento di stampa.
    - I ponti sono corti, al massimo 16 mm (lo verifica `tools/check_print.py`).
 6. **Tutto entra nel piatto 220 × 220 mm.** Il pezzo più grande è il piede: 55 × 150 × 30 mm.
 
+7. **Niente dettagli piccoli o fragili.** Il pezzo deve resistere all'uso in classe:
+   - niente nervature o pareti sotto 2 mm;
+   - niente perni, alette o chiavette sottili;
+   - le griglie sono feritoie da 2,5 mm con nervature da 2,5 mm;
+   - le uniche forme sottili rimaste sono le linguette a T, imposte dalla scanalatura
+     Bosch, continue per tutta l'altezza del pezzo e stampate nel piano degli strati.
+8. **Forme continue.** Ogni pezzo nasce da un unico profilo estruso e raccordato in una passata,
+   con transizioni a 45° o raccordi tangenti: niente blocchi sommati con gradini inutili.
+
 ## Pezzi stampati
 
 | File | Q.tà | Ingombro (mm) | Come va sul piatto | Note |
@@ -29,7 +38,7 @@ nell'orientamento di stampa.
 | `distanziale_24.stl` | 2 | 8,5 × 26 × 24 | in piedi | sotto l'aggancio 1 |
 | `distanziale_50.stl` | 4 | 8,5 × 26 × 50 | in piedi | tra un aggancio e l'altro |
 | `distanziale_44.stl` | 2 | 8,5 × 26 × 44 | in piedi | sopra l'aggancio 3, bloccato dal tappo |
-| `tappo.stl` | 2 | 20 × 20 × 7 | capovolto (faccia superiore sul piatto) | vite M5 svasata nel foro assiale |
+| `tappo.stl` | 2 | 20 × 20 × 4 | capovolto (faccia superiore sul piatto) | blocchetto pieno, centrato e fissato dalla vite M5 svasata |
 | `copertura.stl` | 3 | 28 × 33 × 5,4 | capovolta | copre il circuito della barra, lascia libero il KK |
 | `culla_laterale.stl` | 2 | 39 × 128 × 28 | faccia inferiore | una delle due va **specchiata** nello slicer |
 | `ponte_centrale.stl` | 1 | 70 × 128 × 28 | faccia inferiore | sostiene il centro della scheda |

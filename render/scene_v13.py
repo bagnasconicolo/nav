@@ -735,19 +735,6 @@ def make_cap(name, cx):
     zt = UP_Z0 + UP_H
     cap = box(name, cx - UP / 2, cx + UP / 2, -UP / 2, UP / 2, zt, zt + 4.0)
     bevel(cap, 1.2, 3, bed=('z', 1))
-    inner = 1 if cx < 0 else -1                   # inner face (spacers) gets no key: the cap clamps the spacer
-    for k in range(4):
-        a = k * math.pi / 2
-        nx, ny = round(math.cos(a)), round(math.sin(a))
-        if nx == inner:
-            continue
-        r0, r1 = UP / 2 - 1.7, UP / 2 - 0.1
-        if nx:
-            key = box('key', cx + nx * r0 if nx > 0 else cx - r1, cx + nx * r1 if nx > 0 else cx - r0, -2.7, 2.7, zt - 3.0, zt + 0.2)
-        else:
-            key = box('key', cx - 2.7, cx + 2.7, ny * r0 if ny > 0 else -r1, ny * r1 if ny > 0 else -r0, zt - 3.0, zt + 0.2)
-        bevel(key, 0.4, 1)
-        boolean(cap, key, 'UNION')
     # M5 countersunk (ISO 10642) into the tapped axial bore
     boolean(cap, cyl('ch', cx, 0, 2.75, zt - 4, zt + 5, 32))
     bm = bmesh.new()
@@ -1178,15 +1165,13 @@ def make_compute_lid():
     bevel(l, 1.2, 3, bed=('x', 1))
     # GPIO window: the whole 2x20 header is reachable from outside
     boolean(l, box('gw', CB_X1 - LID_T - 1, CB_X1 + 1, PY(26.5) - 4.5, PY(26.5) + 4.5, PZ(32.5) - 28, PZ(32.5) + 28))
-    # fan grille (hex pattern of holes inside the fan circle)
-    fy, fz = 0.0, FAN_Z0 + 15.0
-    for i in range(-5, 6):
-        for j in range(-5, 6):
-            y = fy + 2.6 * i + (1.3 if j % 2 else 0.0)
-            z = fz + 2.25 * j
-            if (y - fy) ** 2 + (z - fz) ** 2 < 12.5 ** 2 and (y - fy) ** 2 + (z - fz) ** 2 > 4.5 ** 2:
-                boolean(l, prism('gh', [(y + 0.95 * math.cos(math.pi / 3 * k + math.pi / 6), z + 0.95 * math.sin(math.pi / 3 * k + math.pi / 6)) for k in range(6)],
-                                 CB_X1 - LID_T - 1, CB_X1 + 1, axis='x'))
+    # fan grille: 5 slots 2.5 mm wide with 2.5 mm ribs (no thin webs)
+    fz = FAN_Z0 + 15.0
+    for i in range(-2, 3):
+        y = 5.0 * i
+        hl = math.sqrt(max(12.5 ** 2 - y ** 2, 0)) - 1.0
+        pts = [(y - 1.25, fz - hl), (y + 1.25, fz - hl), (y + 1.25, fz + hl), (y - 1.25, fz + hl)]
+        boolean(l, prism('gs', pts, CB_X1 - LID_T - 1, CB_X1 + 1, axis='x'))
     # countersunk M3 lid screws
     for y, z in LID_SCREWS:
         boolean(l, prism('lh', [(y + 1.7 * math.cos(2 * math.pi * k / 24), z + 1.7 * math.sin(2 * math.pi * k / 24)) for k in range(24)], CB_X1 - LID_T - 1, CB_X1 + 1, axis='x'))
@@ -1281,7 +1266,7 @@ HZ0, HZ1 = PIN[3][1] - 1.6, PIN[18][1] + 1.6
 idc = box('idc', PT + 2.6, PT + 11.0, PY(26.5) - 2.9, PY(26.5) + 2.9, HZ0, HZ1)
 bevel(idc, 0.3, 1)
 setmat(idc, BM_MATS['plastic'])
-hood = box('hood', PT + 8.0, CB_X1 + 9.0, PY(26.5) - 5.0, PY(26.5) + 5.0, HZ0 - 1.6, HZ1 + 1.6)
+hood = box('hood', PT + 8.0, CB_X1 + 9.0, PY(26.5) - 5.5, PY(26.5) + 5.5, HZ0 - 2.4, HZ1 + 2.4)
 bevel(hood, 1.5, 3, bed=('x', 1))
 boolean(hood, box('hcav', PT + 7.0, CB_X1 + 7.0, PY(26.5) - 3.1, PY(26.5) + 3.1, HZ0 - 0.2, HZ1 + 0.2))   # fits over the IDC housing
 for kk in range(5):
