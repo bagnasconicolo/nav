@@ -955,8 +955,8 @@ def build_board():
     Minv = BWM.inverted()
     for f in bm.faces:
         cen = Minv @ f.calc_center_median()
-        if cen.y > -0.01:                      # top face (three y = 0)
-            f.material_index = 1
+        if cen.y > -0.01 or cen.y < -B_T + 0.01:    # top / bottom face
+            f.material_index = 1 if cen.y > -0.01 else 2
             for lp in f.loops:
                 p = Minv @ lp.vert.co
                 lp[uv].uv = ((p.x - BX1) / BW_, 1.0 - (p.z - BY1) / BH_)
@@ -974,9 +974,28 @@ def build_board():
     nt.links.new(img.outputs['Color'], bs.inputs['Base Color'])
     pcb.data.materials.append(side)
     pcb.data.materials.append(top)
+    bot = bpy.data.materials.new('b_bottom')
+    bot.use_nodes = True
+    bb = bot.node_tree.nodes['Principled BSDF']
+    bb.inputs['Roughness'].default_value = 0.4
+    bb.inputs['Coat Weight'].default_value = 0.25
+    bimg = bot.node_tree.nodes.new('ShaderNodeTexImage')
+    bimg.image = bpy.data.images.load(os.path.join(BOARD_DIR, 'bottom_nero.png'))
+    bimg.interpolation = 'Cubic'
+    bot.node_tree.links.new(bimg.outputs['Color'], bb.inputs['Base Color'])
+    pcb.data.materials.append(bot)
     objs.append(pcb)
     for c in BRD['comps']:
         build_component(c)
+    # solder joints on the solder side: fillet cone + clipped lead, on every plated through hole
+    for hx, hy, hd in json.load(open(os.path.join(BOARD_DIR, 'holes.json'))):
+        if hd > 2.0:
+            continue
+        Mh = BWM @ Matrix.Translation((hx, -B_T, hy))
+        bmesh.ops.create_cone(BM['tin'], cap_ends=True, segments=16, radius1=0.4, radius2=hd / 2 + 0.55, depth=0.9,
+                              matrix=Mh @ Matrix.Translation((0, -0.45, 0)) @ Matrix.Rotation(-math.pi / 2, 4, 'X'))
+        bmesh.ops.create_cone(BM['tin'], cap_ends=True, segments=8, radius1=0.3, radius2=0.3, depth=1.4,
+                              matrix=Mh @ Matrix.Translation((0, -1.0, 0)) @ Matrix.Rotation(-math.pi / 2, 4, 'X'))
     for k, bmk in BM.items():
         if len(bmk.verts):
             o = mesh_obj('bcomp_' + k, bmk)
