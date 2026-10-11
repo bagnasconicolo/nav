@@ -8,6 +8,7 @@ MODE = sys.argv[sys.argv.index('--') + 4] if '--' in sys.argv and len(sys.argv) 
 EXPLODED = MODE == 'exploded'
 PARTS = MODE == 'parts'
 OPEN = MODE == 'compute_open'
+MODOUT = MODE == 'module_out'
 COMPUTE_VIEW = MODE in ('compute', 'compute_open')
 from mathutils import Matrix
 
@@ -1393,6 +1394,32 @@ if not EXPLODED:
         CABLES.append(wire(f'pwr{j}', pts, mt, r=W_R))
 
 # ---------------------------------------------------------------- compute module opened
+if MODOUT:
+    for ob in MODULE:
+        if ob.name.startswith('mthumb'):
+            xm = sum(v.co.x for v in ob.data.vertices) / len(ob.data.vertices)
+            ob.location.x += m(22.0) * (1 if xm < 0 else -1)      # unscrewed, pulled out of the feet
+        else:
+            ob.location.y += m(-120.0)
+            ob.location.z += m(75.0)
+    for ob in CABLES:
+        if ob.name.startswith(('coax', 'hcoax', 'hi2c', 'pwr')):
+            ob.hide_render = True
+    for ob in HARNESS:
+        if ob.name.startswith('plug_'):
+            ob.hide_render = True
+    # dashed axes: foot insert -> unscrewed thumb screw
+    M_AX = mat_simple('axis2', (0.85, 0.33, 0.05), 0.6)
+    for sx in (-1, 1):
+        for y, z in FOOT_SCREWS:
+            xa, xb = sorted((sx * (abs(FX1) - 1.0), sx * (abs(FX1) - 62.0)))
+            xx = xa
+            while xx < xb:
+                dd = prism('dash2', [(y + 0.6 * math.cos(2 * math.pi * k / 12), z + 0.6 * math.sin(2 * math.pi * k / 12)) for k in range(12)],
+                           xx, min(xx + 4.0, xb), axis='x')
+                setmat(dd, M_AX)
+                dd.visible_shadow = False
+                xx += 6.5
 if OPEN:
     for ob in LID_PARTS:
         ob.location.x += m(48)
@@ -1545,6 +1572,9 @@ scene.collection.objects.link(cam)
 if EXPLODED:
     target = Vector((m(20), m(-95), m(190)))
     cam.location = target + Vector((-0.42, -0.86, 0.46)) * 1.55
+elif MODOUT:
+    target = Vector((m(0), m(-120), m(70)))
+    cam.location = target + Vector((-0.42, -0.84, 0.55)) * 1.22
 elif COMPUTE_VIEW:
     target = Vector((m(188), m(-4), m(148)))
     cam.location = target + Vector((0.62, -0.62, 0.42)) * (0.50 if OPEN else 0.46)
