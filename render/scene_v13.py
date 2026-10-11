@@ -9,6 +9,7 @@ EXPLODED = MODE == 'exploded'
 PARTS = MODE == 'parts'
 OPEN = MODE == 'compute_open'
 MODOUT = MODE == 'module_out'
+MODFLIP = MODE == 'module_flip'
 COMPUTE_VIEW = MODE in ('compute', 'compute_open')
 from mathutils import Matrix
 
@@ -1420,6 +1421,20 @@ if MODOUT:
                 setmat(dd, M_AX)
                 dd.visible_shadow = False
                 xx += 6.5
+if MODFLIP:
+    keep = set(o.name for o in MODULE)
+    for ob in scene.objects:
+        if ob.type in ('MESH', 'CURVE') and ob.name not in keep and ob.name != 'floor':
+            ob.hide_render = True
+    pts = [ob.matrix_world @ v.co for ob in MODULE for v in ob.data.vertices]
+    c = sum(pts, Vector()) / len(pts)
+    flip = Matrix.Translation(c) @ Matrix.Rotation(math.pi, 4, 'Y') @ Matrix.Translation(-c)
+    for ob in MODULE:
+        ob.data.transform(ob.matrix_world.inverted() @ flip @ ob.matrix_world)
+    zmin = min((ob.matrix_world @ v.co).z for ob in MODULE for v in ob.data.vertices)
+    for ob in MODULE:
+        ob.location.z += m(-2.0) - zmin
+    FLIP_C = sum((ob.matrix_world @ v.co for ob in MODULE for v in ob.data.vertices), Vector()) / sum(len(ob.data.vertices) for ob in MODULE)
 if OPEN:
     for ob in LID_PARTS:
         ob.location.x += m(48)
@@ -1572,6 +1587,9 @@ scene.collection.objects.link(cam)
 if EXPLODED:
     target = Vector((m(20), m(-95), m(190)))
     cam.location = target + Vector((-0.42, -0.86, 0.46)) * 1.55
+elif MODFLIP:
+    target = FLIP_C
+    cam.location = target + Vector((-0.45, -0.80, 0.62)) * 0.62
 elif MODOUT:
     target = Vector((m(0), m(-120), m(70)))
     cam.location = target + Vector((-0.42, -0.84, 0.55)) * 1.22

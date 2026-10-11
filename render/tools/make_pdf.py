@@ -70,9 +70,14 @@ def fit(img, box_w, box_h):
 def image_page(path, title, sub, n, total):
     im = page()
     header(im, title, sub, n, total)
-    src = Image.open(path).convert('RGB')
-    s = fit(src, A4[0] - mm(24), A4[1] - mm(40))
-    im.paste(s, ((A4[0] - s.width) // 2, mm(28) + (A4[1] - mm(40) - s.height) // 2))
+    paths = path if isinstance(path, (tuple, list)) else [path]
+    n_ = len(paths)
+    cw = (A4[0] - mm(24) - mm(6) * (n_ - 1)) / n_
+    for i, pth in enumerate(paths):
+        src = Image.open(pth).convert('RGB')
+        s = fit(src, cw, A4[1] - mm(40))
+        x = mm(12) + i * (cw + mm(6)) + (cw - s.width) / 2
+        im.paste(s, (round(x), mm(28) + (A4[1] - mm(40) - s.height) // 2))
     return im
 
 
@@ -315,19 +320,23 @@ def main(rdir, pdir, vdir, out):
         ('prototipo_v13_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda staccabile, modulo di calcolo'),
         ('prototipo_v13_exploded.png', 'Esploso', 'Tutti i componenti; modulo scheda e modulo di calcolo si staccano in blocco'),
         ('prototipo_v13_board.png', 'Modulo scheda', 'Culle avvitate ai piedi con pomelli M4, distanziali in ottone, LEMO verso l\'esterno'),
-        ('prototipo_v13_modulo_staccato.png', 'Modulo scheda staccato', 'Si svitano i 4 pomelli M4 (2 per piede), si scollegano KK e LEMO, e il modulo scheda si sfila in avanti'),
+        (('prototipo_v13_modulo_staccato.png', 'prototipo_v13_modulo_capovolto.png'), 'Modulo scheda staccato',
+         'A sinistra: si svitano i 4 pomelli M4, si scollegano KK e LEMO e il modulo si sfila in avanti. A destra: il modulo capovolto (culle, ponte, gommini)'),
         ('prototipo_v13_cavi.png', 'Cablaggio', 'Coassiali barra → scheda (KK), LEMO → GPIO del Pi, I²C da J6, 5 V a J3 dal retro, alimentazione del Pi'),
         ('prototipo_v13_cavi_dettaglio.png', 'Cablaggio, dettaglio', 'J3 (5 V) sul bordo posteriore, J6 (I²C) e uscite LEMO sul bordo anteriore, cuffia GPIO sul modulo di calcolo'),
         ('prototipo_v13_compute_open.png', 'Modulo di calcolo', 'Pi Zero 2 W su distanziali in ottone, ventola sotto il coperchio, cablaggio GPIO'),
     ]
-    overview = [o for o in overview if os.path.exists(os.path.join(rdir, o[0]))]
+    def _p(fn):
+        return tuple(os.path.join(rdir, f) for f in fn) if isinstance(fn, tuple) else os.path.join(rdir, fn)
+    overview = [(_p(o[0]),) + tuple(o[1:]) for o in overview
+                if all(os.path.exists(x) for x in (_p(o[0]) if isinstance(o[0], tuple) else [_p(o[0])]))]
     parts = [p for p in PARTS if os.path.exists(os.path.join(vdir, p[0] + '.json'))]
     extra = os.path.exists(os.path.join(vdir, 'piede_back.png'))
     total = 1 + len(overview) + 2 * len(parts) + 1 + (1 if extra else 0)
-    pages = [cover(os.path.join(rdir, overview[0][0]), 1, total)]
+    pages = [cover(overview[0][0], 1, total)]
     n = 2
     for fn, t, sub in overview:
-        pages.append(image_page(os.path.join(rdir, fn), t, sub, n, total)); n += 1
+        pages.append(image_page(fn, t, sub, n, total)); n += 1
     for stem, name, qty, notes in parts:
         if os.path.exists(os.path.join(pdir, stem + '_c.png')):
             pages.append(part_page(stem, name, qty, notes, pdir, n, total)); n += 1
