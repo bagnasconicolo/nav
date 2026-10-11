@@ -1386,9 +1386,10 @@ if not EXPLODED:
     # 5 V supply into J3 (bottom of the board), down to the table
     E = KK_IN['J3'] / MM
     for j, (dy, mt) in enumerate(((-1.27, M_WIRE_R), (1.27, M_WIRE_K))):
-        pts = [(E.x + dy, E.y, E.z - 2), (E.x + dy, E.y, E.z + 5), (E.x + dy + 9, E.y - 3, E.z + 6),
-               (122.0 + dy, -72.0, 44.0), (146.0 + dy, -98.0, 22.0), (160.0 + dy, -106.0, -2 + W_R),
-               (176.0 + dy, -96.0, -2 + W_R), (230.0 + dy, -20.0, -2 + W_R), (300.0 + dy, 140.0, -2 + W_R)]
+        pts = [(E.x + dy, E.y, E.z - 2), (E.x + dy, E.y, E.z + 5), (E.x + dy + 8, E.y + 7, E.z + 5),
+               (116.0 + dy, -22.0, 49.0), (122.0 + dy, -6.0, 36.0), (125.0 + dy, 16.0, 30.0),
+               (127.0 + dy, 34.0, 10.0), (128.0 + dy, 50.0, -1.2 + W_R), (150.0 + dy, 120.0, -1.2 + W_R),
+               (190.0 + dy * 2, 300.0, -1.2 + W_R)]
         CABLES.append(wire(f'pwr{j}', pts, mt, r=W_R))
 
 # ---------------------------------------------------------------- compute module opened

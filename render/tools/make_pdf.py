@@ -315,6 +315,8 @@ def main(rdir, pdir, vdir, out):
         ('prototipo_v13_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda staccabile, modulo di calcolo'),
         ('prototipo_v13_exploded.png', 'Esploso', 'Tutti i componenti; modulo scheda e modulo di calcolo si staccano in blocco'),
         ('prototipo_v13_board.png', 'Modulo scheda', 'Culle avvitate ai piedi con pomelli M4, distanziali in ottone, LEMO verso l\'esterno'),
+        ('prototipo_v13_cavi.png', 'Cablaggio', 'Coassiali barra → scheda (KK), LEMO → GPIO del Pi, I²C da J6, 5 V a J3 dal retro, alimentazione del Pi'),
+        ('prototipo_v13_cavi_dettaglio.png', 'Cablaggio, dettaglio', 'J3 (5 V) sul bordo posteriore, J6 (I²C) e uscite LEMO sul bordo anteriore, cuffia GPIO sul modulo di calcolo'),
         ('prototipo_v13_compute_open.png', 'Modulo di calcolo', 'Pi Zero 2 W su distanziali in ottone, ventola sotto il coperchio, cablaggio GPIO'),
     ]
     overview = [o for o in overview if os.path.exists(os.path.join(rdir, o[0]))]
