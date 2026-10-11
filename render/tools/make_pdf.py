@@ -312,10 +312,10 @@ def inserts_page(n, total):
 
 def main(rdir, pdir, vdir, out):
     overview = [
-        ('prototipo_v12_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda staccabile, modulo di calcolo'),
-        ('prototipo_v12_exploded.png', 'Esploso', 'Tutti i componenti; modulo scheda e modulo di calcolo si staccano in blocco'),
-        ('prototipo_v12_board.png', 'Modulo scheda', 'Culle avvitate ai piedi con pomelli M4, distanziali in ottone, LEMO verso l\'esterno'),
-        ('prototipo_v12_compute_open.png', 'Modulo di calcolo', 'Pi Zero 2 W su distanziali in ottone, ventola sotto il coperchio, cablaggio GPIO'),
+        ('prototipo_v13_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda staccabile, modulo di calcolo'),
+        ('prototipo_v13_exploded.png', 'Esploso', 'Tutti i componenti; modulo scheda e modulo di calcolo si staccano in blocco'),
+        ('prototipo_v13_board.png', 'Modulo scheda', 'Culle avvitate ai piedi con pomelli M4, distanziali in ottone, LEMO verso l\'esterno'),
+        ('prototipo_v13_compute_open.png', 'Modulo di calcolo', 'Pi Zero 2 W su distanziali in ottone, ventola sotto il coperchio, cablaggio GPIO'),
     ]
     overview = [o for o in overview if os.path.exists(os.path.join(rdir, o[0]))]
     parts = [p for p in PARTS if os.path.exists(os.path.join(vdir, p[0] + '.json'))]
