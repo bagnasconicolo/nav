@@ -54,7 +54,9 @@ Esito di `python tools/check_print.py pezzi/*.stl`:
 |---|---|---|---|
 | aggancio | ok | 1 mm² | 9,6 mm |
 | piede | ok | 7 mm² (bordi delle lettere del logo in rilievo, 0,8 mm) | 16,2 mm (lamature e sedi dei gommini) |
-| scatola_calcolo | ok | 0 | 5,5 mm |
+| scatola_acquisizione | ok | 12 mm² (bordi delle scritte incise sul fronte) | 3,0 mm (13 mm sopra la presa USB) |
+| scatola_calcolo | ok | 0 | 3,0 mm |
+| supporto_meteo | ok | 0 | 2,5 mm |
 | tutti gli altri | ok | 0 | ≤ 1,2 mm |
 
 ## Impostazioni di stampa (Ender 3, ugello 0,4 mm)
