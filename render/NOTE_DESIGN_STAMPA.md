@@ -1,13 +1,13 @@
-# MuLab: telaio per barre di scintillatore, note di design e stampa (v13)
+# MuLab: telaio per barre di scintillatore, note di design e stampa (v14)
 
 Pensato per l'uso nelle scuole: robusto, smontabile e stampabile su una **Ender 3** senza
-supporti. Il modello completo è generato da `scene_v13.py`, gli STL sono in `pezzi/` già
-nell'orientamento di stampa.
+supporti. Il modello completo è generato da `scene_v14.py`, gli STL sono in `pezzi/` già
+nell'orientamento di stampa. Il cablaggio è descritto in `CABLAGGIO.md`.
 
 ## Regole di progetto seguite
 
 1. **Niente filetti nella plastica.** Ogni vite va in un **inserto in ottone a caldo**:
-   M3 nella scheda e nella scatola del Pi, M4 nei piedi.
+   M3 nella scheda, nelle due scatole e nel supporto meteo, M2,5 per il Pi, M4 nei piedi.
 2. **Niente perni sottili stampati.** La scheda appoggia su distanziali in ottone, non su
    pioli di plastica.
 3. **Pareti di almeno 3 mm** nei pezzi strutturali, 2 mm nelle coperture. Raccordi da
@@ -42,9 +42,11 @@ nell'orientamento di stampa.
 | `copertura.stl` | 3 | 28 × 33 × 5,4 | capovolta | copre il circuito della barra, lascia libero il KK |
 | `culla_laterale.stl` | 2 | 39 × 128 × 28 | faccia inferiore | una delle due va **specchiata** nello slicer |
 | `ponte_centrale.stl` | 1 | 70 × 128 × 28 | faccia inferiore | sostiene il centro della scheda |
-| `scatola_calcolo.stl` | 1 | 128 × 50 × 23 | dorso sul piatto | Pi Zero 2 W, ventola 30 mm |
-| `coperchio_calcolo.stl` | 1 | 104 × 50 × 3 | faccia esterna sul piatto | 3 viti M3 svasate |
-| `cuffia_gpio.stl` | 1 | 24 × 10 × 15 | faccia superiore sul piatto | scarico della trazione del connettore GPIO |
+| `scatola_acquisizione.stl` | 1 | 201 × 90 × 31 | dorso sul piatto | montante destro: scheda Pico 2 + GPS, 5 LEMO sul fronte, feritoia I²C sul retro |
+| `coperchio_acquisizione.stl` | 1 | 161 × 90 × 3 | faccia esterna sul piatto | 4 viti M3 svasate, feritoie sopra il Pico |
+| `scatola_calcolo.stl` | 1 | 152 × 50 × 23 | dorso sul piatto | montante sinistro: Pi Zero 2 W, ventola 30 mm, porte verso il retro |
+| `coperchio_calcolo.stl` | 1 | 104 × 50 × 3 | faccia esterna sul piatto | 3 viti M3 svasate, finestra GPIO |
+| `supporto_meteo.stl` | 1 | 48 × 40,5 × 23 | piastra sul piatto | montante sinistro, sotto lo Zero: modulo meteo su 3 distanziali, tettoia con feritoie |
 
 Esito di `python tools/check_print.py pezzi/*.stl`:
 
@@ -71,15 +73,17 @@ Esito di `python tools/check_print.py pezzi/*.stl`:
 | Cosa | Q.tà | Dove |
 |---|---|---|
 | inserti in ottone M4 (Ø esterno 5,6 mm) | 8 | piedi, 4 per piede (si usano i 2 anteriori) |
-| inserti in ottone M3 (Ø esterno 4,0 mm) | 11 | culle (4), ponte (4), scatola del Pi (3, coperchio) |
+| inserti in ottone M3 (Ø esterno 4,0 mm) | 26 | culle (4), ponte (4), scatola del Pi (3, coperchio), scatola di acquisizione (8 schede + 4 coperchio), supporto meteo (3) |
 | inserti in ottone M2,5 | 4 | piastrine del Pi nella scatola |
 | distanziali in ottone M3 maschio-femmina 8 mm + viti M3×6 | 8 | scheda a 3 canali |
 | viti M4 a testa zigrinata, lunghe circa 45 mm (o M4×45 + pomello) | 4 | culle → piedi |
 | viti M5 svasate M5×10 (ISO 10642) | 2 | tappi |
 | viti M5×16 ISO 4762 | 2 | montanti, dal basso |
 | viti M5×8 ISO 7380 + dadi a T M5 | 2 | traversa |
-| viti M5 a testa zigrinata + dadi a T M5 a inserimento frontale | 2 | scatola del Pi |
-| viti M3×8 svasate | 3 | coperchio della scatola |
+| viti M5 a testa zigrinata + dadi a T M5 a inserimento frontale | 5 | scatola del Pi (2), scatola di acquisizione (2), supporto meteo (1) |
+| viti M3×8 svasate | 7 | coperchi delle due scatole (3 + 4) |
+| viti M3×6 a testa cilindrica | 8 | scheda Pico 2 e GPS nella scatola di acquisizione |
+| distanziali in ottone M3 maschio-femmina 8 mm + viti M3×5 | 3 | modulo meteo |
 | distanziali M2,5 maschio-femmina 6 mm + viti M2,5×5 | 4 | Pi Zero 2 W |
 | ventola 30 × 30 × 10 mm a 5 V | 1 | coperchio della scatola |
 | gommini adesivi Ø 12 mm | 12 | 4 sotto i piedi, 8 sotto culle e ponte |
@@ -100,8 +104,11 @@ tappo.
 5. Modulo scheda: culle e ponte sotto la scheda (distanziali in ottone), poi si avvicina il
    modulo ai piedi e si stringono i 4 pomelli M4. Per toglierlo basta svitare i 4 pomelli e
    scollegare i KK.
-6. Modulo di calcolo: due pomelli M5 nei dadi a T a inserimento frontale, nella scanalatura
-   esterna del montante destro.
+6. Scatola di acquisizione (montante destro) e modulo di calcolo (montante sinistro): due pomelli
+   M5 ciascuna nei dadi a T a inserimento frontale, nella scanalatura esterna del montante.
+7. Supporto meteo: un pomello M5 nella scanalatura esterna del montante sinistro, sotto lo Zero.
+8. Cavi: vedi `CABLAGGIO.md`. I cavi che attraversano il telaio vanno nella cava posteriore
+   della traversa.
 
 ## Punti ancora da verificare con i pezzi veri
 

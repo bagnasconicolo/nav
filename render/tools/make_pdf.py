@@ -39,9 +39,11 @@ PARTS = [  # file stem, display name, quantity, notes
     ('copertura', 'Copertura circuito barra', '3', 'Stampare capovolta. Lascia libero il connettore KK.'),
     ('culla_laterale', 'Culla laterale (modulo scheda)', '2 (una specchiata)', '2 inserti M3 per i distanziali, 2 fori a goccia per i pomelli M4.'),
     ('ponte_centrale', 'Ponte centrale (modulo scheda)', '1', '4 inserti M3 per i distanziali della scheda.'),
-    ('scatola_calcolo', 'Scatola modulo di calcolo', '1', 'Dorso sul piatto. Inserti M2,5 per il Pi e M3 per il coperchio.'),
+    ('scatola_acquisizione', 'Scatola di acquisizione', '1', 'Dorso sul piatto. Scheda Pico 2 e GPS su borchie con inserti M3; 5 LEMO sul fronte, feritoia I²C sul retro.'),
+    ('coperchio_acquisizione', 'Coperchio scatola di acquisizione', '1', 'Faccia esterna sul piatto. Feritoie sopra il Pico, 4 viti M3 svasate.'),
+    ('scatola_calcolo', 'Scatola modulo di calcolo', '1', 'Dorso sul piatto. Montante sinistro, porte verso il retro. Inserti M2,5 per il Pi e M3 per il coperchio.'),
     ('coperchio_calcolo', 'Coperchio modulo di calcolo', '1', 'Faccia esterna sul piatto. Griglia ventola e finestra GPIO.'),
-    ('cuffia_gpio', 'Cuffia connettore GPIO', '1', 'Faccia superiore sul piatto.'),
+    ('supporto_meteo', 'Supporto modulo meteo', '1', 'Piastra sul piatto. Tettoia con feritoie; 3 inserti M3 per i distanziali del modulo.'),
 ]
 TITLE = 'MuLab · Rivelatore di muoni a tre barre'
 
@@ -203,7 +205,7 @@ def cover(path, n, total):
     d.text((mm(16), mm(70)), 'a tre barre di scintillatore', font=f(7), fill=INK)
     d.line((mm(16), mm(84), mm(80), mm(84)), fill=ACCENT, width=mm(1.0))
     y = mm(92)
-    for line in ('Telaio, modulo scheda, modulo di calcolo', 'Render, esploso e tavole dei pezzi stampati',
+    for line in ('Telaio, modulo scheda, acquisizione, calcolo, meteo', 'Render, esploso e tavole dei pezzi stampati',
                  '', 'Stampa: A4 orizzontale, scala 100%', f'{date.today().strftime("%d/%m/%Y")}'):
         d.text((mm(16), y), line, font=f(3.6), fill=GREY)
         y += mm(6)
@@ -304,8 +306,11 @@ def inserts_page(n, total):
             ('M4 × 8,1', '5,6', '10', '8', 'piedi, fianco interno: 4 per piede (si usano i 2 anteriori), per i pomelli delle culle'),
             ('M3 × 5,7', '4,0', '6', '4', 'culle laterali: 2 per culla, sotto i distanziali della scheda'),
             ('M3 × 5,7', '4,0', '6', '4', 'ponte centrale, sotto i distanziali della scheda'),
+            ('M3 × 5,7', '4,0', '6', '8', 'scatola di acquisizione: 4 per la scheda Pico 2, 4 per il GPS'),
+            ('M3 × 5,7', '4,0', '7', '4', 'scatola di acquisizione, viti del coperchio'),
             ('M3 × 5,7', '4,0', '7', '3', 'scatola del modulo di calcolo, viti del coperchio'),
-            ('M2,5 × 4', '3,6', '5', '4', 'scatola del modulo di calcolo, distanziali del Pi Zero 2 W')]
+            ('M2,5 × 4', '3,6', '5', '4', 'scatola del modulo di calcolo, distanziali del Pi Zero 2 W'),
+            ('M3 × 5,7', '4,0', '5', '3', 'supporto del modulo meteo, distanziali del modulo')]
     cols = [mm(14), mm(44), mm(66), mm(84), mm(100)]
     for i, r in enumerate(rows):
         for c, t in zip(cols, r):
@@ -317,14 +322,16 @@ def inserts_page(n, total):
 
 def main(rdir, pdir, vdir, out):
     overview = [
-        ('prototipo_v13_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda staccabile, modulo di calcolo'),
-        ('prototipo_v13_exploded.png', 'Esploso', 'Tutti i componenti; modulo scheda e modulo di calcolo si staccano in blocco'),
-        ('prototipo_v13_board.png', 'Modulo scheda', 'Culle avvitate ai piedi con pomelli M4, distanziali in ottone, LEMO verso l\'esterno'),
-        (('prototipo_v13_modulo_staccato.png', 'prototipo_v13_modulo_capovolto.png'), 'Modulo scheda staccato',
-         'A sinistra: si svitano i 4 pomelli M4, si scollegano KK e LEMO e il modulo si sfila in avanti. A destra: il modulo capovolto (culle, ponte, gommini)'),
-        ('prototipo_v13_cavi.png', 'Cablaggio', 'Coassiali barra → scheda (KK), LEMO → GPIO del Pi, I²C da J6, 5 V a J3 dal retro, alimentazione del Pi'),
-        ('prototipo_v13_cavi_dettaglio.png', 'Cablaggio, dettaglio', 'J3 (5 V) sul bordo posteriore, J6 (I²C) e uscite LEMO sul bordo anteriore, cuffia GPIO sul modulo di calcolo'),
-        ('prototipo_v13_compute_open.png', 'Modulo di calcolo', 'Pi Zero 2 W su distanziali in ottone, ventola sotto il coperchio, cablaggio GPIO'),
+        ('prototipo_v14_assembled.png', 'Vista completa', 'Telaio Bosch 20×20, tre barre, modulo scheda, scatola di acquisizione (destra), modulo di calcolo e modulo meteo (sinistra)'),
+        ('prototipo_v14_exploded.png', 'Esploso', 'Tutti i componenti; i moduli si staccano in blocco'),
+        ('prototipo_v14_board.png', 'Modulo scheda', 'Culle avvitate ai piedi con pomelli M4, distanziali in ottone, LEMO verso l\'esterno'),
+        (('prototipo_v14_modulo_staccato.png', 'prototipo_v14_modulo_capovolto.png'), 'Modulo scheda staccato',
+         'A sinistra: si svitano i 4 pomelli M4, si scollegano KK, LEMO e USB-C e il modulo si sfila in avanti. A destra: il modulo capovolto (culle, ponte, gommini)'),
+        ('prototipo_v14_cavi.png', 'Cablaggio', 'Barre → scheda (KK), uscite LEMO → ingressi LEMO della scatola di acquisizione, I²C da J6 (KK), USB-C di alimentazione dal retro'),
+        ('prototipo_v14_cavi_dettaglio.png', 'Cablaggio, dettaglio', 'J6 (I²C, KK 3 poli) e uscite LEMO sul bordo anteriore, USB-C sul bordo posteriore'),
+        ('prototipo_v14_retro.png', 'Cablaggio, retro', 'USB Zero → Pico, I²C e Qwiic dentro la cava posteriore della traversa e lungo il retro dei montanti'),
+        ('prototipo_v14_acq_open.png', 'Scatola di acquisizione', 'Scheda Pico 2 (ingressi LEMO, hub I²C), GPS con SMA sul fondo, feritoia delle porte I²C/Qwiic sul retro'),
+        ('prototipo_v14_compute_open.png', 'Modulo di calcolo', 'Pi Zero 2 W con ventola, montante sinistro; sotto, il modulo meteo sul suo supporto'),
     ]
     def _p(fn):
         return tuple(os.path.join(rdir, f) for f in fn) if isinstance(fn, tuple) else os.path.join(rdir, fn)

@@ -1,0 +1,2114 @@
+import bpy, bmesh, math, sys
+from mathutils import Vector
+
+RES = int(sys.argv[sys.argv.index('--') + 1]) if '--' in sys.argv else 800
+SAMPLES = int(sys.argv[sys.argv.index('--') + 2]) if '--' in sys.argv else 64
+OUT = sys.argv[sys.argv.index('--') + 3] if '--' in sys.argv else '/tmp/r.png'
+MODE = sys.argv[sys.argv.index('--') + 4] if '--' in sys.argv and len(sys.argv) > sys.argv.index('--') + 4 else 'assembled'
+EXPLODED = MODE == 'exploded'
+PARTS = MODE == 'parts'
+OPEN = MODE == 'compute_open'
+AOPEN = MODE == 'acq_open'
+MODOUT = MODE == 'module_out'
+MODFLIP = MODE == 'module_flip'
+COMPUTE_VIEW = MODE in ('compute', 'compute_open')
+ACQ_VIEW = MODE in ('acq', 'acq_open')
+from mathutils import Matrix
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+scene = bpy.context.scene
+MM = 0.001
+
+
+def m(v):
+    return v * MM
+
+
+# ---------------------------------------------------------------- helpers
+def mesh_obj(name, bm):
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(name, me)
+    scene.collection.objects.link(ob)
+    return ob
+
+
+def box(name, x0, x1, y0, y1, z0, z1):
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    for v in bm.verts:
+        v.co.x = m(x0) if v.co.x < 0 else m(x1)
+        v.co.y = m(y0) if v.co.y < 0 else m(y1)
+        v.co.z = m(z0) if v.co.z < 0 else m(z1)
+    return mesh_obj(name, bm)
+
+
+def prism(name, pts_xy, z0, z1, axis='z'):
+    """Extrude a 2D polygon (mm) between z0 and z1 along the given axis."""
+    bm = bmesh.new()
+    def mk(a, b, c):
+        if axis == 'z':
+            return bm.verts.new((m(a), m(b), m(c)))
+        if axis == 'x':
+            return bm.verts.new((m(c), m(a), m(b)))
+        if axis == 'y':
+            return bm.verts.new((m(a), m(c), m(b)))
+    bot = [mk(x, y, z0) for x, y in pts_xy]
+    top = [mk(x, y, z1) for x, y in pts_xy]
+    bm.faces.new(list(reversed(bot)))
+    bm.faces.new(top)
+    n = len(pts_xy)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new([bot[i], bot[j], top[j], top[i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return mesh_obj(name, bm)
+
+
+def cyl(name, cx, cy, r, z0, z1, seg=48, axis='z'):
+    pts = [(cx + r * math.cos(2 * math.pi * i / seg), cy + r * math.sin(2 * math.pi * i / seg)) for i in range(seg)]
+    return prism(name, pts, z0, z1, axis)
+
+
+def apply_mods(ob):
+    with bpy.context.temp_override(object=ob, active_object=ob, selected_objects=[ob]):
+        for md in list(ob.modifiers):
+            bpy.ops.object.modifier_apply(modifier=md.name)
+
+
+def boolean(target, cutter, op='DIFFERENCE'):
+    md = target.modifiers.new('b', 'BOOLEAN')
+    md.operation = op
+    md.solver = 'EXACT'
+    md.object = cutter
+    apply_mods(target)
+    bpy.data.objects.remove(cutter, do_unlink=True)
+    return target
+
+
+def _bed_weights(ob, angle, bed, want_bed):
+    ax, sg = {'x': 0, 'y': 1, 'z': 2}[bed[0]], bed[1]
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    cmin = min(v.co[ax] * sg for v in bm.verts)
+    ws = []
+    for e in bm.edges:
+        on_bed = all(v.co[ax] * sg < cmin + 1e-7 for v in e.verts)
+        sharp = len(e.link_faces) == 2 and e.calc_face_angle(0.0) > math.radians(angle)
+        ws.append(1.0 if sharp and (on_bed == want_bed) else 0.0)
+    bm.free()
+    me = ob.data
+    if 'bevel_weight_edge' not in me.attributes:
+        me.attributes.new('bevel_weight_edge', 'FLOAT', 'EDGE')
+    me.attributes['bevel_weight_edge'].data.foreach_set('value', ws)
+
+
+def bevel(ob, w, seg=2, angle=40, bed=None, chamfer=0.6):
+    """Round the sharp edges. With bed=('z', -1) (axis, side) the edges lying on the print bed are not
+    rounded (a fillet there would print as an overhang) and get a 45 deg chamfer instead."""
+    md = ob.modifiers.new('bev', 'BEVEL')
+    md.width = m(w)
+    md.segments = seg
+    md.harden_normals = False
+    if bed is None:
+        md.limit_method = 'ANGLE'
+        md.angle_limit = math.radians(angle)
+        apply_mods(ob)
+        return ob
+    _bed_weights(ob, angle, bed, False)
+    md.limit_method = 'WEIGHT'
+    apply_mods(ob)
+    _bed_weights(ob, angle, bed, True)
+    md = ob.modifiers.new('bev', 'BEVEL')
+    md.width = m(chamfer)
+    md.segments = 1
+    md.limit_method = 'WEIGHT'
+    apply_mods(ob)
+    return ob
+
+
+def smooth(ob, angle=35):
+    with bpy.context.temp_override(object=ob, active_object=ob, selected_objects=[ob], selected_editable_objects=[ob]):
+        bpy.ops.object.shade_auto_smooth(angle=math.radians(angle))
+
+
+def mirror_x(ob, name):
+    new = ob.copy()
+    new.data = ob.data.copy()
+    new.name = name
+    scene.collection.objects.link(new)
+    for v in new.data.vertices:
+        v.co.x = -v.co.x
+    new.data.flip_normals()
+    return new
+
+
+# ---------------------------------------------------------------- materials
+def node_mat(name):
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    return mat, nt, bsdf
+
+
+def mat_printed(name, color, rough, layer_period_mm=0.25, bump=0.25):
+    mat, nt, bsdf = node_mat(name)
+    bsdf.inputs['Base Color'].default_value = (*color, 1)
+    bsdf.inputs['Roughness'].default_value = rough
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    wave = nt.nodes.new('ShaderNodeTexWave')
+    wave.wave_type = 'BANDS'
+    wave.bands_direction = 'Z'
+    wave.inputs['Scale'].default_value = 0.6283 / (layer_period_mm * MM)
+    wave.inputs['Distortion'].default_value = 0.0
+    noise = nt.nodes.new('ShaderNodeTexNoise')
+    noise.inputs['Scale'].default_value = 900
+    mix = nt.nodes.new('ShaderNodeMath')
+    mix.operation = 'MULTIPLY_ADD'
+    mix.inputs[1].default_value = 1.0
+    nt.links.new(tc.outputs['Object'], wave.inputs['Vector'])
+    nt.links.new(tc.outputs['Object'], noise.inputs['Vector'])
+    nt.links.new(wave.outputs['Fac'], mix.inputs[0])
+    nt.links.new(noise.outputs['Fac'], mix.inputs[2])
+    bp = nt.nodes.new('ShaderNodeBump')
+    bp.inputs['Strength'].default_value = bump
+    bp.inputs['Distance'].default_value = m(0.03)
+    nt.links.new(mix.outputs[0], bp.inputs['Height'])
+    nt.links.new(bp.outputs['Normal'], bsdf.inputs['Normal'])
+    return mat
+
+
+def mat_foil():
+    mat, nt, bsdf = node_mat('foil')
+    bsdf.inputs['Base Color'].default_value = (0.70, 0.71, 0.72, 1)
+    bsdf.inputs['Metallic'].default_value = 1.0
+    bsdf.inputs['Roughness'].default_value = 0.34
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    # stretched mapping so creases run mostly across the bar
+    mp = nt.nodes.new('ShaderNodeMapping')
+    mp.inputs['Scale'].default_value = (1.0, 3.0, 1.0)
+    nt.links.new(tc.outputs['Object'], mp.inputs['Vector'])
+    wv = nt.nodes.new('ShaderNodeTexWave')
+    wv.wave_type = 'BANDS'
+    wv.bands_direction = 'X'
+    wv.wave_profile = 'SIN'
+    wv.inputs['Scale'].default_value = 9
+    wv.inputs['Distortion'].default_value = 9
+    wv.inputs['Detail'].default_value = 3
+    wv.inputs['Detail Scale'].default_value = 1.5
+    nt.links.new(mp.outputs['Vector'], wv.inputs['Vector'])
+    noise = nt.nodes.new('ShaderNodeTexNoise')
+    noise.inputs['Scale'].default_value = 70
+    noise.inputs['Detail'].default_value = 8
+    noise.inputs['Roughness'].default_value = 0.6
+    nt.links.new(tc.outputs['Object'], noise.inputs['Vector'])
+    add = nt.nodes.new('ShaderNodeMath')
+    add.operation = 'MULTIPLY_ADD'
+    add.inputs[1].default_value = 0.35
+    nt.links.new(noise.outputs['Fac'], add.inputs[0])
+    nt.links.new(wv.outputs['Fac'], add.inputs[2])
+    bp = nt.nodes.new('ShaderNodeBump')
+    bp.inputs['Strength'].default_value = 0.18
+    bp.inputs['Distance'].default_value = m(0.25)
+    nt.links.new(add.outputs[0], bp.inputs['Height'])
+    nt.links.new(bp.outputs['Normal'], bsdf.inputs['Normal'])
+    # slight roughness variation
+    rr = nt.nodes.new('ShaderNodeMapRange')
+    rr.inputs['To Min'].default_value = 0.30
+    rr.inputs['To Max'].default_value = 0.40
+    nt.links.new(noise.outputs['Fac'], rr.inputs['Value'])
+    nt.links.new(rr.outputs['Result'], bsdf.inputs['Roughness'])
+    return mat
+
+
+def mat_alu():
+    mat, nt, bsdf = node_mat('alu')
+    bsdf.inputs['Base Color'].default_value = (0.74, 0.75, 0.77, 1)
+    bsdf.inputs['Metallic'].default_value = 1.0
+    bsdf.inputs['Roughness'].default_value = 0.30
+    bsdf.inputs['Anisotropic'].default_value = 0.5
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    mp = nt.nodes.new('ShaderNodeMapping')
+    mp.inputs['Scale'].default_value = (400, 400, 4)
+    noise = nt.nodes.new('ShaderNodeTexNoise')
+    noise.inputs['Scale'].default_value = 3
+    nt.links.new(tc.outputs['Object'], mp.inputs['Vector'])
+    nt.links.new(mp.outputs['Vector'], noise.inputs['Vector'])
+    rr = nt.nodes.new('ShaderNodeMapRange')
+    rr.inputs['To Min'].default_value = 0.36
+    rr.inputs['To Max'].default_value = 0.44
+    nt.links.new(noise.outputs['Fac'], rr.inputs['Value'])
+    nt.links.new(rr.outputs['Result'], bsdf.inputs['Roughness'])
+    tan = nt.nodes.new('ShaderNodeTangent')
+    tan.direction_type = 'RADIAL'
+    tan.axis = 'Z'
+    nt.links.new(tan.outputs['Tangent'], bsdf.inputs['Tangent'])
+    return mat
+
+
+def mat_simple(name, color, rough, metal=0.0, coat=0.0):
+    mat, nt, bsdf = node_mat(name)
+    bsdf.inputs['Base Color'].default_value = (*color, 1)
+    bsdf.inputs['Roughness'].default_value = rough
+    bsdf.inputs['Metallic'].default_value = metal
+    bsdf.inputs['Coat Weight'].default_value = coat
+    return mat
+
+
+M_BASE = mat_printed('anthracite', (0.032, 0.034, 0.038), 0.52, 0.25, 0.3)
+M_CLIP = mat_printed('clip_orange', (0.40, 0.085, 0.010), 0.58, 0.2, 0.25)
+M_FOIL = mat_foil()
+M_ALU = mat_alu()
+M_PCB = mat_simple('pcb', (0.015, 0.16, 0.045), 0.28, coat=0.4)
+M_TERM = mat_simple('terminal', (0.02, 0.02, 0.022), 0.42)
+M_SCREW = mat_simple('screw', (0.8, 0.8, 0.78), 0.25, metal=1.0)
+M_TIN = mat_simple('tin', (0.85, 0.85, 0.85), 0.2, metal=1.0)
+M_IC = mat_simple('ic', (0.02, 0.02, 0.022), 0.45)
+M_CAP = mat_simple('cap', (0.45, 0.30, 0.15), 0.4)
+M_RES = mat_simple('res', (0.03, 0.03, 0.03), 0.35)
+M_SPACER = M_BASE
+M_CAP_TOP = mat_simple('endcap', (0.025, 0.025, 0.028), 0.5)
+M_WIRE_R = mat_simple('wire_red', (0.45, 0.012, 0.01), 0.38)
+M_WIRE_K = mat_simple('wire_black', (0.012, 0.012, 0.014), 0.38)
+M_BOLT = mat_simple('bolt', (0.05, 0.05, 0.055), 0.32, metal=1.0)
+M_RUBBER = mat_simple('rubber', (0.012, 0.012, 0.012), 0.85)
+M_SHEATH = mat_printed('sheath', (0.012, 0.012, 0.013), 0.5, 0.6, 0.6)
+M_SHRINK = mat_simple('shrink', (0.01, 0.01, 0.011), 0.28)
+M_NYLON = mat_simple('kk_nylon', (0.80, 0.76, 0.64), 0.5)
+M_COAX = mat_simple('coax', (0.012, 0.012, 0.013), 0.42)
+M_ACRYL = bpy.data.materials.new('acrylic')
+M_ACRYL.use_nodes = True
+_b = M_ACRYL.node_tree.nodes['Principled BSDF']
+_b.inputs['Base Color'].default_value = (0.86, 0.93, 0.95, 1)
+_b.inputs['Roughness'].default_value = 0.04
+_b.inputs['IOR'].default_value = 1.49
+_b.inputs['Transmission Weight'].default_value = 1.0
+M_BRASS = mat_simple('brass', (0.62, 0.42, 0.12), 0.3, metal=1.0)
+M_HOLE = mat_simple('dark', (0.01, 0.01, 0.01), 0.8)
+
+
+def setmat(ob, mat):
+    ob.data.materials.clear()
+    ob.data.materials.append(mat)
+    return ob
+
+
+# ---------------------------------------------------------------- geometry
+BAR_L, BAR_W, BAR_T = 300.0, 45.0, 5.0
+BAR_Z = [60.0, 130.0, 200.0]
+CLR = 0.5             # clearance in pocket
+POCKET_D = 10.5       # pocket depth from mouth
+WALL_YZ = 3.0         # pocket side/top/bottom walls
+CLIP_UP = 14.0        # back plate / tongue height above the bar axis
+BACK = 3.5            # back wall thickness
+X_MOUTH = -BAR_L / 2 + 10.0             # -140
+X_BOTTOM = X_MOUTH - POCKET_D           # -150.5
+X_BACK = X_BOTTOM - BACK                # -154 : clip back face = upright inner face
+UP = 20.0
+UX = X_BACK - UP / 2                    # upright centre x
+FOOT_H = 10.0
+SOCK_TOP = 30.0
+UP_Z0 = 8.0
+UP_H = 250.0
+
+# slot geometry (depth measured from the face)
+SL_OPEN = 3.0     # half opening
+SL_LIP = 1.8
+SL_CAV = 5.6      # half width of cavity under lips
+SL_DEPTH = 6.0
+SL_BOT = 2.4      # half width at cavity bottom
+
+
+def teardrop(cy, cz, r, n=28):
+    """Horizontal hole that prints without support: circle with a 45 deg pointed top (+z)."""
+    pts = []
+    for k in range(n + 1):
+        a = math.radians(135 + 270 * k / n)
+        pts.append((cy + r * math.cos(a), cz + r * math.sin(a)))
+    pts.append((cy, cz + r * math.sqrt(2)))
+    return pts
+
+
+def gothic_window(ob, axis, a0, a1, c, w=14.0, z0=5.0, zs=14.0):
+    """Lightening window with a 45 deg pointed roof (self-supporting), cut through along `axis`."""
+    pts = [(c - w / 2, z0), (c + w / 2, z0), (c + w / 2, zs), (c, zs + w / 2), (c - w / 2, zs)]
+    boolean(ob, prism('gw', pts, a0, a1, axis=axis))
+
+
+def text_obj(name, body, size, depth, mat):
+    """Extruded text (mm), centred on the origin, lying in XY, thickness `depth` along Z."""
+    cu = bpy.data.curves.new(name, 'FONT')
+    cu.body = body
+    cu.size = m(size)
+    cu.extrude = m(depth / 2)
+    cu.align_x = 'CENTER'
+    cu.align_y = 'CENTER'
+    cu.resolution_u = 8
+    tmp = bpy.data.objects.new(name, cu)
+    scene.collection.objects.link(tmp)
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(dg))
+    bpy.data.objects.remove(tmp, do_unlink=True)
+    ob = bpy.data.objects.new(name, me)
+    scene.collection.objects.link(ob)
+    setmat(ob, mat)
+    return ob
+
+
+def make_upright(name, cx, zb=UP_Z0, h=UP_H):
+    up = box(name, cx - UP / 2, cx + UP / 2, -UP / 2, UP / 2, zb, zb + h)
+    bevel(up, 0.6, 3)
+    z0, z1 = zb - 2, zb + h + 2
+    for k in range(4):
+        ang = k * math.pi / 2
+        # local slot profile: u across the face, d = depth into profile
+        loc = [(-SL_OPEN, -2.0), (-SL_OPEN, SL_LIP), (-SL_CAV, SL_LIP), (-SL_BOT, SL_DEPTH),
+               (SL_BOT, SL_DEPTH), (SL_CAV, SL_LIP), (SL_OPEN, SL_LIP), (SL_OPEN, -2.0)]
+        pts = []
+        for u, d in loc:
+            # face normal along +x rotated by ang; face at distance UP/2
+            r = UP / 2 - d
+            nx, ny = math.cos(ang), math.sin(ang)
+            tx, ty = -ny, nx
+            pts.append((cx + nx * r + tx * u, ny * r + ty * u))
+        cut = prism('slot', pts, z0, z1)
+        boolean(up, cut)
+    boolean(up, cyl('bore', cx, 0, 2.1, z0, z1, 32))
+    setmat(up, M_ALU)
+    smooth(up, 30)
+    return up
+
+
+def make_clip(name, zc):
+    """One continuous profile: pocket body in front, a 45 deg ramp rising to the back that carries
+    the T tongue. Extruded across the whole width and rounded in a single pass."""
+    hw = BAR_W / 2 + CLR + WALL_YZ
+    hh = BAR_T / 2 + CLR + WALL_YZ
+    tb = 4.5                                       # back wall thickness at the top
+    prof = [(X_BACK, zc - hh), (X_MOUTH, zc - hh), (X_MOUTH, zc + hh),
+            (X_BACK + tb + (CLIP_UP - hh), zc + hh), (X_BACK + tb, zc + CLIP_UP), (X_BACK, zc + CLIP_UP)]
+    body = prism(name, [(x, z) for x, z in prof], -hw, hw, axis='y')
+    bevel(body, 2.0, 4, angle=30, bed=('z', -1))
+    pocket = box('pocket', X_BOTTOM, X_MOUTH + 2, -BAR_W / 2 - CLR, BAR_W / 2 + CLR,
+                 zc - BAR_T / 2 - CLR, zc + BAR_T / 2 + CLR)
+    boolean(body, pocket)
+    # lead-in chamfer at the pocket mouth
+    ch = 0.9
+    bm = bmesh.new()
+    py, pz = BAR_W / 2 + CLR, BAR_T / 2 + CLR
+    vs = []
+    for x, e in ((X_MOUTH - ch, 0.0), (X_MOUTH + 0.5, ch + 0.5)):
+        for y, z in ((-py - e, zc - pz - e), (py + e, zc - pz - e), (py + e, zc + pz + e), (-py - e, zc + pz + e)):
+            vs.append(bm.verts.new((m(x), m(y), m(z))))
+    bm.faces.new(vs[0:4]); bm.faces.new(vs[4:8])
+    for i in range(4):
+        j = (i + 1) % 4
+        bm.faces.new([vs[i], vs[j], vs[4 + j], vs[4 + i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    boolean(body, mesh_obj('mouth', bm))
+    # T tongue: neck through the slot opening, head behind the lips
+    neck = box('neck', X_BACK - 2.0, X_BACK + 0.2, -2.75, 2.75, zc - hh, zc + CLIP_UP)
+    head = box('head', X_BACK - 4.0, X_BACK - 1.95, -3.7, 3.7, zc - hh, zc + CLIP_UP)
+    bevel(head, 0.3, 1)
+    boolean(body, neck, 'UNION')
+    boolean(body, head, 'UNION')
+    setmat(body, M_CLIP)
+    smooth(body, 35)
+    return body
+
+
+def make_bar(name, zc):
+    bar = box(name, -BAR_L / 2, BAR_L / 2, -BAR_W / 2, BAR_W / 2, zc - BAR_T / 2, zc + BAR_T / 2)
+    bevel(bar, 0.6, 3)
+    setmat(bar, M_FOIL)
+    smooth(bar, 35)
+    return bar
+
+
+PCB_PARTS = []
+ENTRIES = []
+COVERS = []
+
+
+def make_pcb(zc):
+    zt = zc + BAR_T / 2
+    parts = PCB_PARTS
+    x0, x1 = -BAR_L / 2 + 17.0, -BAR_L / 2 + 41.0   # -133 .. -109
+    y0, y1 = -21.0, 8.0
+    pcb = box('pcb', x0, x1, y0, y1, zt, zt + 1.6)
+    bevel(pcb, 0.4, 1)
+    setmat(pcb, M_PCB)
+    parts.append(pcb)
+    zp = zt + 1.6
+    # --- Molex KK 254, 2 pins, right-angle header (22-05-3021 style) + crimp housing (22-01-3027 style)
+    P = 2.54
+    hx = -121.0                                   # header centre x
+    pins_x = [hx - P / 2, hx + P / 2]
+    tx0, tx1 = hx - 2.9, hx + 2.9                 # header body extents (used by the cover window)
+    hb0, ty1 = y0 + 0.4, y0 + 3.6                 # header wall, y range (back)
+    zpin = zp + 2.54
+    hdr = box('kk_hdr', tx0, tx1, hb0, ty1, zp, zp + 6.2)
+    bevel(hdr, 0.2, 1)
+    # friction-lock ramp on the front face of the wall
+    ramp = prism('ramp', [(hb0, zp + 4.4), (hb0 - 1.1, zp + 5.4), (hb0 - 1.1, zp + 6.2), (hb0, zp + 6.2)],
+                 hx - 1.2, hx + 1.2, axis='x')
+    boolean(hdr, ramp, 'UNION')
+    setmat(hdr, M_NYLON)
+    smooth(hdr, 30)
+    parts.append(hdr)
+    for px in pins_x:
+        # square pin: horizontal part toward the front, bent down through the PCB at the back
+        pin = box('kkpin', px - 0.32, px + 0.32, y0 - 9.5, ty1 + 1.6, zpin - 0.32, zpin + 0.32)
+        setmat(pin, M_TIN); parts.append(pin)
+        pin = box('kkpin', px - 0.32, px + 0.32, ty1 + 1.0, ty1 + 1.64, zp - 0.5, zpin + 0.32)
+        setmat(pin, M_TIN); parts.append(pin)
+    # crimp housing plugged on the pins, wires leave toward the front (-y)
+    hs0, hs1 = y0 - 11.9, hb0 - 0.05
+    hsg = box('kk_housing', hx - 2.5, hx + 2.5, hs0, hs1, zpin - 2.4, zpin + 2.4)
+    bevel(hsg, 0.25, 1)
+    # latch slot on top and wire entries at the front
+    boolean(hsg, box('latch', hx - 1.0, hx + 1.0, hs1 - 7.5, hs1 - 1.5, zpin + 1.6, zpin + 3))
+    for px in pins_x:
+        boolean(hsg, box('went', px - 0.85, px + 0.85, hs0 - 1, hs0 + 2.0, zpin - 0.85, zpin + 0.85))
+        boolean(hsg, box('cwin', px - 0.6, px + 0.6, hs0 + 3.5, hs0 + 7.5, zpin + 1.0, zpin + 3))
+        ENTRIES.append((px, hs0, zpin, zc))
+    setmat(hsg, M_NYLON)
+    smooth(hsg, 30)
+    parts.append(hsg)
+    # --- SOIC-8
+    ix0, iy0 = -131.0, -8.0
+    ic = box('ic', ix0, ix0 + 5.0, iy0, iy0 + 4.0, zp + 0.15, zp + 1.6)
+    bevel(ic, 0.15, 1)
+    setmat(ic, M_IC)
+    parts.append(ic)
+    for i in range(4):
+        px = ix0 + 0.6 + i * 1.27
+        for ya, yb in [(iy0 - 0.9, iy0 + 0.1), (iy0 + 3.9, iy0 + 4.9)]:
+            pin = box('pin', px - 0.22, px + 0.22, ya, yb, zp, zp + 0.5)
+            setmat(pin, M_TIN)
+            parts.append(pin)
+    # --- 0805 passives (body + tinned terminations)
+    def passive(cx, cy, mat, rot=False, h=0.55):
+        L, W = 2.0, 1.25
+        if rot:
+            L, W = W, L
+        b = box('smd', cx - L / 2, cx + L / 2, cy - W / 2, cy + W / 2, zp, zp + h)
+        setmat(b, mat)
+        parts.append(b)
+        e = 0.35
+        if not rot:
+            ends = [(cx - L / 2 - 0.02, cx - L / 2 + e, cy - W / 2 - 0.02, cy + W / 2 + 0.02),
+                    (cx + L / 2 - e, cx + L / 2 + 0.02, cy - W / 2 - 0.02, cy + W / 2 + 0.02)]
+        else:
+            ends = [(cx - L / 2 - 0.02, cx + L / 2 + 0.02, cy - W / 2 - 0.02, cy - W / 2 + e),
+                    (cx - L / 2 - 0.02, cx + L / 2 + 0.02, cy + W / 2 - e, cy + W / 2 + 0.02)]
+        for a, b2, c, d in ends:
+            t = box('term', a, b2, c, d, zp, zp + h + 0.03)
+            setmat(t, M_TIN)
+            parts.append(t)
+    passive(-122.5, -6.0, M_RES)
+    passive(-118.0, -6.0, M_CAP, h=0.8)
+    passive(-113.5, -6.0, M_RES)
+    passive(-122.5, -1.5, M_CAP, h=0.8)
+    passive(-114.5, 0.5, M_RES, rot=True)
+    passive(-127.0, 3.0, M_CAP, h=0.8)
+    # SOT-23
+    s = box('sot', -120.0, -117.0, 1.6, 3.0, zp + 0.1, zp + 1.0)
+    setmat(s, M_IC)
+    parts.append(s)
+    for px in [-119.45, -117.55]:
+        pin = box('pin', px - 0.2, px + 0.2, 0.9, 1.7, zp, zp + 0.3)
+        setmat(pin, M_TIN); parts.append(pin)
+    pin = box('pin', -118.7, -118.3, 2.9, 3.7, zp, zp + 0.3)
+    setmat(pin, M_TIN); parts.append(pin)
+    # mounting pads / tinned via pads at the rear
+    for px in [-130.5, -111.5]:
+        pad = cyl('pad', px, 5.5, 1.2, zp - 0.02, zp + 0.04, 24)
+        setmat(pad, M_TIN); parts.append(pad)
+    cov = box('cover', x0 - 2.0, x1 + 2.0, y0 - 2.0, y1 + 2.0, zt, zp + 3.8)
+    bevel(cov, 1.5, 3, bed=('z', 1))
+    boolean(cov, box('cin', x0 - 0.2, x1 + 0.2, y0 - 0.2, y1 + 0.2, zt - 1, zp + 2.2))
+    boolean(cov, box('win', tx0 - 0.5, tx1 + 0.5, y0 - 3, ty1 + 2.2, zt - 1, zp + 10))
+    setmat(cov, M_BASE)
+    smooth(cov, 35)
+    COVERS.append(cov)
+    return parts
+
+
+H_LEN = 300.0                # horizontal Bosch profile, 20x20 x 300
+H_Z0 = 6.0                   # its bottom face height
+H_X = H_LEN / 2              # profile ends at x = +-150
+BS_X = UX + 21.0             # M5 button screw (into slot nut) under the profile end
+FX0, FX1 = UX - 24.0, UX + 30.0   # foot extent in x (longer inwards, to hold 16 mm of profile)
+FOOT_TOP = SOCK_TOP
+FOOT_SCREWS = [(-28.0, 9.0), (-46.0, 4.6)]   # (y, z) of the M4 inserts on the foot's inner face
+FIL_R = 18.0                 # fillet radius between block and plate
+CH_W, CH_D = 14.0, 3.0       # cable channel width / depth
+SH_R = 3.4                   # braided sheath radius
+SH_Y = -19.5                 # sheath axis y (in front of the left upright)
+
+
+def make_foot(name):
+    """Printed foot: plate + block with vertical socket (upright) and side pocket
+    (horizontal profile). Symmetric, so the same part is used on both sides."""
+    cx = UX
+    prof = [(-75.0, 0.0), (75.0, 0.0), (75.0, 6.0), (40.0, 10.0), (38.04, 10.096), (36.098, 10.384), (34.194, 10.861), (32.346, 11.522), (30.572, 12.362), (28.889, 13.371), (27.312, 14.54), (25.858, 15.858), (24.54, 17.312), (23.371, 18.889), (22.362, 20.572), (21.522, 22.346), (20.861, 24.194), (20.384, 26.098), (20.096, 28.04), (20.0, 30.0), (-20.0, 30.0), (-20.096, 28.04), (-20.384, 26.098), (-20.861, 24.194), (-21.522, 22.346), (-22.362, 20.572), (-23.371, 18.889), (-24.54, 17.312), (-25.858, 15.858), (-27.312, 14.54), (-28.889, 13.371), (-30.572, 12.362), (-32.346, 11.522), (-34.194, 10.861), (-36.098, 10.384), (-38.04, 10.096), (-40.0, 10.0), (-75.0, 6.0)]
+    foot = prism(name, prof, FX0, FX1, axis='x')
+    bevel(foot, 2.0, 3, angle=25, bed=('z', -1))
+    # engraved logo on the outer face
+    logo = text_obj('logo', 'MuLab', 8.0, 1.6, M_BASE)
+    logo.data.transform(Matrix.Translation((m(FX0), 0, m(18.0))) @ Matrix(((0, 0, -1, 0), (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+    boolean(foot, logo)
+    # vertical socket + M5 from below into the upright's axial bore
+    boolean(foot, box('sock', cx - UP / 2 - 0.15, cx + UP / 2 + 0.15, -UP / 2 - 0.15, UP / 2 + 0.15, UP_Z0, FOOT_TOP + 5))
+    boolean(foot, cyl('clr', cx, 0, 2.75, -1, UP_Z0 + 1, 40))
+    boolean(foot, cyl('cbore', cx, 0, 4.75, -1, 5.0, 48))
+    # side pocket for the horizontal profile (opens on the inner face)
+    boolean(foot, box('hpock', -H_X - 0.2, FX1 + 2, -UP / 2 - 0.15, UP / 2 + 0.15, H_Z0 - 0.1, H_Z0 + UP + 0.2))
+    # M5 button screw from below into a slot nut in the profile's bottom slot
+    boolean(foot, cyl('bclr', BS_X, 0, 2.75, -1, H_Z0 + 1, 40))
+    boolean(foot, cyl('bcb', BS_X, 0, 5.1, -1, 3.0, 48))
+    # M4 heat-set inserts for the board-module cradles (front and back: the foot is reversible)
+    for sy in (-1, 1):
+        for y, z in FOOT_SCREWS:
+            boolean(foot, prism('ins', teardrop(sy * y, z, 2.8), FX1 - 10.0, FX1 + 1.0, axis='x'))
+    # rubber pad recesses
+    for py in (-60.0, 60.0):
+        boolean(foot, cyl('padrec', cx, py, 6.3, -1, 1.0, 48))
+    setmat(foot, M_BASE)
+    smooth(foot, 35)
+    return foot
+
+
+def rot180(ob, name):
+    new = ob.copy()
+    new.data = ob.data.copy()
+    new.name = name
+    scene.collection.objects.link(new)
+    new.data.transform(Matrix.Rotation(math.pi, 4, 'Z'))
+    return new
+
+
+def make_base():
+    left = make_foot('foot_L')
+    rot180(left, 'foot_R')
+    hp = make_upright('hprofile', 0.0, -H_LEN / 2, H_LEN)
+    hp.data.transform(Matrix.Translation((0, 0, m(H_Z0 + UP / 2))) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+    for cx in (UX, -UX):
+        for py in (-60.0, 60.0):
+            p = cyl('rubber', cx, py, 6.0, -2.0, 0.9, 48)
+            bevel(p, 0.8, 2)
+            setmat(p, M_RUBBER)
+            smooth(p, 40)
+    return left
+
+
+def make_spacer(name, z0, z1):
+    xb, xf = X_BACK, X_BOTTOM + 1.0
+    outline = [(xf, -13), (xf, 13), (xb, 13), (xb, 2.75), (xb - 2.0, 2.75), (xb - 2.0, 3.7), (xb - 4.0, 3.7),
+               (xb - 4.0, -3.7), (xb - 2.0, -3.7), (xb - 2.0, -2.75), (xb, -2.75), (xb, -13)]
+    sp = prism(name, outline, z0 + 0.1, z1 - 0.1)
+    bevel(sp, 0.6, 2, bed=('z', -1))
+    setmat(sp, M_SPACER)
+    smooth(sp, 35)
+    mirror_x(sp, name + 'R')
+    return sp
+
+
+_HH = BAR_T / 2 + CLR + WALL_YZ
+SPACER_SPANS = [(SOCK_TOP, BAR_Z[0] - _HH), (BAR_Z[0] + CLIP_UP, BAR_Z[1] - _HH), (BAR_Z[1] + CLIP_UP, BAR_Z[2] - _HH),
+                (BAR_Z[2] + CLIP_UP, UP_Z0 + UP_H)]
+for k, (a_, b_) in enumerate(SPACER_SPANS):
+    make_spacer(f'spacer{k}', a_, b_)
+
+
+base = make_base()
+upL = make_upright('upright_L', UX)
+upR = make_upright('upright_R', -UX)
+def engrave_number(ob, num, xc, zc):
+    hw = BAR_W / 2 + CLR + WALL_YZ
+    t = text_obj('num', str(num), 7.0, 1.2, M_CLIP)
+    t.data.transform(Matrix.Translation((m(xc), m(-hw), m(zc))) @ Matrix.Rotation(math.pi / 2, 4, 'X'))
+    boolean(ob, t)
+
+
+for i, zc in enumerate(BAR_Z):
+    make_bar(f'bar{i}', zc)
+    cl = make_clip(f'clipL{i}', zc)
+    cr = mirror_x(cl, f'clipR{i}')
+    engrave_number(cl, i + 1, (X_BACK + X_MOUTH) / 2, zc)
+    engrave_number(cr, i + 1, -(X_BACK + X_MOUTH) / 2, zc)
+    make_pcb(zc)
+
+
+# ---------------------------------------------------------------- M5x16 socket head screws (from below)
+def make_bolt(name, cx):
+    head = cyl(name, cx, 0, 4.25, 0.0, 5.0, 48)
+    bevel(head, 0.4, 2)
+    hexs = [(cx + 2.06 * math.cos(math.pi / 3 * i), 2.06 * math.sin(math.pi / 3 * i)) for i in range(6)]
+    boolean(head, prism('hex', hexs, -1, 3.0))
+    shank = cyl('shank', cx, 0, 2.45, 4.9, 21.0, 32)
+    bevel(shank, 0.4, 1)
+    boolean(head, shank, 'UNION')
+    setmat(head, M_BOLT)
+    smooth(head, 40)
+    # thread hint: thin dark rings
+    rings = []
+    for i in range(18):
+        z = 6.0 + i * 0.8
+        r = cyl('ring', cx, 0, 2.52, z, z + 0.28, 32)
+        boolean(head, r, 'UNION')
+    return head
+
+
+BOLTS = [make_bolt('bolt_L', UX), make_bolt('bolt_R', -UX)]
+
+
+def socket_screw(name, d, L, dk, k):
+    """ISO 4762 screw in local frame: bearing face at z=0, head in +z, shank in -z."""
+    h = cyl(name, 0, 0, dk / 2, 0, k, 48)
+    bevel(h, 0.35, 2)
+    s_ = 0.4 * dk
+    hexs = [(s_ * math.cos(math.pi / 3 * i), s_ * math.sin(math.pi / 3 * i)) for i in range(6)]
+    boolean(h, prism('hex', hexs, k * 0.4, k + 1))
+    sh = cyl('sh', 0, 0, d / 2 - 0.05, -L, 0.1, 32)
+    bevel(sh, 0.3, 1)
+    boolean(h, sh, 'UNION')
+    for i in range(int((L - 2) / 0.7)):
+        z = -L + 1.0 + i * 0.7
+        boolean(h, cyl('ring', 0, 0, d / 2 + 0.02, z, z + 0.25, 32), 'UNION')
+    setmat(h, M_BOLT)
+    smooth(h, 40)
+    return h
+
+
+def hex_nut(name, d, af, t):
+    rr = af / math.sqrt(3)
+    pts = [(rr * math.cos(math.pi / 3 * i + math.pi / 6), rr * math.sin(math.pi / 3 * i + math.pi / 6)) for i in range(6)]
+    n = prism(name, pts, 0, t)
+    bevel(n, 0.3, 1)
+    boolean(n, cyl('nh', 0, 0, d / 2, -1, t + 1, 32))
+    setmat(n, M_BOLT)
+    smooth(n, 40)
+    return n
+
+
+def place(ob, mat):
+    ob.data.transform(mat)
+    ob.data.update()
+
+
+def button_screw(name, d, L, dk, k):
+    """ISO 7380 button head in local frame: bearing at z=0, head +z, shank -z."""
+    h = cyl(name, 0, 0, dk / 2, 0, k, 48)
+    bevel(h, 1.1, 4)
+    s_ = 0.3 * dk
+    hexs = [(s_ * math.cos(math.pi / 3 * i), s_ * math.sin(math.pi / 3 * i)) for i in range(6)]
+    boolean(h, prism('hex', hexs, k * 0.35, k + 1))
+    boolean(h, cyl('sh', 0, 0, d / 2 - 0.05, -L, 0.1, 32), 'UNION')
+    for i in range(int((L - 2) / 0.8)):
+        z = -L + 1.0 + i * 0.8
+        boolean(h, cyl('ring', 0, 0, d / 2 + 0.02, z, z + 0.28, 32), 'UNION')
+    setmat(h, M_BOLT)
+    smooth(h, 40)
+    return h
+
+
+def slot_nut(name, x):
+    """M5 slot nut sitting in the bottom slot of the horizontal profile."""
+    n = box(name, x - 5.0, x + 5.0, -4.4, 4.4, H_Z0 + SL_LIP + 0.1, H_Z0 + SL_LIP + 3.1)
+    bevel(n, 0.4, 1)
+    boolean(n, box('neck', x - 5.0, x + 5.0, -2.7, 2.7, H_Z0 + 0.3, H_Z0 + SL_LIP + 0.3), 'UNION')
+    boolean(n, cyl('nh', x, 0, 2.5, H_Z0 - 1, H_Z0 + 6, 32))
+    setmat(n, M_BOLT)
+    smooth(n, 40)
+    return n
+
+
+HW = []
+for x in (BS_X, -BS_X):
+    bs = button_screw('bscrew', 5.0, 8.0, 9.5, 2.75)
+    place(bs, Matrix.Translation((m(x), 0, m(3.0))) @ Matrix.Rotation(math.pi, 4, 'X'))
+    HW.append((x, bs, slot_nut('tnut', x)))
+
+
+# ---------------------------------------------------------------- end caps
+def make_cap(name, cx):
+    zt = UP_Z0 + UP_H
+    cap = box(name, cx - UP / 2, cx + UP / 2, -UP / 2, UP / 2, zt, zt + 4.0)
+    bevel(cap, 1.2, 3, bed=('z', 1))
+    # M5 countersunk (ISO 10642) into the tapped axial bore
+    boolean(cap, cyl('ch', cx, 0, 2.75, zt - 4, zt + 5, 32))
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=40, radius1=m(2.75), radius2=m(5.4), depth=m(2.7),
+                          matrix=Matrix.Translation((m(cx), 0, m(zt + 4.0 - 1.35 + 0.01))))
+    boolean(cap, mesh_obj('csk', bm))
+    setmat(cap, M_CAP_TOP)
+    smooth(cap, 35)
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=40, radius1=m(2.6), radius2=m(5.0), depth=m(2.5),
+                          matrix=Matrix.Translation((m(cx), 0, m(zt + 4.0 - 1.25 - 0.15))))
+    hd = mesh_obj(name + '_screw', bm)
+    boolean(hd, prism('hx', [(cx + 1.6 * math.cos(math.pi / 3 * i), 1.6 * math.sin(math.pi / 3 * i)) for i in range(6)], zt + 2.6, zt + 5))
+    setmat(hd, M_BOLT)
+    return cap
+
+
+CAPS = [make_cap('cap_L', UX), make_cap('cap_R', -UX)]
+
+
+# ---------------------------------------------------------------- 3-channel readout board (glacier-elettronica, variante_3ch)
+import json, os
+BOARD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scheda3ch')
+BRD = json.load(open(os.path.join(BOARD_DIR, 'scene.json')))
+BX1, BY1, BX2, BY2 = BRD['board']
+BW_, BH_ = BX2 - BX1, BY2 - BY1                 # 103 x 215
+B_T = BRD['thickness']
+SUP_TOP = H_Z0 + UP                            # top of the module rails = top of the cross-member (26)
+STANDOFF = 8.0
+B_BOT = SUP_TOP + 2.0 + STANDOFF                # underside of the PCB (bosses 2 mm)
+B_TOPZ = B_BOT + B_T                            # component side (faces +z)
+B_YBACK = -34.0                                 # PCB edge with the KK inputs (toward the bars)
+RAIL_Y0, RAIL_Y1 = -142.0, -10.3                # rails: from the front to the cross-member face
+
+
+def board_world():
+    """board-local mm (X along width, Y = -(y - Y1), Z up from the top copper) -> world metres.
+    Lying flat on the base under the bars, components up: the 215 mm side runs along the frame
+    (power + channel 1 on the left, coincidence on the right), KK inputs on the front edge,
+    LEMO outputs on the back edge."""
+    R = Matrix(((0, 1, 0, 0), (-1, 0, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)))
+    return Matrix.Diagonal((MM, MM, MM, 1.0)) @ Matrix.Translation((BH_ / 2, B_YBACK, B_TOPZ)) @ R
+
+
+C3 = Matrix(((1, 0, 0, -BX1), (0, 0, -1, BY1), (0, 1, 0, 0), (0, 0, 0, 1)))   # three.js (x,y,z) -> board-local
+BWM = board_world() @ C3
+
+
+def pmat(name, rgb, rough, metal=0.0, trans=0.0):
+    mt = mat_simple(name, rgb, rough, metal)
+    if trans:
+        mt.node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = trans
+    return mt
+
+
+BM_MATS = {
+    'epoxy': pmat('b_epoxy', (0.017, 0.017, 0.019), 0.45), 'tin': pmat('b_tin', (0.62, 0.63, 0.65), 0.3, 0.9),
+    'gold': pmat('b_gold', (0.69, 0.43, 0.07), 0.3, 0.9), 'chrome': pmat('b_chrome', (0.74, 0.77, 0.79), 0.18, 1.0),
+    'brass': pmat('b_brass', (0.58, 0.36, 0.07), 0.35, 0.9), 'ceramic': pmat('b_cer', (0.45, 0.33, 0.17), 0.7),
+    'ceramicHV': pmat('b_cerhv', (0.32, 0.23, 0.13), 0.7), 'white': pmat('b_white', (0.87, 0.87, 0.87), 0.5),
+    'blue': pmat('b_trim', (0.025, 0.1, 0.48), 0.45), 'redLed': pmat('b_led', (1.0, 0.03, 0.03), 0.15, 0, 0.4),
+    'plastic': pmat('b_plastic', (0.008, 0.008, 0.008), 0.7), 'resTop': pmat('b_res', (0.005, 0.005, 0.005), 0.5),
+    'redTP': pmat('b_redtp', (0.52, 0.02, 0.025), 0.5), 'blackTP': pmat('b_blktp', (0.016, 0.016, 0.016), 0.5),
+    'inductor': pmat('b_ind', (0.023, 0.023, 0.023), 0.75), 'ferrite': pmat('b_fer', (0.07, 0.07, 0.07), 0.8),
+    'glass': pmat('b_glass', (0.7, 0.28, 0.12), 0.1, 0, 0.6), 'dark': pmat('b_dark', (0.01, 0.01, 0.01), 0.7),
+    'nylon': M_NYLON,
+}
+BM = {k: bmesh.new() for k in BM_MATS}
+
+
+def comp_matrix(c):
+    return BWM @ Matrix.Translation((c['x'], 0, c['y'])) @ Matrix.Rotation(c['rot'], 4, 'Y')
+
+
+def pbox(Mc, w, h, d, mk, x, y, z):
+    bmesh.ops.create_cube(BM[mk], size=1.0, matrix=Mc @ Matrix.Translation((x, y, z)) @ Matrix.Diagonal((w, h, d, 1)))
+
+
+def pcyl(Mc, r, ln, mk, axis, x, y, z, seg=24):
+    rot = {'y': Matrix.Rotation(-math.pi / 2, 4, 'X'), 'x': Matrix.Rotation(math.pi / 2, 4, 'Y'), 'z': Matrix.Identity(4)}[axis]
+    bmesh.ops.create_cone(BM[mk], cap_ends=True, segments=seg, radius1=r, radius2=r, depth=ln,
+                          matrix=Mc @ Matrix.Translation((x, y, z)) @ rot)
+
+
+def ptorus(Mc, R, r, mk, x, y, z, nu=24, nv=10):
+    bm = BM[mk]
+    Mt = Mc @ Matrix.Translation((x, y, z))
+    rings = []
+    for i in range(nu):
+        a = 2 * math.pi * i / nu
+        ring = []
+        for j in range(nv):
+            b = 2 * math.pi * j / nv
+            p = Vector(((R + r * math.cos(b)) * math.cos(a), (R + r * math.cos(b)) * math.sin(a), r * math.sin(b)))
+            ring.append(bm.verts.new(Mt @ p))
+        rings.append(ring)
+    for i in range(nu):
+        for j in range(nv):
+            i2, j2 = (i + 1) % nu, (j + 1) % nv
+            bm.faces.new([rings[i][j], rings[i2][j], rings[i2][j2], rings[i][j2]])
+
+
+def gull(Mc, x0, x1, z, H):
+    t, wd = 0.15, 0.42
+    mid = (x0 + x1) / 2
+    pbox(Mc, abs(mid - x0) + 0.1, t, wd, 'tin', (x0 + mid) / 2, H * 0.45, z)
+    pbox(Mc, t, H * 0.45, wd, 'tin', mid, H * 0.225, z)
+    pbox(Mc, abs(x1 - mid) + 0.1, t, wd, 'tin', (mid + x1) / 2, t / 2, z)
+
+
+def cap_(Mc, L, Wd, H, mk):
+    pbox(Mc, L - 0.7, H, Wd, mk, 0, H / 2, 0)
+    for s in (-1, 1):
+        pbox(Mc, 0.4, H + 0.02, Wd + 0.02, 'tin', s * (L / 2 - 0.2), H / 2, 0)
+
+
+def sot_(Mc, L, Wd, H, pins):
+    pbox(Mc, L, H, Wd, 'epoxy', 0, H / 2 + 0.1, 0)
+    for x, s in pins:
+        pbox(Mc, 0.4, 0.15, 0.55, 'tin', x, 0.08, s * (Wd / 2 + 0.35))
+        pbox(Mc, 0.4, H * 0.45, 0.15, 'tin', x, H * 0.25, s * (Wd / 2 + 0.05))
+
+
+KK_IN = {}      # ref -> world point (m) where the cable enters the plugged KK housing
+
+
+def build_component(c):
+    Mc = comp_matrix(c)
+    fp = c['fp']
+    if fp == 'R_0805':
+        pbox(Mc, 1.4, 0.45, 1.25, 'resTop', 0, 0.25, 0)
+        for s in (-1, 1):
+            pbox(Mc, 0.35, 0.5, 1.27, 'tin', s * 0.85, 0.25, 0)
+    elif fp == 'C_0805':
+        cap_(Mc, 2.0, 1.25, 0.9, 'ceramic')
+    elif fp == 'C_1206':
+        cap_(Mc, 3.2, 1.6, 1.1, 'ceramicHV')
+    elif fp == 'C_1210':
+        cap_(Mc, 3.2, 2.5, 1.6, 'ceramicHV')
+    elif fp == 'LED_0805':
+        pbox(Mc, 2.0, 0.35, 1.25, 'white', 0, 0.17, 0)
+        pbox(Mc, 1.4, 0.45, 1.1, 'redLed', 0, 0.55, 0)
+        for s in (-1, 1):
+            pbox(Mc, 0.35, 0.36, 1.27, 'tin', s * 0.85, 0.17, 0)
+    elif fp == 'SOT23':
+        sot_(Mc, 2.9, 1.3, 1.0, [(-0.95, 1), (0.95, 1), (0, -1)])
+    elif fp == 'SOT23-5':
+        sot_(Mc, 2.9, 1.6, 1.1, [(-0.95, 1), (0, 1), (0.95, 1), (0.95, -1), (-0.95, -1)])
+    elif fp == 'SOT23-6':
+        sot_(Mc, 2.9, 1.6, 1.0, [(-0.95, 1), (0, 1), (0.95, 1), (0.95, -1), (0, -1), (-0.95, -1)])
+    elif fp in ('SOIC8', 'SOIC14'):
+        n = 4 if fp == 'SOIC8' else 7
+        pbox(Mc, 3.9, 1.5, 4.9 if n == 4 else 8.65, 'epoxy', 0, 0.85, 0)
+        for i in range(n):
+            z = -(n - 1) * 1.27 / 2 + i * 1.27
+            gull(Mc, 1.95, 3.1, z, 1.5)
+            gull(Mc, -1.95, -3.1, z, 1.5)
+    elif fp == 'SOT223':
+        pbox(Mc, 6.5, 1.6, 3.5, 'epoxy', 0, 0.9, 0)
+        for x in (-2.3, 0, 2.3):
+            pbox(Mc, 0.7, 0.15, 1.6, 'tin', x, 0.4, 2.4)
+            pbox(Mc, 0.7, 0.15, 1.2, 'tin', x, 0.08, 3.1)
+        pbox(Mc, 3.0, 0.2, 1.6, 'tin', 0, 0.1, -2.6)
+    elif fp == 'L_PWR_5050':
+        pbox(Mc, 5, 4, 5, 'inductor', 0, 2, 0)
+        pcyl(Mc, 1.8, 0.05, 'ferrite', 'y', 0, 4.02, 0)
+    elif fp == 'D_DO35':
+        y = 1.3
+        pcyl(Mc, 0.85, 3.8, 'glass', 'x', 0, y, 0)
+        pcyl(Mc, 0.87, 0.5, 'dark', 'x', -1.4, y, 0)
+        for s in (-1, 1):
+            pcyl(Mc, 0.25, 1.9, 'tin', 'x', s * 2.85, y, 0, 10)
+            pcyl(Mc, 0.25, y, 'tin', 'y', s * 3.81, y / 2, 0, 10)
+    elif fp == 'TRIM_3296W':
+        pbox(Mc, 9.5, 10, 4.8, 'blue', 0, 5.2, 0)
+        pcyl(Mc, 1.15, 1.2, 'brass', 'y', 3.4, 10.6, 0)
+        pbox(Mc, 1.8, 0.25, 0.35, 'dark', 3.4, 11.25, 0)
+    elif fp in ('HDR1x02', 'HDR1x03'):
+        n = 2 if fp == 'HDR1x02' else 3
+        pbox(Mc, 2.54 * n, 2.5, 2.54, 'plastic', 1.27 * (n - 1), 1.25, 0)
+        for k in range(n):
+            pbox(Mc, 0.64, 8.5, 0.64, 'gold', 2.54 * k, 3.25, 0)
+    elif fp in ('MOLEX_KK_2', 'MOLEX_KK_3'):
+        n = 2 if fp == 'MOLEX_KK_2' else 3
+        xc = 1.27 * (n - 1)
+        pbox(Mc, 2.54 * n + 1.0, 3.2, 5.6, 'nylon', xc, 1.6, 0)
+        pbox(Mc, 2.54 * n + 1.0, 2.6, 0.9, 'nylon', xc, 4.5, 2.35)
+        pbox(Mc, 1.4, 0.8, 0.5, 'nylon', xc, 3.6, 1.7)
+        for k in range(n):
+            pbox(Mc, 0.64, 9.0, 0.64, 'gold', 2.54 * k, 3.6, 0)
+        # crimp housing (22-01-3027 / 22-01-3037) plugged from above, cable leaves on top
+        pbox(Mc, 2.54 * n - 0.1, 12.4, 4.6, 'plastic' if n == 3 else 'nylon', xc, 3.25 + 6.2, -0.45)
+        pbox(Mc, 1.6, 1.0, 0.8, 'nylon', xc, 6.0, 1.85)         # latch over the ramp
+        KK_IN[c['ref']] = Mc @ Vector((xc, 15.6, -0.45))
+    elif fp == 'USBC_GCT_USB4125':
+        # receptacle (mouth toward the board edge = local +z) and a plugged USB-C cable
+        pbox(Mc, 8.94, 3.2, 7.3, 'chrome', 0, 1.6, -0.25)
+        pbox(Mc, 8.3, 2.5, 7.0, 'plastic', 0, 1.6, 3.4 + 3.5)
+        pbox(Mc, 12.0, 6.4, 16.0, 'plastic', 0, 1.6, 3.4 + 7.0 + 8.0)
+        KK_IN['J7'] = Mc @ Vector((0, 1.6, 3.4 + 23.0 + 0.5))
+    elif fp == 'F_1812':
+        cap_(Mc, 4.5, 3.2, 1.2, 'ceramic')
+    elif fp == 'D_SMA':
+        pbox(Mc, 4.3, 2.1, 2.6, 'epoxy', 0, 1.15, 0)
+        pbox(Mc, 0.6, 2.12, 2.62, 'white', -1.4, 1.15, 0)
+        for sx in (-1, 1):
+            pbox(Mc, 1.2, 0.2, 1.5, 'tin', sx * 2.3, 0.1, 0)
+    elif fp == 'LEMO_EPL00':
+        pbox(Mc, 7, 7, 7, 'chrome', 0, 3.6, 0)
+        pcyl(Mc, 2.9, 10.5, 'chrome', 'x', 8.6, 3.6, 0, 40)
+        pcyl(Mc, 3.2, 1.2, 'chrome', 'x', 4.5, 3.6, 0, 40)
+        pcyl(Mc, 1.4, 0.3, 'dark', 'x', 13.9, 3.6, 0, 32)
+        pcyl(Mc, 0.35, 0.4, 'gold', 'x', 14.0, 3.6, 0, 16)
+    elif fp == 'TP_THT':
+        mk = 'blackTP' if c['value'] == 'GND' else 'redTP'
+        ptorus(Mc, 1.2, 0.22, mk, 0, 3.2, 0)
+        for s in (-1, 1):
+            pcyl(Mc, 0.22, 2.2, mk, 'y', s * 1.0, 1.1, 0, 8)
+
+
+def build_board():
+    objs = []
+    # PCB with the real top texture (black solder mask variant)
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0, matrix=BWM @ Matrix.Translation(((BX1 + BX2) / 2, -B_T / 2, (BY1 + BY2) / 2))
+                          @ Matrix.Diagonal((BW_, B_T, BH_, 1)))
+    uv = bm.loops.layers.uv.new()
+    Minv = BWM.inverted()
+    for f in bm.faces:
+        cen = Minv @ f.calc_center_median()
+        if cen.y > -0.01 or cen.y < -B_T + 0.01:    # top / bottom face
+            f.material_index = 1 if cen.y > -0.01 else 2
+            for lp in f.loops:
+                p = Minv @ lp.vert.co
+                lp[uv].uv = ((p.x - BX1) / BW_, 1.0 - (p.z - BY1) / BH_)
+    pcb = mesh_obj('board3ch', bm)
+    side = mat_simple('b_side', (0.012, 0.012, 0.012), 0.6)
+    top = bpy.data.materials.new('b_top')
+    top.use_nodes = True
+    nt = top.node_tree
+    bs = nt.nodes['Principled BSDF']
+    bs.inputs['Roughness'].default_value = 0.4
+    bs.inputs['Coat Weight'].default_value = 0.25
+    img = nt.nodes.new('ShaderNodeTexImage')
+    img.image = bpy.data.images.load(os.path.join(BOARD_DIR, 'top_nero.png'))
+    img.interpolation = 'Cubic'
+    nt.links.new(img.outputs['Color'], bs.inputs['Base Color'])
+    pcb.data.materials.append(side)
+    pcb.data.materials.append(top)
+    bot = bpy.data.materials.new('b_bottom')
+    bot.use_nodes = True
+    bb = bot.node_tree.nodes['Principled BSDF']
+    bb.inputs['Roughness'].default_value = 0.4
+    bb.inputs['Coat Weight'].default_value = 0.25
+    bimg = bot.node_tree.nodes.new('ShaderNodeTexImage')
+    bimg.image = bpy.data.images.load(os.path.join(BOARD_DIR, 'bottom_nero.png'))
+    bimg.interpolation = 'Cubic'
+    bot.node_tree.links.new(bimg.outputs['Color'], bb.inputs['Base Color'])
+    pcb.data.materials.append(bot)
+    objs.append(pcb)
+    for c in BRD['comps']:
+        build_component(c)
+    # solder joints on the solder side: fillet cone + clipped lead, on every plated through hole
+    for hx, hy, hd in json.load(open(os.path.join(BOARD_DIR, 'holes.json'))):
+        if hd > 2.0:
+            continue
+        Mh = BWM @ Matrix.Translation((hx, -B_T, hy))
+        bmesh.ops.create_cone(BM['tin'], cap_ends=True, segments=16, radius1=0.4, radius2=hd / 2 + 0.55, depth=0.9,
+                              matrix=Mh @ Matrix.Translation((0, -0.45, 0)) @ Matrix.Rotation(-math.pi / 2, 4, 'X'))
+        bmesh.ops.create_cone(BM['tin'], cap_ends=True, segments=8, radius1=0.3, radius2=0.3, depth=1.4,
+                              matrix=Mh @ Matrix.Translation((0, -1.0, 0)) @ Matrix.Rotation(-math.pi / 2, 4, 'X'))
+    for k, bmk in BM.items():
+        if len(bmk.verts):
+            o = mesh_obj('bcomp_' + k, bmk)
+            setmat(o, BM_MATS[k])
+            objs.append(o)
+    return objs
+
+
+BOARD_OBJS = build_board()
+MH_WORLD = [BWM @ Vector((c['x'], 0, c['y'])) for c in BRD['comps'] if c['fp'] == 'MH_M3']
+
+
+# ---- removable board module: 2 printed cradles bolted to the feet (M4 thumb screws in heat-set inserts),
+#      a centre bridge under the board, brass M3 standoffs on heat-set inserts
+M_KNURL = mat_simple('knurl', (0.02, 0.02, 0.022), 0.45)
+HOLE_X = sorted({round(p.x / MM, 2) for p in MH_WORLD})          # 4 columns of board holes
+HOLE_Y = sorted({round(p.y / MM, 2) for p in MH_WORLD})          # 2 rows
+MODULE = []
+CR_TOP = SUP_TOP + 2.0                                           # 28: top of cradles / bridge
+CR_Y1 = -14.0
+
+
+def thumb_x(name, y, z, x0, x1, xs0, r=5.5):
+    """Knurled thumb screw along x: head from x0 to x1, shank to xs0."""
+    pts = [(y + (r if k % 2 == 0 else r - 0.4) * math.cos(2 * math.pi * k / 40), z + (r if k % 2 == 0 else r - 0.4) * math.sin(2 * math.pi * k / 40)) for k in range(40)]
+    t = prism(name, pts, min(x0, x1), max(x0, x1), axis='x')
+    bevel(t, 0.5, 2, angle=60)
+    sx0, sx1 = sorted((xs0, x0))
+    boolean(t, prism('sh', [(y + 1.95 * math.cos(2 * math.pi * k / 24), z + 1.95 * math.sin(2 * math.pi * k / 24)) for k in range(24)], sx0, sx1, axis='x'), 'UNION')
+    setmat(t, M_KNURL)
+    smooth(t, 20)
+    return t
+
+
+def insert_holes(ob, xs, ys, top, r=2.0, depth=6.0):
+    for x in xs:
+        for y in ys:
+            boolean(ob, cyl('ins', x, y, r, top - depth, top + 1, 28))
+
+
+def make_cradle(name):
+    x0, x1 = FX1 + 0.2, HOLE_X[0] + 9.0
+    r = box(name, x0, x1, RAIL_Y0, CR_Y1, 0, CR_TOP)
+    bevel(r, 2.5, 3, bed=('z', -1))
+    for yc in (-122.0, -102.0, -82.0, -66.0):
+        gothic_window(r, 'x', x0 - 1, x1 + 1, yc)
+    for y, z in FOOT_SCREWS:
+        boolean(r, prism('th', teardrop(y, z, 2.25), x0 - 1, x1 + 1, axis='x'))
+    insert_holes(r, [HOLE_X[0]], HOLE_Y, CR_TOP)
+    setmat(r, M_BASE)
+    smooth(r, 35)
+    return r, x1
+
+
+def make_bridge(name):
+    xa, xb = HOLE_X[1], HOLE_X[2]
+    r = box(name, xa - 8, xb + 8, RAIL_Y0, CR_Y1, 0, CR_TOP)
+    bevel(r, 2.5, 3, bed=('z', -1))
+    for yc in (-122.0, -102.0, -82.0, -62.0, -42.0):
+        gothic_window(r, 'x', xa - 9, xb + 9, yc)
+    gothic_window(r, 'y', RAIL_Y0 - 1, CR_Y1 + 1, (xa + xb) / 2, w=30.0, z0=5.0, zs=8.0)
+    insert_holes(r, [xa, xb], HOLE_Y, CR_TOP)
+    setmat(r, M_BASE)
+    smooth(r, 35)
+    return r
+
+
+crL, cx1 = make_cradle('bsupL')
+crR = mirror_x(crL, 'bsupR')
+brg = make_bridge('bsupC')
+MODULE += [crL, crR, brg]
+for sx in (1, -1):
+    for y, z in FOOT_SCREWS:
+        MODULE.append(thumb_x('mthumb', y, z, sx * cx1, sx * (cx1 + 6.0), sx * (FX1 - 8.0)))
+for x in (HOLE_X[0] + 0, -HOLE_X[0], HOLE_X[1], HOLE_X[2]):
+    for y in (CR_Y1 - 12, RAIL_Y0 + 12):
+        p = cyl('bpad', x, y, 5.0, -2.0, 0.9, 40)
+        bevel(p, 0.8, 2)
+        setmat(p, M_RUBBER)
+        MODULE.append(p)
+
+BOARD_HW = []
+ARMS = []
+for k, p in enumerate(MH_WORLD):
+    x, y = p.x / MM, p.y / MM
+    so = prism(f'standoff{k}', [(x + 2.75 * math.cos(math.pi / 3 * i), y + 2.75 * math.sin(math.pi / 3 * i)) for i in range(6)],
+               CR_TOP, B_BOT)
+    bevel(so, 0.25, 1)
+    setmat(so, M_BRASS)
+    BOARD_HW.append(so)
+    sc = cyl(f'm3head{k}', x, y, 2.75, B_TOPZ, B_TOPZ + 2.0, 32)
+    bevel(sc, 0.7, 3)
+    boolean(sc, prism('rec', [(x + 1.2 * math.cos(math.pi / 3 * i), y + 1.2 * math.sin(math.pi / 3 * i)) for i in range(6)],
+                      B_TOPZ + 1.0, B_TOPZ + 3))
+    setmat(sc, M_BOLT)
+    BOARD_HW.append(sc)
+MODULE += BOARD_HW + BOARD_OBJS
+
+# ---------------------------------------------------------------- compute module: Raspberry Pi Zero 2 W in a fan-cooled printed box
+# on the outer face of the right upright (far from the SiPMs), removable: 2 ears with T keys + thumb screws
+M_PIGRN = mat_simple('pi_pcb', (0.02, 0.17, 0.05), 0.35, coat=0.3)
+M_FAN = mat_simple('fan', (0.015, 0.015, 0.016), 0.5)
+CB_X0, CB_X1 = -UX + UP / 2, -UX + UP / 2 + 26.0        # 174 .. 200 (back on the upright, lid face)
+CB_Y0, CB_Y1 = -25.0, 25.0
+CB_Z0, CB_Z1 = 98.0, 202.0
+CB_W = 3.0                                              # wall
+LID_T = 3.0
+PI_X = CB_X0 + 3.0 + 8.0                                # back face of the Pi PCB (bosses 8 mm)
+PI_Y0 = CB_Y0 + CB_W + 1.0                              # Pi edge with the ports (front)
+PI_Z0 = CB_Z0 + CB_W + 2.0                              # Pi end with the microSD (bottom)
+PI_T = 1.0
+PZ = lambda u: PI_Z0 + u                                # Pi long axis (65 mm) -> world z
+PY = lambda v: PI_Y0 + v                                # Pi short axis (30 mm) -> world y
+PT = PI_X + PI_T                                        # top copper of the Pi (x)
+FAN_Z0 = PZ(65) + 2.0
+LID_SCREWS = [(CB_Y0 + CB_W + 3.2, CB_Z1 - CB_W - 3.2), (CB_Y1 - CB_W - 3.2, CB_Z1 - CB_W - 3.2), (CB_Y1 - CB_W - 3.2, CB_Z0 + CB_W + 3.2)]
+COMPUTE = []                                            # parts of the compute module
+LID_PARTS = []
+
+
+def ear(z0, z1):
+    e = box('ear', CB_X0, CB_X0 + 8, -12, 12, z0, z1)
+    bevel(e, 2.5, 3, bed=('x', -1))
+    f = CB_X0
+    zc = (z0 + z1) / 2
+    boolean(e, prism('eh', [(2.75 * math.cos(2 * math.pi * k / 32), zc + 2.75 * math.sin(2 * math.pi * k / 32)) for k in range(32)], f - 5, f + 7, axis='x'))
+    return e
+
+
+def knurled_x(name, y, z, x0, x1, r=6.0):
+    pts = [(y + (r if k % 2 == 0 else r - 0.4) * math.cos(2 * math.pi * k / 48), z + (r if k % 2 == 0 else r - 0.4) * math.sin(2 * math.pi * k / 48)) for k in range(48)]
+    t = prism(name, pts, x0, x1, axis='x')
+    bevel(t, 0.5, 2, angle=60)
+    boolean(t, prism('sh', [(y + 2.45 * math.cos(2 * math.pi * k / 24), z + 2.45 * math.sin(2 * math.pi * k / 24)) for k in range(24)], CB_X0 - 6, x0 + 0.1, axis='x'), 'UNION')
+    setmat(t, M_KNURL)
+    smooth(t, 20)
+    return t
+
+
+FLANGE = 8.0                                         # back flange thickness (x)
+FL_EXT = 24.0                                        # flange beyond the body, below and above
+EAR_Z = (CB_Z0 - 13.0, CB_Z1 + 13.0)                 # thumb-screw positions on the flange
+
+
+def make_compute_base():
+    """Side profile (x-z): a back flange running the full height, joined to the body by concave fillets."""
+    x0, xb = CB_X0, CB_X1 - LID_T
+    fr = 6.0
+    pts = [(x0, CB_Z0 - FL_EXT), (x0 + FLANGE, CB_Z0 - FL_EXT), (x0 + FLANGE, CB_Z0 - fr)]
+    pts += [(x0 + FLANGE + fr + fr * math.cos(math.radians(a_)), CB_Z0 - fr + fr * math.sin(math.radians(a_))) for a_ in range(180, 89, -10)]
+    pts += [(xb, CB_Z0), (xb, CB_Z1)]
+    pts += [(x0 + FLANGE + fr + fr * math.cos(math.radians(a_)), CB_Z1 + fr + fr * math.sin(math.radians(a_))) for a_ in range(270, 179, -10)]
+    pts += [(x0 + FLANGE, CB_Z1 + FL_EXT), (x0, CB_Z1 + FL_EXT)]
+    # prism() maps (a, b, c) -> x = a, z = b, y = c for axis 'y'
+    b = prism('cbox', pts, CB_Y0, CB_Y1, axis='y')
+    bevel(b, 2.5, 3, angle=30, bed=('x', -1))
+    for zc in EAR_Z:
+        boolean(b, prism('eh', [(2.75 * math.cos(2 * math.pi * k / 32), zc + 2.75 * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                         x0 - 5, x0 + FLANGE + 2, axis='x'))
+    boolean(b, box('cav', CB_X0 + 3.0, CB_X1, CB_Y0 + CB_W, CB_Y1 - CB_W, CB_Z0 + CB_W, CB_Z1 - CB_W))
+    # Pi: short printed pads with M2.5 inserts, brass standoffs on top
+    for u in (3.5, 61.5):
+        for v in (3.5, 26.5):
+            boolean(b, prism('pad', [(PY(v) + 3.5 * math.cos(2 * math.pi * k / 32), PZ(u) + 3.5 * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                             CB_X0 + 1.0, CB_X0 + 6.0, axis='x'), 'UNION')
+    # lid screw bosses (M3 inserts): two at the top corners, one at the bottom-back corner
+    for y, z in LID_SCREWS:
+        boolean(b, prism('lb', [(y + 3.6 * math.cos(2 * math.pi * k / 32), z + 3.6 * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                         CB_X0 + 1.0, CB_X1 - LID_T, axis='x'), 'UNION')
+        boolean(b, prism('li', [(y + 2.0 * math.cos(2 * math.pi * k / 24), z + 2.0 * math.sin(2 * math.pi * k / 24)) for k in range(24)],
+                         CB_X1 - LID_T - 7, CB_X1, axis='x'))
+    # port openings in the front wall: mini-HDMI, USB, PWR
+    for u, w in ((12.4, 14.0), (41.4, 11.0), (54.0, 11.0)):
+        boolean(b, box('port', PT - 2.0, PT + 6.5, CB_Y0 - 1, CB_Y0 + CB_W + 1, PZ(u) - w / 2, PZ(u) + w / 2))
+    # microSD slot in the bottom wall
+    boolean(b, box('sd', PT - 1.5, PT + 3.5, PY(16.9) - 7.5, PY(16.9) + 7.5, CB_Z0 - 1, CB_Z0 + CB_W + 1))
+    # air intake: slots in the back (+y) wall
+    for k in range(7):
+        z = PZ(8) + k * 8.0
+        boolean(b, box('vent', CB_X0 + 6, CB_X1 - 6, CB_Y1 - CB_W - 1, CB_Y1 + 1, z - 1.6, z + 1.6))
+    setmat(b, M_BASE)
+    smooth(b, 35)
+    return b
+
+
+def make_compute_lid():
+    l = box('clid', CB_X1 - LID_T, CB_X1, CB_Y0, CB_Y1, CB_Z0, CB_Z1)
+    bevel(l, 1.2, 3, bed=('x', 1))
+    # GPIO window: the whole 2x20 header is reachable from outside
+    boolean(l, box('gw', CB_X1 - LID_T - 1, CB_X1 + 1, PY(26.5) - 4.5, PY(26.5) + 4.5, PZ(32.5) - 28, PZ(32.5) + 28))
+    # fan grille: 5 slots 2.5 mm wide with 2.5 mm ribs (no thin webs)
+    fz = FAN_Z0 + 15.0
+    for i in range(-2, 3):
+        y = 5.0 * i
+        hl = math.sqrt(max(12.5 ** 2 - y ** 2, 0)) - 1.0
+        pts = [(y - 1.25, fz - hl), (y + 1.25, fz - hl), (y + 1.25, fz + hl), (y - 1.25, fz + hl)]
+        boolean(l, prism('gs', pts, CB_X1 - LID_T - 1, CB_X1 + 1, axis='x'))
+    # countersunk M3 lid screws
+    for y, z in LID_SCREWS:
+        boolean(l, prism('lh', [(y + 1.7 * math.cos(2 * math.pi * k / 24), z + 1.7 * math.sin(2 * math.pi * k / 24)) for k in range(24)], CB_X1 - LID_T - 1, CB_X1 + 1, axis='x'))
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=m(1.7), radius2=m(3.2), depth=m(1.6),
+                              matrix=Matrix.Translation((m(CB_X1 - 0.8 + 0.01), m(y), m(z))) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+        boolean(l, mesh_obj('lcsk', bm))
+    # engraved name
+    t = text_obj('ltxt', 'MuLab', 6.0, 1.2, M_BASE)
+    t.data.transform(Matrix.Translation((m(CB_X1), m(-11.0), m(PZ(32.5)))) @ Matrix(((0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+    boolean(l, t)
+    setmat(l, M_BASE)
+    smooth(l, 35)
+    return l
+
+
+cbase = make_compute_base()
+clid = make_compute_lid()
+COMPUTE += [cbase, clid]
+LID_PARTS.append(clid)
+for y, z in LID_SCREWS:
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=m(1.6), radius2=m(3.0), depth=m(1.5),
+                          matrix=Matrix.Translation((m(CB_X1 - 0.75 - 0.1), m(y), m(z))) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+    hs = mesh_obj('lscrew', bm)
+    setmat(hs, M_BOLT)
+    COMPUTE.append(hs)
+    LID_PARTS.append(hs)
+for u in (3.5, 61.5):
+    for v in (3.5, 26.5):
+        so = prism('pistand', [(PY(v) + 2.5 * math.cos(math.pi / 3 * i), PZ(u) + 2.5 * math.sin(math.pi / 3 * i)) for i in range(6)],
+                   CB_X0 + 6.0, PI_X, axis='x')
+        setmat(so, M_BRASS)
+        COMPUTE.append(so)
+for zc in EAR_Z:
+    COMPUTE.append(knurled_x('cthumb', 0.0, zc, CB_X0 + FLANGE, CB_X0 + FLANGE + 6.0))
+
+# Raspberry Pi Zero 2 W
+BM = {k: bmesh.new() for k in BM_MATS}
+BM_MATS['pigreen'] = M_PIGRN
+BM_MATS['fan'] = M_FAN
+BM = {k: bmesh.new() for k in BM_MATS}
+I4 = Matrix.Diagonal((MM, MM, MM, 1.0))
+
+
+def wb(mk, x0, x1, y0, y1, z0, z1):
+    bmesh.ops.create_cube(BM[mk], size=1.0, matrix=I4 @ Matrix.Translation(((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)) @ Matrix.Diagonal((x1 - x0, y1 - y0, z1 - z0, 1)))
+
+
+wb('pigreen', PI_X, PT, PY(0), PY(30), PZ(0), PZ(65))
+wb('epoxy', PT, PT + 1.2, PY(10), PY(22), PZ(27), PZ(39))                 # RP3A0 SiP
+wb('chrome', PT, PT + 1.0, PY(8), PY(16), PZ(43), PZ(53))                  # RF shield
+wb('chrome', PT, PT + 3.2, PY(-0.8), PY(6.7), PZ(12.4 - 5.6), PZ(12.4 + 5.6))   # mini HDMI
+for u in (41.4, 54.0):
+    wb('chrome', PT, PT + 2.8, PY(-1.0), PY(4.6), PZ(u - 4), PZ(u + 4))      # micro USB
+wb('chrome', PT, PT + 1.4, PY(16.9 - 6), PY(16.9 + 6), PZ(0), PZ(11.5))      # microSD socket
+wb('epoxy', PT + 0.2, PT + 1.0, PY(16.9 - 5.5), PY(16.9 + 5.5), PZ(-2.0), PZ(4))   # card
+wb('epoxy', PT, PT + 1.2, PY(6.5), PY(23.5), PZ(61), PZ(65))               # CSI connector
+wb('plastic', PT, PT + 2.5, PY(26.5) - 2.54, PY(26.5) + 2.54, PZ(32.5) - 25.4, PZ(32.5) + 25.4)   # 2x20 header
+PIN = {}
+for n in range(40):
+    col, row = n // 2, n % 2
+    z = PZ(32.5) - 24.13 + 2.54 * col
+    y = PY(26.5) + (-1.27 if row == 0 else 1.27)
+    PIN[n + 1] = (y, z)
+    wb('gold', PT - 2.5, PT + 8.5, y - 0.32, y + 0.32, z - 0.32, z + 0.32)
+for u in (3.5, 61.5):
+    for v in (3.5, 26.5):
+        bmesh.ops.create_cone(BM['tin'], cap_ends=True, segments=24, radius1=2.3, radius2=2.3, depth=1.8,
+                              matrix=I4 @ Matrix.Translation((PT + 0.9, PY(v), PZ(u))) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+# 30 mm fan, mounted under the lid
+wb('fan', CB_X1 - LID_T - 10.0, CB_X1 - LID_T, -15, 15, FAN_Z0, FAN_Z0 + 30)
+for k in range(7):
+    a = 2 * math.pi * k / 7
+    bmesh.ops.create_cube(BM['dark'], size=1.0, matrix=I4 @ Matrix.Translation((CB_X1 - LID_T - 1.2, 7.0 * math.cos(a), FAN_Z0 + 15 + 7.0 * math.sin(a)))
+                          @ Matrix.Rotation(a, 4, 'X') @ Matrix.Rotation(0.5, 4, 'Z') @ Matrix.Diagonal((1.2, 9.0, 4.0, 1)))
+bmesh.ops.create_cone(BM['dark'], cap_ends=True, segments=32, radius1=4.0, radius2=4.0, depth=1.0,
+                      matrix=I4 @ Matrix.Translation((CB_X1 - LID_T - 0.7, 0, FAN_Z0 + 15)) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+FAN_OBJS = []
+for k, bmk in BM.items():
+    if len(bmk.verts):
+        o = mesh_obj('pi_' + k, bmk)
+        setmat(o, BM_MATS[k])
+        COMPUTE.append(o)
+for o in COMPUTE:
+    if o.name.startswith('pi_fan') or o.name.startswith('pi_dark'):
+        LID_PARTS.append(o)
+
+# Zero 2 W ports used: micro-USB PWR and micro-USB data (to the Pico of the acquisition box)
+ZPLUGS = []
+if not EXPLODED:
+    for u in (41.4, 54.0):
+        up = box('zplug', PT - 0.5, PT + 6.5, PY(-1.0) - 14.0, PY(-1.0) + 0.5, PZ(u) - 5.5, PZ(u) + 5.5)
+        bevel(up, 1.5, 2)
+        setmat(up, BM_MATS['plastic'])
+        ZPLUGS.append(up)
+COMPUTE += ZPLUGS
+# the Zero box lives on the LEFT upright: same part turned 180 deg about z (ports toward the back,
+# lid and GPIO window outward, nothing mirrored)
+RZ180 = Matrix.Rotation(math.pi, 4, 'Z')
+for o in COMPUTE:
+    o.data.transform(RZ180)
+
+
+def rz(p):
+    return (-p[0], -p[1], p[2])
+
+
+Z_PWR_END = rz((PT + 3, PY(-1.0) - 14.5, PZ(54.0)))
+Z_USB_END = rz((PT + 3, PY(-1.0) - 14.5, PZ(41.4)))
+
+# ---------------------------------------------------------------- acquisition box ("scatolina"): Pico 2 board
+# (glacier-elettronica, moduli/acquisizione, 105 x 70 mm) + GPS NEO-M9N breakout, on the outer face of the
+# RIGHT upright. 5 LEMO in a column on the front wall, I2C/Qwiic ports through a slot in the back wall.
+M_GPSRED = mat_simple('gps_pcb', (0.36, 0.015, 0.015), 0.35, coat=0.3)
+AX0, AX1 = -UX + UP / 2, -UX + UP / 2 + 34.0       # 174 .. 208
+AY0, AY1 = -45.0, 45.0
+AZ0, AZ1 = 60.0, 221.0
+AW = 3.0
+ALID = 3.0
+APX = AX0 + AW + 5.0                                # back of the PCB (printed bosses 5 mm)
+APT = APX + 1.6                                     # top copper
+AYC = 31.0                                          # world y = AYC - y_kicad  (LEMO edge y_k = 70 -> -39)
+APZ1 = 209.0                                        # world z = APZ1 - x_kicad (Pico USB up, GPS strip down)
+AFL = 8.0
+AFL_EXT = 20.0
+AEAR_Z = (AZ0 - 10.0, AZ1 + 10.0)
+A_LID_SCREWS = [(sy * 38.8, z) for sy in (-1, 1) for z in (AZ0 + 6.2, AZ1 - 6.2)]
+LEMO_XK = [16.0, 32.0, 48.0, 64.0, 80.0]             # J1..J5 along the board edge
+LEMO_LAB = ['1', '2', '3', 'AND', 'PPS']
+GPS_Y0, GPS_Y1, GPS_Z0, GPS_Z1 = -24.3, 16.3, 65.0, 101.8
+ACQ = []
+ALID_PARTS = []
+MODDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'moduli')
+
+
+def ak(xk, yk, h=0.0):
+    return (APT + h, AYC - yk, APZ1 - xk)
+
+
+def import_glb(path, M, prefix):
+    """Import a glTF made from the KiCad STEP, bake every node into world-space mesh data (metres)."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = []
+    for o in new:
+        if o.type == 'MESH':
+            mw = M @ o.matrix_world
+            o.data = o.data.copy()
+            o.data.transform(mw)
+            o.parent = None
+            o.matrix_world = Matrix.Identity(4)
+            o.name = prefix + o.name
+            for mt in o.data.materials:
+                if mt and mt.node_tree and 'Principled BSDF' in mt.node_tree.nodes:
+                    mt.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.42
+            meshes.append(o)
+    for o in new:
+        if o.type != 'MESH':
+            bpy.data.objects.remove(o, do_unlink=True)
+    return meshes
+
+
+def pcb_of(objs):
+    """The bare board: the mesh with the largest two-dimension footprint."""
+    def area(o):
+        d = sorted(max(v.co[i] for v in o.data.vertices) - min(v.co[i] for v in o.data.vertices) for i in range(3))
+        return d[1] * d[2]
+    return max(objs, key=area)
+
+
+def retexture_pcb(ob, img_name, to_uv):
+    """Black solder-mask texture from the Gerbers on the component side, dark elsewhere."""
+    me = ob.data
+    if not me.uv_layers:
+        me.uv_layers.new()
+    uvl = me.uv_layers.active.data
+    top = bpy.data.materials.new('t_' + img_name)
+    top.use_nodes = True
+    bs = top.node_tree.nodes['Principled BSDF']
+    bs.inputs['Roughness'].default_value = 0.4
+    bs.inputs['Coat Weight'].default_value = 0.25
+    im = top.node_tree.nodes.new('ShaderNodeTexImage')
+    im.image = bpy.data.images.load(os.path.join(MODDIR, img_name))
+    im.interpolation = 'Cubic'
+    top.node_tree.links.new(im.outputs['Color'], bs.inputs['Base Color'])
+    me.materials.clear()
+    me.materials.append(mat_simple('pcb_side', (0.012, 0.012, 0.012), 0.6))
+    me.materials.append(top)
+    for p in me.polygons:
+        uv = to_uv(p)
+        if uv is None:
+            p.material_index = 0
+            continue
+        p.material_index = 1
+        for li in p.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co / MM
+            uvl[li].uv = uv(co)
+
+
+# --- the Pico board, from the KiCad STEP (glTF): x_g -> -z, y_g -> y, z_g -> x
+RA = Matrix(((0, 0, 1, m(APT)), (0, 1, 0, m(AYC)), (-1, 0, 0, m(APZ1)), (0, 0, 0, 1)))
+ACQ_BOARD = import_glb(os.path.join(MODDIR, 'scheda_acquisizione.glb'), RA, 'acq_')
+for o in [pcb_of(ACQ_BOARD)]:
+    if True:
+        retexture_pcb(o, 'acq_top.png',
+                      lambda p: (lambda co: ((APZ1 - co.z) / 105.0, (co.y - AYC + 70.0) / 70.0)) if p.normal.x > 0.9 else None)
+ACQ += ACQ_BOARD
+_av = [o.matrix_world @ v.co / MM for o in ACQ_BOARD for v in o.data.vertices]
+_lemo = [v for v in _av if v.y < AYC - 70.0 - 1.0]
+LEMO_AX = (min(v.x for v in _lemo) + max(v.x for v in _lemo)) / 2      # axis height of the LEMO sockets
+LEMO_TIP = min(v.y for v in _lemo)
+_usb = [v for v in _av if v.z > APZ1 - 9.0 and v.x > APT + 6.0 and abs(v.y - (AYC - 32.0)) < 7.0]
+USB_X = (min(v.x for v in _usb) + max(v.x for v in _usb)) / 2
+USB_Y = (min(v.y for v in _usb) + max(v.y for v in _usb)) / 2
+USB_Z = max(v.z for v in _usb)
+print('acq: LEMO axis x', round(LEMO_AX, 2), 'tip y', round(LEMO_TIP, 2), 'USB', round(USB_X, 2), round(USB_Y, 2), round(USB_Z, 2))
+
+# --- GPS breakout (SparkFun GPS-17285 NEO-M9N SMA, 40.6 x 36.8 mm; indicative model), SMA through the bottom
+BMG = {k: bmesh.new() for k in ('gps', 'chrome', 'gold', 'plastic', 'epoxy')}
+BMG_MATS = {'gps': M_GPSRED, 'chrome': BM_MATS['chrome'], 'gold': BM_MATS['gold'], 'plastic': BM_MATS['plastic'], 'epoxy': BM_MATS['epoxy']}
+
+
+def gb(mk, x0, x1, y0, y1, z0, z1):
+    bmesh.ops.create_cube(BMG[mk], size=1.0, matrix=Matrix.Diagonal((MM, MM, MM, 1.0)) @ Matrix.Translation(((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2))
+                          @ Matrix.Diagonal((x1 - x0, y1 - y0, z1 - z0, 1)))
+
+
+def gcyl(mk, r, x, y, z0, z1, seg=24):
+    bmesh.ops.create_cone(BMG[mk], cap_ends=True, segments=seg, radius1=r, radius2=r, depth=z1 - z0,
+                          matrix=Matrix.Diagonal((MM, MM, MM, 1.0)) @ Matrix.Translation((x, y, (z0 + z1) / 2)))
+
+
+GPS_X = APX + 5.0                                     # GPS board on 10 mm bosses: its SMA clears the flange
+GT = GPS_X + 1.6
+gb('gps', GPS_X, GT, GPS_Y0, GPS_Y1, GPS_Z0, GPS_Z1)
+gb('chrome', GT, GT + 2.4, -4 - 6.1, -4 + 6.1, 74.0, 90.0)                 # NEO-M9N can
+gb('epoxy', GT, GT + 1.0, 5.0, 11.0, 78.0, 84.0)                            # regulator / EEPROM
+gb('epoxy', GT, GT + 1.4, -20.0, -15.0, 90.0, 95.0)
+GPS_SMA = (GPS_X + 0.8, -4.0)
+gcyl('gold', 3.2, GPS_SMA[0], GPS_SMA[1], GPS_Z0 - 9.0, GPS_Z0 + 1.5, 6)                           # SMA jack (hex)
+gcyl('gold', 2.9, GPS_SMA[0], GPS_SMA[1], GPS_Z0 - 15.0, GPS_Z0 - 9.0, 32)                         # thread
+GPS_HDR = [(-4.0 + (i - 2.5) * 2.54) for i in range(6)]
+for y in GPS_HDR:                                     # 1x6 header on the top edge + Dupont housings
+    gb('gold', GPS_X - 0.5, GT + 8.0, y - 0.32, y + 0.32, GPS_Z1 - 1.6, GPS_Z1 - 1.0)
+    gb('plastic', GT + 2.5, GT + 13.5, y - 1.25, y + 1.25, GPS_Z1 - 2.6, GPS_Z1 + 0.05)
+J6K = [(101.0, 27.0 + 2.54 * i) for i in range(6)]    # GPS strip on the Pico board
+for xk, yk in J6K:
+    x, y, z = ak(xk, yk)
+    gb('plastic', APT + 2.5, APT + 16.5, y - 1.25, y + 1.25, z - 1.25, z + 1.25)
+# KK 3-way housing on J7 (I2C port 0, to the detector board) and a Qwiic plug on port 2 (weather module)
+x, y, z = ak(29.0 + 2.54, 5.0)
+gb('plastic', APT + 3.2, APT + 15.6, y - 2.3 - 0.45, y + 2.3 - 0.45, z - 3.8, z + 3.8)
+A_KK = (APT + 15.6, y - 0.45, z)
+x, y, z = ak(50.0, 3.6)
+gb('plastic', APT + 0.2, APT + 3.1, y + 0.5, y + 6.5, z - 3.0, z + 3.0)
+A_QW = (APT + 1.6, y + 6.5, z)
+for k, bm in BMG.items():
+    if len(bm.verts):
+        o = mesh_obj('gps_' + k, bm)
+        setmat(o, BMG_MATS[k])
+        ACQ.append(o)
+
+
+def make_acq_base():
+    """Like the Zero box: side profile (x-z) with a back flange running the full height, extruded along y."""
+    x0, xb = AX0, AX1 - ALID
+    fr = 4.0
+    pts = [(x0, AZ0 - AFL_EXT), (x0 + AFL, AZ0 - AFL_EXT), (x0 + AFL, AZ0 - fr)]
+    pts += [(x0 + AFL + fr + fr * math.cos(math.radians(a_)), AZ0 - fr + fr * math.sin(math.radians(a_))) for a_ in range(180, 89, -10)]
+    pts += [(xb, AZ0), (xb, AZ1)]
+    pts += [(x0 + AFL + fr + fr * math.cos(math.radians(a_)), AZ1 + fr + fr * math.sin(math.radians(a_))) for a_ in range(270, 179, -10)]
+    pts += [(x0 + AFL, AZ1 + AFL_EXT), (x0, AZ1 + AFL_EXT)]
+    b = prism('abox', pts, AY0, AY1, axis='y')
+    bevel(b, 2.5, 3, angle=30, bed=('x', -1))
+    for zc in AEAR_Z:
+        boolean(b, prism('eh', [(2.75 * math.cos(2 * math.pi * k / 32), zc + 2.75 * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                         x0 - 5, x0 + AFL + 2, axis='x'))
+    boolean(b, box('cav', AX0 + AW, AX1, AY0 + AW, AY1 - AW, AZ0 + AW, AZ1 - AW))
+    # bosses with M3 heat-set inserts: Pico board (4) and GPS (4)
+    pads = [(ak(xk, yk)[1:], APX) for xk in (4.0, 101.0) for yk in (4.0, 66.0)]
+    pads += [((y, z), GPS_X) for y in (GPS_Y0 + 3.0, GPS_Y1 - 3.0) for z in (GPS_Z0 + 3.0, GPS_Z1 - 3.0)]
+    for (y, z), top in pads:
+        boolean(b, prism('pad', [(y + 3.6 * math.cos(2 * math.pi * k / 32), z + 3.6 * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                         AX0 + 1.0, top, axis='x'), 'UNION')
+        boolean(b, prism('pi', [(y + 2.0 * math.cos(2 * math.pi * k / 24), z + 2.0 * math.sin(2 * math.pi * k / 24)) for k in range(24)],
+                         top - 6.0, top + 1, axis='x'))
+    # lid bosses (M3 inserts) in the four corners, clear of both boards
+    for y, z in A_LID_SCREWS:
+        boolean(b, prism('lb', [(y + 3.6 * math.cos(2 * math.pi * k / 32), z + 3.6 * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                         AX0 + 1.0, AX1 - ALID, axis='x'), 'UNION')
+        boolean(b, prism('li', [(y + 2.0 * math.cos(2 * math.pi * k / 24), z + 2.0 * math.sin(2 * math.pi * k / 24)) for k in range(24)],
+                         AX1 - ALID - 7, AX1, axis='x'))
+    # front wall: the five LEMO sockets pass through (Ø 7.2 mm teardrop holes, tip toward the lid = up when printed)
+    for xk in LEMO_XK:
+        z = APZ1 - xk
+        boolean(b, prism('lh', [(u, v) for v, u in teardrop(z, LEMO_AX, 3.6)], AY0 - 1, AY0 + AW + 1, axis='y'))
+    # engraved labels next to the sockets
+    for xk, lab in zip(LEMO_XK, LEMO_LAB):
+        t = text_obj('lab', lab, 4.2, 1.2, M_BASE)
+        t.data.transform(Matrix.Translation((m(LEMO_AX + 11.0), m(AY0), m(APZ1 - xk))) @ Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+        boolean(b, t)
+    t = text_obj('lab', 'IN', 3.2, 1.2, M_BASE)
+    t.data.transform(Matrix.Translation((m(LEMO_AX), m(AY0), m(APZ1 - 8.0))) @ Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+    boolean(b, t)
+    # back wall: one notch over the whole row of I2C ports (2 KK + 6 Qwiic), open toward the lid (no bridge)
+    boolean(b, box('slot', APT - 0.4, AX1 + 1, AY1 - AW - 1, AY1 + 1, APZ1 - 96.0, APZ1 - 22.0))
+    # top wall: Pico USB; bottom wall: SMA of the GPS
+    boolean(b, box('usb', USB_X - 5.0, USB_X + 5.0, USB_Y - 6.5, USB_Y + 6.5, AZ1 - AW - 1, AZ1 + 1))
+    boolean(b, prism('sma', [(u, v) for v, u in teardrop(GPS_SMA[1], GPS_SMA[0], 3.7)], AZ0 - 1, AZ0 + AW + 1, axis='z'))
+    setmat(b, M_BASE)
+    smooth(b, 35)
+    return b
+
+
+def make_acq_lid():
+    l = box('alid', AX1 - ALID, AX1, AY0, AY1, AZ0, AZ1)
+    bevel(l, 1.2, 3, bed=('x', 1))
+    for y, z in A_LID_SCREWS:
+        boolean(l, prism('lh', [(y + 1.7 * math.cos(2 * math.pi * k / 24), z + 1.7 * math.sin(2 * math.pi * k / 24)) for k in range(24)], AX1 - ALID - 1, AX1 + 1, axis='x'))
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=m(1.7), radius2=m(3.2), depth=m(1.6),
+                              matrix=Matrix.Translation((m(AX1 - 0.8 + 0.01), m(y), m(z))) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+        boolean(l, mesh_obj('lcsk', bm))
+    # window over the Pico: the students see the board and its activity LED (slots 2.5 mm, ribs 2.5 mm)
+    for i in range(-3, 4):
+        y = AYC - 32.0 + 5.0 * i
+        boolean(l, prism('ws', [(y - 1.25, APZ1 - 52.0), (y + 1.25, APZ1 - 52.0), (y + 1.25, APZ1 - 14.0), (y - 1.25, APZ1 - 14.0)],
+                         AX1 - ALID - 1, AX1 + 1, axis='x'))
+    for txt, z, sz in (('MuLab', APZ1 - 75.0, 7.0), ('acquisizione', APZ1 - 88.0, 4.2)):
+        t = text_obj('ltxt', txt, sz, 1.2, M_BASE)
+        t.data.transform(Matrix.Translation((m(AX1), m(-4.0), m(z))) @ Matrix(((0, 0, 1, 0), (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0, 1))))
+        boolean(l, t)
+    setmat(l, M_BASE)
+    smooth(l, 35)
+    return l
+
+
+abase = make_acq_base()
+alid = make_acq_lid()
+ACQ += [abase, alid]
+ALID_PARTS.append(alid)
+for y, z in A_LID_SCREWS:
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=32, radius1=m(1.6), radius2=m(3.0), depth=m(1.5),
+                          matrix=Matrix.Translation((m(AX1 - 0.75 - 0.1), m(y), m(z))) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
+    hs = mesh_obj('alscrew', bm)
+    setmat(hs, M_BOLT)
+    ACQ.append(hs)
+    ALID_PARTS.append(hs)
+for zc in AEAR_Z:
+    th = knurled_x('athumb', 0.0, zc, AX0 + AFL, AX0 + AFL + 6.0)
+    ACQ.append(th)
+for xk, yk in [(4.0, 4.0), (101.0, 4.0), (4.0, 66.0), (101.0, 66.0)]:     # M3 pan screws on the Pico board
+    x, y, z = ak(xk, yk)
+    sc = prism('ascr', [(y + 2.75 * math.cos(2 * math.pi * k / 24), z + 2.75 * math.sin(2 * math.pi * k / 24)) for k in range(24)], APT, APT + 2.0, axis='x')
+    bevel(sc, 0.7, 2)
+    setmat(sc, M_BOLT)
+    ACQ.append(sc)
+
+# ---------------------------------------------------------------- weather module (SHT45 + LPS22HH, 36 x 22 mm) on a printed
+# bracket on the outer face of the LEFT upright, below the Zero box (away from its heat), Qwiic cable to the acquisition box
+MX0 = UX - UP / 2                                   # -174: upright outer face
+MPB = 6.0                                           # bracket plate
+MPT = MX0 - MPB - 8.0 - 1.6                         # PCB top copper (-189.6); components toward -x
+MZ1 = 68.0
+MY0 = 18.0                                          # world y = MY0 - x_kicad
+MET = []
+RM = Matrix(((0, 0, -1, m(MPT)), (-1, 0, 0, m(MY0)), (0, 1, 0, m(MZ1)), (0, 0, 0, 1)))
+MET_BOARD = import_glb(os.path.join(MODDIR, 'modulo_meteo.glb'), RM, 'met_')
+for o in [pcb_of(MET_BOARD)]:
+    if True:
+        retexture_pcb(o, 'met_top.png',
+                      lambda p: (lambda co: ((MY0 - co.y) / 36.0, (co.z - MZ1 + 22.0) / 22.0)) if p.normal.x < -0.9 else None)
+MET += MET_BOARD
+M_HOLES = [(3.5, 3.5), (3.5, 18.5), (32.5, 18.5)]
+MTZ = 40.0                                          # thumb screw into a T-nut in the upright's outer slot
+
+
+def make_meteo_bracket():
+    x0, x1 = MX0 - MPB, MX0
+    b = box('mbox', x0, x1, -24.0, 24.0, 32.0, 72.5)
+    # roof and two cheeks: keep fingers and drips off the sensors, air flows from below and the front
+    boolean(b, box('roof', MX0 - 23.0, x1, -24.0, 24.0, 70.0, 72.5), 'UNION')
+    for sy in (-1, 1):
+        boolean(b, box('cheek', MX0 - 23.0, x1, min(sy * 21.6, sy * 24.0), max(sy * 21.6, sy * 24.0), 60.0, 72.5), 'UNION')
+    bevel(b, 1.5, 3, bed=('x', 1))
+    for xk, yk in M_HOLES:
+        y, z = MY0 - xk, MZ1 - yk
+        boolean(b, prism('mi', [(y + 2.0 * math.cos(2 * math.pi * k / 24), z + 2.0 * math.sin(2 * math.pi * k / 24)) for k in range(24)],
+                         x0 - 1, x0 + 5.0, axis='x'))
+    boolean(b, prism('mh', [(2.75 * math.cos(2 * math.pi * k / 32), MTZ + 2.75 * math.sin(2 * math.pi * k / 32)) for k in range(32)], x0 - 1, x1 + 1, axis='x'))
+    # slots in the roof for convection
+    for i in range(-3, 4):
+        y = 5.0 * i
+        boolean(b, box('rs', MX0 - 20.0, MX0 - 8.0, y - 1.25, y + 1.25, 69.0, 73.0))
+    setmat(b, M_BASE)
+    smooth(b, 35)
+    return b
+
+
+mbr = make_meteo_bracket()
+MET.append(mbr)
+for xk, yk in M_HOLES:
+    y, z = MY0 - xk, MZ1 - yk
+    so = prism('mstand', [(y + 2.5 * math.cos(math.pi / 3 * i), z + 2.5 * math.sin(math.pi / 3 * i)) for i in range(6)], MX0 - MPB - 8.0, MX0 - MPB, axis='x')
+    setmat(so, M_BRASS)
+    MET.append(so)
+    sc = prism('mscr', [(y + 2.6 * math.cos(2 * math.pi * k / 24), z + 2.6 * math.sin(2 * math.pi * k / 24)) for k in range(24)], MPT - 1.8, MPT, axis='x')
+    bevel(sc, 0.6, 2)
+    setmat(sc, M_BOLT)
+    MET.append(sc)
+mt = thumb_x('mthumbm', 0.0, MTZ, MX0 - MPB, MX0 - MPB - 6.0, MX0 + 6.0, r=6.0)
+MET.append(mt)
+# Qwiic plug on J1 (mouth toward +y)
+x, y, z = MPT - 1.45, MY0 - 3.6 + 0.6, MZ1 - 11.0
+qp = box('mqw', x - 1.45, x + 1.45, y, y + 6.0, z - 3.0, z + 3.0)
+setmat(qp, BM_MATS['plastic'])
+MET.append(qp)
+M_QW = (x, y + 6.0, z)
+HARNESS = []
+
+
+# ---------------------------------------------------------------- cable clips (front slot, left upright)
+W_R = 0.8                    # wire radius
+W_Y = -(20 + FIL_R) + (FIL_R + CH_D - W_R)    # wire run y: tangent to the foot channel
+W_X = [-5.0, -3.0, -1.0, 1.0, 3.0, 5.0]       # x offsets from the upright axis (top pair outermost)
+
+
+COAX_R = 1.4                 # RG174
+CX_Y = -16.3                 # coax axis y where it crosses the front of the left upright
+
+
+def make_cable_clip(name, zc):
+    x = UX
+    f = -UP / 2
+    c = box(name, x - 4.0, x + 4.0, CX_Y - 3.2, f + 0.1, zc - 3.6, zc + 3.6)
+    bevel(c, 0.8, 2)
+    boolean(c, prism('ch', [(CX_Y + (COAX_R + 0.1) * math.cos(2 * math.pi * k / 32), zc + (COAX_R + 0.1) * math.sin(2 * math.pi * k / 32)) for k in range(32)],
+                     x - 6, x + 6, axis='x'))
+    boolean(c, box('slit', x - 6, x + 6, CX_Y - 5, CX_Y, zc - 1.0, zc + 1.0))
+    boolean(c, box('neck', x - 2.5, x + 2.5, f - 0.2, f + 2.0, zc - 3.6, zc + 3.6), 'UNION')
+    boolean(c, box('head', x - 3.7, x + 3.7, f + 1.95, f + 4.0, zc - 3.6, zc + 3.6), 'UNION')
+    setmat(c, M_BASE)
+    smooth(c, 35)
+    return c
+
+
+CLIP_Z = []
+CCLIPS = [make_cable_clip(f'cclip{k}', z) for k, z in enumerate(CLIP_Z)]
+
+# ---------------------------------------------------------------- cables
+def wire(name, pts, mat, r=0.8):
+    cu = bpy.data.curves.new(name, 'CURVE')
+    cu.dimensions = '3D'
+    cu.bevel_depth = m(r)
+    cu.bevel_resolution = 4
+    cu.resolution_u = 24
+    sp = cu.splines.new('BEZIER')
+    sp.bezier_points.add(len(pts) - 1)
+    for bp, p in zip(sp.bezier_points, pts):
+        bp.co = (m(p[0]), m(p[1]), m(p[2]))
+        bp.handle_left_type = bp.handle_right_type = 'AUTO'
+    # straight entry into the terminal
+    b0 = sp.bezier_points[0]
+    b0.handle_left_type = b0.handle_right_type = 'VECTOR'
+    ob = bpy.data.objects.new(name, cu)
+    scene.collection.objects.link(ob)
+    ob.data.materials.append(mat)
+    return ob
+
+
+CABLES = []
+if not EXPLODED:
+    for i, zc in enumerate(BAR_Z):
+        ents = [e for e in ENTRIES if e[3] == zc]
+        hx = sum(e[0] for e in ents) / len(ents)
+        hs0, ze = ents[0][1], ents[0][2]
+        E = KK_IN[f'J{i + 1}01'] / MM
+        zr = E.z + 18.0 + 6.0 * i
+        pts = [(hx, hs0 + 3.0, ze), (hx, hs0 - 4.0, ze), (hx - 2, hs0 - 10.0, ze - 4)]
+        if i > 0:
+            xv, yv = hx - 5.0 - 4.0 * i, -45.0 - 2.0 * i
+            pts += [(xv, yv, ze - 18), (xv, yv, zr + 10)]
+        pts += [((hx + E.x) / 2, -47.0 - 2.0 * i, zr), (E.x - 10, E.y - 1, E.z + 14), (E.x, E.y, E.z + 7), (E.x, E.y, E.z - 2)]
+        CABLES.append(wire(f'coax{i}', pts, M_COAX, r=COAX_R))
+    RT = -1.2                                 # table level used for cables lying on it
+    BPLUGS = []                               # plugs on the detector board (leave with the board module)
+    APLUGS = []                               # plugs on the acquisition box
+
+    def along(bm, P, d, r, a, b, seg=32):
+        """Cylinder of radius r on the axis P + t d, t in [a, b] (mm)."""
+        d = Vector(d).normalized()
+        q = Vector((0, 0, 1)).rotation_difference(d).to_matrix().to_4x4()
+        c = Vector(P) + d * ((a + b) / 2)
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=m(r), radius2=m(r), depth=m(b - a),
+                              matrix=Matrix.Translation(c * MM) @ q)
+
+    def lemo_plug(P, d, mk_lists):
+        """LEMO FFA.00 straight plug on a socket whose nose is at P, cable leaving along d. Returns the cable start."""
+        bc, bp = bmesh.new(), bmesh.new()
+        along(bc, P, d, 3.35, -2.0, 11.0, 40)          # body (coupling over the socket nose)
+        along(bc, P, d, 3.6, 3.5, 6.5, 40)             # latch sleeve
+        along(bp, P, d, 2.7, 11.0, 13.0, 32)
+        along(bp, P, d, 2.5, 13.0, 21.0, 32)           # strain-relief boot
+        oc = mesh_obj('plug_chrome', bc)
+        setmat(oc, BM_MATS['chrome'])
+        op = mesh_obj('plug_boot', bp)
+        setmat(op, BM_MATS['plastic'])
+        mk_lists += [oc, op]
+        return Vector(P) + Vector(d).normalized() * 21.5
+
+    # detector LEMO outputs (J104, J204, J304, J5) -> acquisition box inputs 1, 2, 3, AND
+    byref = {c['ref']: c for c in BRD['comps']}
+    lemos = [byref[r] for r in ('J104', 'J204', 'J304', 'J5')]
+    xrank = sorted(range(4), key=lambda i: (comp_matrix(lemos[i]) @ Vector((0, 0, 0))).x)
+    for k, c in enumerate(lemos):
+        Mc = comp_matrix(c)
+        nose = Mc @ Vector((13.9, 3.6, 0)) / MM
+        tip = Mc @ Vector((20.0, 3.6, 0)) / MM
+        P0 = lemo_plug(nose, tip - nose, BPLUGS)
+        za = APZ1 - LEMO_XK[k]
+        A0 = lemo_plug((LEMO_AX, LEMO_TIP, za), (0, -1, 0), APLUGS)
+        q = xrank.index(k)                       # the leftmost output runs outermost on the table
+        gy = -178.0 - 3.2 * (3 - q)
+        rc = RT + COAX_R
+        pts = [tuple(P0), tuple(P0 + (tip - nose).normalized() * 8.0), (P0.x + 4, gy + 5, 10.0), (P0.x + 14, gy, rc),
+               (150.0, gy, rc), (196.0 + 3.2 * q, gy + 26, rc), (206.0 + 3.2 * q, -118.0, rc),
+               (210.0 + 3.0 * q, -100.0, 14.0), (210.0 + 2.0 * q, -96.0, 60.0), (202.0, A0.y - 16.0, za - 26.0),
+               (LEMO_AX, A0.y - 7.0, za - 2.0), tuple(A0)]
+        CABLES.append(wire(f'lcoax{k}', pts, M_COAX, r=COAX_R))
+    HARNESS += BPLUGS + APLUGS
+    M_I2C = mat_simple('i2c_cable', (0.04, 0.04, 0.045), 0.5)
+    # signal cables that cross the frame run INSIDE the rear slot of the cross-member (pushed in through the
+    # 6 mm opening) and up the rear face of the uprights: nothing loose on the table behind the detector
+    SL_Y = 7.0
+
+    def rear_run(x_up, zs, z_top_r, z_top_l):
+        """Right upright (x = +x_up, rising to z_top_r) <- slot at height zs -> left upright (rising to z_top_l)."""
+        return [(x_up, 13.5, z_top_r), (x_up, 13.5, 40.0), (156.0, 16.0, 30.0), (140.0, 14.0, zs + 8.0), (126.0, SL_Y, zs),
+                (-126.0, SL_Y, zs), (-140.0, 14.0, zs + 8.0), (-156.0, 16.0, 30.0), (-x_up, 13.5, 40.0), (-x_up, 13.5, z_top_l)]
+
+    # I2C: J6 (KK 3-way, front right of the board) -> under the board and the cross-member -> rear slot ->
+    # up the back of the right upright -> around the box -> port 0 (KK) through the back slot
+    E = KK_IN['J6'] / MM
+    r2 = RT + 1.5
+    pts = [tuple(E), (E.x, E.y, E.z + 6), (E.x - 1, E.y - 10, E.z + 9), (E.x - 2, -146.0, 30.0), (E.x - 3, -149.0, 8.0),
+           (E.x - 4, -140.0, r2), (E.x - 4, -40.0, r2), (E.x - 2, 16.0, r2 + 1.0), (E.x + 8, 12.0, 9.0), (E.x + 22, SL_Y, 12.6),
+           (126.0, SL_Y, 12.6), (140.0, 14.0, 21.0), (156.0, 16.0, 30.0), (161.5, 13.5, 40.0), (161.5, 13.5, A_KK[2] - 40.0),
+           (168.0, 40.0, A_KK[2] - 14.0), (186.0, AY1 + 6.0, A_KK[2] - 2.0),
+           (A_KK[0] + 3.0, AY1 + 2.0, A_KK[2]), (A_KK[0] + 2.5, A_KK[1] + 5.0, A_KK[2]), (A_KK[0] + 0.5, A_KK[1], A_KK[2])]
+    CABLES.append(wire('ki2c', list(reversed(pts)), M_I2C, r=1.5))
+    # 5 V for the detector: USB-C (J7, back edge), the cable passes under the cross-member to the supply behind
+    E = KK_IN['J7'] / MM
+    r3 = RT + 1.8
+    pts = [tuple(E), (E.x, E.y + 3, E.z), (E.x - 1, E.y + 6, E.z - 8), (E.x - 3, -13.5, 14.0), (E.x - 4, -13.0, r3),
+           (E.x - 4, 4.0, r3), (E.x + 2, 40.0, r3), (E.x + 40, 110.0, r3), (E.x + 260, 170.0, r3), (E.x + 1400, 230.0, r3)]
+    CABLES.append(wire('usbc', pts, M_COAX, r=1.8))
+    # Zero 2 W: power from a 5 V supply behind; data USB to the Pico, entering the acquisition box from the top
+    r4 = RT + 1.6
+    P = Vector(Z_PWR_END)
+    pts = [tuple(P), (P.x, P.y + 6, P.z), (P.x + 1, P.y + 17, P.z - 17), (P.x + 3, 60.0, 60.0), (P.x + 4, 70.0, 12.0),
+           (P.x + 2, 92.0, r4), (P.x - 40, 140.0, r4), (P.x - 260, 175.0, r4), (P.x - 1400, 230.0, r4)]
+    CABLES.append(wire('zpwr', pts, M_COAX, r=1.6))
+    up = box('pusb', USB_X - 3.5, USB_X + 3.5, USB_Y - 5.5, USB_Y + 5.5, USB_Z + 0.5, USB_Z + 17.0)
+    bevel(up, 1.5, 2)
+    setmat(up, BM_MATS['plastic'])
+    APLUGS.append(up)
+    HARNESS.append(up)
+    P = Vector(Z_USB_END)
+    pts = [(USB_X, USB_Y, USB_Z + 17.0), (USB_X, USB_Y, USB_Z + 26.0), (USB_X + 1, USB_Y + 16, AZ1 + 18.0), (192.0, AY1 + 6.0, AZ1 + 2.0),
+           (176.0, AY1 + 4.0, AZ1 - 20.0), (165.0, 16.0, AZ1 - 50.0)]
+    pts += rear_run(163.5, 16.0, AZ1 - 75.0, P.z - 40.0)
+    pts += [(-172.0, 40.0, P.z - 14.0), (P.x, P.y + 7, P.z - 1.0), (P.x, P.y + 3, P.z), tuple(P)]
+    CABLES.append(wire('zusb', pts, M_COAX, r=1.6))
+    # Qwiic: port 2 of the acquisition box -> weather module (left upright)
+    r5 = RT + 1.1
+    P = Vector(A_QW)
+    Q = Vector(M_QW)
+    pts = [tuple(P), (P.x, P.y + 7, P.z), (P.x + 2, AY1 + 6.0, P.z - 4), (176.0, AY1 + 6.0, P.z - 18.0), (166.0, 16.0, P.z - 45.0)]
+    pts += rear_run(165.5, 19.4, P.z - 60.0, 46.0)
+    pts += [(-170.0, 24.0, 54.0), (Q.x + 6, Q.y + 10, Q.z), (Q.x, Q.y + 4, Q.z), tuple(Q)]
+    CABLES.append(wire('qwiic', pts, mat_simple('qw_cable', (0.012, 0.012, 0.014), 0.45), r=1.1))
+    # GPS: SMA plug under the box, antenna cable (RG174, 5 m) to the window
+    bs = bmesh.new()
+    along(bs, (GPS_SMA[0], GPS_SMA[1], GPS_Z0 - 9.0), (0, 0, -1), 4.2, 0.0, 7.0, 6)
+    along(bs, (GPS_SMA[0], GPS_SMA[1], GPS_Z0 - 9.0), (0, 0, -1), 3.0, 7.0, 13.0, 32)
+    o = mesh_obj('sma_plug', bs)
+    setmat(o, BM_MATS['gold'])
+    APLUGS.append(o)
+    HARNESS.append(o)
+    bb_ = bmesh.new()
+    along(bb_, (GPS_SMA[0], GPS_SMA[1], GPS_Z0 - 9.0), (0, 0, -1), 2.2, 13.0, 21.0, 32)
+    o = mesh_obj('sma_boot', bb_)
+    setmat(o, BM_MATS['plastic'])
+    APLUGS.append(o)
+    HARNESS.append(o)
+    z0 = GPS_Z0 - 30.0
+    pts = [(GPS_SMA[0], GPS_SMA[1], z0), (GPS_SMA[0], GPS_SMA[1], z0 - 3), (GPS_SMA[0] + 6, GPS_SMA[1] - 3, 31.5),
+           (199.0, -8.0, 26.0), (207.0, -6.0, 8.0), (212.0, 6.0, RT + COAX_R), (222.0, 60.0, RT + COAX_R),
+           (250.0, 100.0, RT + COAX_R), (420.0, 130.0, RT + COAX_R), (1500.0, 190.0, RT + COAX_R)]
+    CABLES.append(wire('gpsant', pts, M_COAX, r=COAX_R))
+    # GPS jumpers: J6 strip of the Pico board -> header of the GPS breakout (5V, 3V3, GND, TX, RX, PPS)
+    JW = [mat_simple('jw0', (0.45, 0.012, 0.01), 0.4), mat_simple('jw1', (0.6, 0.18, 0.01), 0.4), M_WIRE_K,
+          mat_simple('jw3', (0.55, 0.45, 0.02), 0.4), mat_simple('jw4', (0.03, 0.3, 0.05), 0.4), mat_simple('jw5', (0.02, 0.08, 0.45), 0.4)]
+    for i, (xk, yk) in enumerate(J6K):
+        x, y, z = ak(xk, yk)
+        yg = GPS_HDR[5 - i]
+        pts = [(APT + 16.5, y, z), (APT + 19.0, y, z - 2.0), (GT + 15.5, yg, GPS_Z1 + 1.5), (GT + 13.5, yg, GPS_Z1 - 1.3)]
+        CABLES.append(wire(f'gpsw{i}', pts, JW[i], r=0.55))
+
+# ---------------------------------------------------------------- compute module opened
+if MODOUT:
+    for ob in MODULE:
+        if ob.name.startswith('mthumb'):
+            xm = sum(v.co.x for v in ob.data.vertices) / len(ob.data.vertices)
+            ob.location.x += m(22.0) * (1 if xm < 0 else -1)      # unscrewed, pulled out of the feet
+        else:
+            ob.location.y += m(-120.0)
+            ob.location.z += m(75.0)
+    for ob in CABLES:
+        if ob.name.startswith(('coax', 'lcoax', 'ki2c', 'usbc')):
+            ob.hide_render = True
+    for ob in BPLUGS + APLUGS:
+        if ob.name.startswith('plug_'):
+            ob.hide_render = True
+    # dashed axes: foot insert -> unscrewed thumb screw
+    M_AX = mat_simple('axis2', (0.85, 0.33, 0.05), 0.6)
+    for sx in (-1, 1):
+        for y, z in FOOT_SCREWS:
+            xa, xb = sorted((sx * (abs(FX1) - 1.0), sx * (abs(FX1) - 62.0)))
+            xx = xa
+            while xx < xb:
+                dd = prism('dash2', [(y + 0.6 * math.cos(2 * math.pi * k / 12), z + 0.6 * math.sin(2 * math.pi * k / 12)) for k in range(12)],
+                           xx, min(xx + 4.0, xb), axis='x')
+                setmat(dd, M_AX)
+                dd.visible_shadow = False
+                xx += 6.5
+if MODFLIP:
+    keep = set(o.name for o in MODULE)
+    for ob in scene.objects:
+        if ob.type in ('MESH', 'CURVE') and ob.name not in keep and ob.name != 'floor':
+            ob.hide_render = True
+    pts = [ob.matrix_world @ v.co for ob in MODULE for v in ob.data.vertices]
+    c = sum(pts, Vector()) / len(pts)
+    flip = Matrix.Translation(c) @ Matrix.Rotation(math.pi, 4, 'Y') @ Matrix.Translation(-c)
+    for ob in MODULE:
+        ob.data.transform(ob.matrix_world.inverted() @ flip @ ob.matrix_world)
+    zmin = min((ob.matrix_world @ v.co).z for ob in MODULE for v in ob.data.vertices)
+    for ob in MODULE:
+        ob.location.z += m(-2.0) - zmin
+    FLIP_C = sum((ob.matrix_world @ v.co for ob in MODULE for v in ob.data.vertices), Vector()) / sum(len(ob.data.vertices) for ob in MODULE)
+if OPEN:
+    for ob in LID_PARTS:
+        ob.location.x -= m(48)
+if AOPEN:
+    for ob in ALID_PARTS:
+        ob.location.x += m(52)
+
+# ---------------------------------------------------------------- exploded offsets
+if EXPLODED:
+    B, U = 115.0, 60.0
+
+    def xmean(ob):
+        return sum(v.co.x for v in ob.data.vertices) / len(ob.data.vertices) / MM
+
+    def move(ob, dx, dz):
+        ob.location.x += m(dx)
+        ob.location.z += m(dz)
+
+    UPX, CLX, SPX, FTX = 70.0, 20.0, 45.0, 70.0
+
+    def zmin(ob):
+        return min(v.co.z for v in ob.data.vertices) / MM
+
+    spacers = {-1.0: [], 1.0: []}
+    for ob in list(scene.collection.objects):
+        if ob.type != 'MESH':
+            continue
+        n = ob.name
+        side = 1.0 if xmean(ob) > 0 else -1.0
+        if ob in MODULE:
+            move(ob, 0, B + 30)
+            ob.location.y += m(-120)
+        elif ob in COMPUTE:
+            move(ob, -(UPX + 45), B + U)
+        elif ob in ALID_PARTS:
+            move(ob, UPX + 95, B + U)
+        elif ob in ACQ:
+            move(ob, UPX + 45, B + U)
+        elif ob in MET:
+            move(ob, -(UPX + 30), B + 20)
+        elif ob in HARNESS:
+            move(ob, UPX + 75, B + U)
+        elif n.startswith('fpin'):
+            move(ob, FTX * side, B + 12)
+        elif n.startswith('foot_'):
+            move(ob, FTX * side, B)
+        elif n.startswith('rubber'):
+            move(ob, FTX * side, B - 14)
+        elif n.startswith('hprofile'):
+            move(ob, 0, B)
+        elif n.startswith('tnut'):
+            move(ob, 0, B - 16)
+        elif n.startswith('bscrew'):
+            move(ob, FTX * side, 34)
+        elif n.startswith('bolt'):
+            move(ob, FTX * side, 26)
+        elif n.startswith('upright'):
+            move(ob, UPX * side, B + U)
+        elif n.startswith('cap_'):
+            move(ob, UPX * side, B + U + 40)
+        elif n.startswith('clip'):
+            move(ob, CLX * side, B + U)
+        elif n.startswith('spacer'):
+            spacers[side].append(ob)
+        elif n.startswith('bar'):
+            move(ob, 0, B + U)
+    # spacers: own column, spread apart so each piece reads separately
+    for side, lst in spacers.items():
+        lst.sort(key=zmin)
+        for k, ob in enumerate(lst):
+            move(ob, SPX * side, B + U + 9.0 * k)
+    for ob in PCB_PARTS:
+        move(ob, 0, B + U + 24)
+    for ob in COVERS:
+        move(ob, 0, B + U + 46)
+    for ob in CCLIPS:
+        move(ob, -UPX, B + U)
+        ob.location.y += m(-22)
+
+    M_AXIS = mat_simple('axis', (0.25, 0.25, 0.27), 0.7)
+
+    def dashed(x, y, z0, z1):
+        z = z0
+        while z < z1:
+            d = cyl('dash', x, y, 0.28, z, min(z + 4.0, z1), 12)
+            setmat(d, M_AXIS)
+            d.visible_shadow = False
+            z += 6.5
+
+    for x in (UX, -UX):
+        sd = 1 if x > 0 else -1
+        xo = x + UPX * sd
+        xf = x + FTX * sd
+        dashed(xf, 0, 26 + 21 + 3, B - 2)                 # screw -> foot
+        dashed(xf, 0, B + FOOT_TOP + 4, B + U + UP_Z0 - 3) # foot -> upright
+        dashed(sd * -BS_X + FTX * sd, 0, 34 + 8 + 3, B - 2)  # button screw -> foot
+        dashed(xo, 0, B + U + UP_Z0 + UP_H + 4, B + U + 40 + UP_Z0 + UP_H - 9)  # upright -> cap
+    for x, bs, tn in HW:
+        dashed(x, 0, B - 16 + H_Z0 + 5, B + H_Z0 - 1)    # slot nut -> profile
+
+# ---------------------------------------------------------------- floor (shadow catcher)
+floor = box('floor', -3000, 3000, -3000, 3000, -3, -2)
+floor.is_shadow_catcher = True
+setmat(floor, mat_simple('floor', (0.8, 0.8, 0.8), 0.6))
+
+# ---------------------------------------------------------------- world & lights
+world = bpy.data.worlds.new('w')
+scene.world = world
+world.use_nodes = True
+bg = world.node_tree.nodes['Background']
+wn = world.node_tree
+wtc = wn.nodes.new('ShaderNodeTexCoord')
+wsep = wn.nodes.new('ShaderNodeSeparateXYZ')
+wn.links.new(wtc.outputs['Generated'], wsep.inputs[0])
+wmr = wn.nodes.new('ShaderNodeMapRange')
+wmr.inputs['From Min'].default_value = -0.3
+wmr.inputs['From Max'].default_value = 0.9
+wmr.inputs['To Min'].default_value = 0.12
+wmr.inputs['To Max'].default_value = 1.0
+wn.links.new(wsep.outputs['Z'], wmr.inputs['Value'])
+wn.links.new(wmr.outputs['Result'], bg.inputs['Color'])
+bg.inputs['Strength'].default_value = 0.35
+
+
+def area(name, loc, size, power, color=(1, 1, 1)):
+    ld = bpy.data.lights.new(name, 'AREA')
+    ld.shape = 'DISK'
+    ld.size = size
+    ld.energy = power
+    ld.color = color
+    ob = bpy.data.objects.new(name, ld)
+    scene.collection.objects.link(ob)
+    ob.location = loc
+    d = Vector((0, 0, 0.12)) - Vector(loc)
+    ob.rotation_euler = d.to_track_quat('-Z', 'Y').to_euler()
+    return ob
+
+
+area('key', (-0.9, -0.9, 1.3), 1.4, 40, (1.0, 0.97, 0.93))
+area('fill', (1.2, -0.7, 0.6), 1.6, 14, (0.93, 0.96, 1.0))
+area('rim', (0.3, 1.2, 1.0), 1.2, 22)
+area('top', (0.0, 0.0, 1.6), 1.5, 12)
+
+# ---------------------------------------------------------------- camera
+cam_d = bpy.data.cameras.new('cam')
+cam_d.lens = 70
+cam_d.clip_start = 0.002
+cam_d.sensor_width = 36
+cam = bpy.data.objects.new('cam', cam_d)
+scene.collection.objects.link(cam)
+if EXPLODED:
+    target = Vector((m(10), m(-80), m(255)))
+    cam.location = target + Vector((-0.42, -0.86, 0.46)) * 1.52
+elif MODFLIP:
+    target = FLIP_C
+    cam.location = target + Vector((-0.45, -0.80, 0.62)) * 0.62
+elif MODOUT:
+    target = Vector((m(0), m(-120), m(70)))
+    cam.location = target + Vector((-0.42, -0.84, 0.55)) * 1.22
+elif COMPUTE_VIEW:
+    target = Vector((m(-192), m(0), m(128)))
+    cam.location = target + Vector((-0.66, -0.60, 0.38)) * (0.66 if OPEN else 0.62)
+elif ACQ_VIEW:
+    target = Vector((m(200), m(-10), m(146)))
+    cam.location = target + Vector((0.62, -0.62, 0.40)) * (0.70 if AOPEN else 0.62)
+else:
+    target = Vector((m(28), m(-70), m(104)))
+    cam.location = target + Vector((-0.34, -0.88, 0.55)) * 1.30
+if os.environ.get('CAM'):                      # close-up views: CAM="tx,ty,tz,dx,dy,dz,dist[,lens]" (mm, direction, m)
+    _c = [float(v) for v in os.environ['CAM'].split(',')]
+    target = Vector((m(_c[0]), m(_c[1]), m(_c[2])))
+    cam.location = target + Vector(_c[3:6]).normalized() * _c[6]
+    if len(_c) > 7:
+        cam_d.lens = _c[7]
+cam.rotation_euler = (target - cam.location).to_track_quat('-Z', 'Y').to_euler()
+scene.camera = cam
+
+# ---------------------------------------------------------------- render
+scene.render.engine = 'CYCLES'
+scene.cycles.device = 'CPU'
+scene.cycles.samples = SAMPLES
+scene.cycles.use_denoising = True
+scene.cycles.max_bounces = 8
+scene.render.film_transparent = True
+scene.render.resolution_x = RES
+scene.render.resolution_y = int(RES * (1.0 if EXPLODED else 0.8))
+scene.render.resolution_percentage = 100
+scene.view_settings.view_transform = 'AgX'
+scene.view_settings.look = 'AgX - Medium High Contrast'
+scene.render.image_settings.file_format = 'PNG'
+scene.render.image_settings.color_mode = 'RGBA'
+scene.render.filepath = OUT
+if not PARTS:
+    bpy.ops.render.render(write_still=True)
+else:
+    import os
+    os.makedirs(OUT, exist_ok=True)
+    scene.render.resolution_y = int(RES * 0.8)
+    cam_d.lens = 85
+    flipX = Matrix.Rotation(math.pi, 4, 'X')
+    jobs = [  # (file, source object, view direction, print-orientation transform)
+        ('piede', 'foot_L', (-0.62, -0.75, 0.55), None),
+        ('aggancio_retro', 'clipL1', (-0.80, -0.45, 0.55), None),
+        ('aggancio_fronte', 'clipL1', (0.80, -0.45, 0.55), None),
+        ('aggancio_1', 'clipL0', (-0.80, -0.45, 0.55), None),
+        ('aggancio_3', 'clipL2', (-0.80, -0.45, 0.55), None),
+        ('distanziale_24', 'spacer0', (-0.70, -0.55, 0.60), None),
+        ('distanziale_50', 'spacer1', (-0.70, -0.55, 0.60), None),
+        ('distanziale_44', 'spacer3', (-0.70, -0.55, 0.60), None),
+        ('tappo', 'cap_L', (-0.50, -0.86, 0.75), flipX),
+        ('culla_laterale', 'bsupL', (-0.70, -0.62, 0.55), None),
+        ('ponte_centrale', 'bsupC', (-0.45, -0.80, 0.62), None),
+        ('scatola_calcolo', 'cbox', (0.60, -0.60, 0.75), Matrix.Rotation(-math.pi / 2, 4, 'Y') @ RZ180),
+        ('coperchio_calcolo', 'clid', (0.55, -0.60, 0.75), Matrix.Rotation(math.pi / 2, 4, 'Y') @ RZ180),
+        ('scatola_acquisizione', 'abox', (0.60, -0.60, 0.75), Matrix.Rotation(-math.pi / 2, 4, 'Y')),
+        ('coperchio_acquisizione', 'alid', (0.55, -0.60, 0.75), Matrix.Rotation(math.pi / 2, 4, 'Y')),
+        ('supporto_meteo', 'mbox', (-0.60, -0.60, 0.75), Matrix.Rotation(math.pi / 2, 4, 'Y')),
+        ('copertura', 'cover', (-0.55, -0.75, 0.75), flipX),
+    ]
+    for ob in scene.objects:
+        if ob.type in ('MESH', 'CURVE') and ob.name != 'floor':
+            ob.hide_render = True
+    ONLY = sys.argv[sys.argv.index('--') + 5].split(',') if len(sys.argv) > sys.argv.index('--') + 5 else None
+    if ONLY:
+        jobs = [j for j in jobs if j[0] in ONLY]
+    for fname, src, vdir, tf in jobs:
+        o = bpy.data.objects[src]
+        c = o.copy()
+        c.data = o.data.copy()
+        scene.collection.objects.link(c)
+        c.hide_render = False
+        if tf is not None:
+            c.data.transform(tf)
+        xs = [v.co.x for v in c.data.vertices]; ys = [v.co.y for v in c.data.vertices]; zs = [v.co.z for v in c.data.vertices]
+        c.data.transform(Matrix.Translation((-(min(xs) + max(xs)) / 2, -(min(ys) + max(ys)) / 2, -min(zs))))
+        c.data.update()
+        xs = [v.co.x for v in c.data.vertices]; ys = [v.co.y for v in c.data.vertices]; zs = [v.co.z for v in c.data.vertices]
+        ctr = Vector((0, 0, max(zs) / 2))
+        r = max((Vector((x, y, z)) - ctr).length for x, y, z in zip(xs, ys, zs))
+        dist = r / math.sin(math.atan(14.4 / 85)) * (0.85 if fname == 'piede' else 1.0)
+        cam.location = ctr + Vector(vdir).normalized() * dist
+        cam.rotation_euler = (ctr - cam.location).to_track_quat('-Z', 'Y').to_euler()
+        scene.render.filepath = os.path.join(OUT, fname + '.png')
+        bpy.ops.render.render(write_still=True)
+        # STL in print orientation (mm)
+        if fname != 'aggancio_fronte':
+            bpy.ops.object.select_all(action='DESELECT')
+            c.select_set(True)
+            bpy.context.view_layer.objects.active = c
+            bpy.ops.wm.stl_export(filepath=os.path.join(OUT, fname.replace('_retro', '') + '.stl'),
+                                  export_selected_objects=True, global_scale=1000.0, apply_modifiers=True)
+        bpy.data.objects.remove(c, do_unlink=True)
