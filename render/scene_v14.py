@@ -2052,6 +2052,77 @@ scene.view_settings.look = 'AgX - Medium High Contrast'
 scene.render.image_settings.file_format = 'PNG'
 scene.render.image_settings.color_mode = 'RGBA'
 scene.render.filepath = OUT
+# ---------------------------------------------------------------- annotation anchors (ANNOT=out.json): where each part lands
+# in the rendered image, for the annotated sheets (tools/tavola_annotata.py)
+if os.environ.get('ANNOT'):
+    import json as _json
+    from bpy_extras.object_utils import world_to_camera_view
+    bpy.context.view_layer.update()
+
+    def _cent(obs):
+        ws = [o.matrix_world @ v.co for o in obs for v in o.data.vertices]
+        return sum(ws, Vector()) / len(ws)
+
+    def _front(obs):
+        ws = [o.matrix_world @ v.co for o in obs for v in o.data.vertices]
+        y0 = min(w.y for w in ws)
+        fr = [w for w in ws if w.y < y0 + m(1.0)]
+        return sum(fr, Vector()) / len(fr)
+
+    def _obj(name):
+        return [bpy.data.objects[name]]
+
+    def _top(lst):
+        zt = max(max((o.matrix_world @ v.co).z for v in o.data.vertices) for o in lst)
+        return [o for o in lst if max((o.matrix_world @ v.co).z for v in o.data.vertices) > zt - m(8)]
+
+    def _pt(x, y, z):
+        return Vector((m(x), m(y), m(z)))
+
+    A = {}
+    if EXPLODED:
+        spac = sorted([o for o in scene.objects if o.name.startswith('spacer') and o.type == 'MESH'], key=lambda o: _cent([o]).z)
+        A = {
+            'piede': _cent(_obj('foot_R')), 'traversa': _cent(_obj('hprofile')), 'montante': _cent(_obj('upright_R')),
+            'tappo': _cent(_obj('cap_R')), 'aggancio': _cent([o for o in scene.objects if o.name.startswith('clip') and _cent([o]).x > 0][:1]),
+            'distanziale': _cent([o for o in spac if _cent([o]).x < 0][-2:-1]), 'barra': _cent(_obj('bar2')),
+            'circuito_barra': _cent(_top(PCB_PARTS)), 'copertura': _cent(_top(COVERS)),
+            'scheda3ch': _cent(_obj('board3ch')), 'culla': _front(_obj('bsupL')), 'ponte': _front(_obj('bsupC')),
+            'pomello_m4': _cent([o for o in MODULE if o.name.startswith('mthumb')][:1]),
+            'scatola_acq': _cent(_obj('abox')), 'coperchio_acq': _cent(_obj('alid')),
+            'scatola_calc': _cent(_obj('cbox')), 'meteo': _cent(_obj('mbox')),
+            'vite_m5': _cent([o for o in scene.objects if o.name.startswith('bscrew')][:1]),
+            'dado_t': _cent([o for o in scene.objects if o.name.startswith('tnut')][:1]),
+            'vite_piede': _cent([o for o in scene.objects if o.name.startswith('bolt')][:1]),
+            'gommino': _cent([o for o in scene.objects if o.name.startswith('rubber')][:1]),
+        }
+    elif AOPEN:
+        A = {
+            'pico': _pt(*ak(33.0, 32.0, 12.0)), 'hub': _pt(*ak(76.0, 24.0, 1.2)),
+            'lemo_in': _pt(LEMO_AX, AY0 - 2.0, APZ1 - 32.0), 'lemo_pps': _pt(LEMO_AX, AY0 - 1.0, APZ1 - 80.0),
+            'gps': _pt(GT + 2.4, -4.0, 86.0), 'sma': _pt(GPS_SMA[0], GPS_SMA[1], AZ0 - 12.0),
+            'porte_i2c': _pt(*ak(66.0, 3.0, 3.0)), 'dupont': _pt(APT + 18.0, -2.0, 104.0),
+            'coperchio_acq': _cent(_obj('alid')), 'pomello_m5': _cent([o for o in ACQ if o.name.startswith('athumb')][-1:]),
+            'usb_pico': _pt(USB_X, USB_Y, AZ1 + 6.0),
+        }
+    elif OPEN:
+        fan = [o for o in COMPUTE if o.name.startswith('pi_fan')]
+        A = {
+            'zero': _pt(*rz((PT + 1.5, PY(12.0), PZ(20.0)))), 'gpio': _pt(*rz((PT + 3.0, PY(26.5), PZ(45.0)))),
+            'ventola': _cent(fan), 'coperchio_calc': _cent(_obj('clid')),
+            'porte_usb': _pt(*rz((PT + 3.0, PY(-1.0) - 8.0, PZ(48.0)))), 'microsd': _pt(*rz((PT + 1.0, PY(16.9), PZ(-1.0)))),
+            'meteo_scheda': _cent([pcb_of(MET_BOARD)]), 'supporto_meteo': _pt(MX0 - 12.0, -20.0, 70.0),
+            'pomello_calc': _cent([o for o in COMPUTE if o.name.startswith('cthumb')][:1]),
+        }
+    rx, ry = scene.render.resolution_x, scene.render.resolution_y
+    out = {}
+    for k, w in A.items():
+        c = world_to_camera_view(scene, cam, w)
+        out[k] = [c.x * rx, (1 - c.y) * ry]
+    _json.dump({'size': [rx, ry], 'pts': out}, open(os.environ['ANNOT'], 'w'), indent=1)
+    print('ANNOT', len(out))
+if os.environ.get('NORENDER'):
+    sys.exit(0)
 if not PARTS:
     bpy.ops.render.render(write_still=True)
 else:
