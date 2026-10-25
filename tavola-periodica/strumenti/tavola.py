@@ -26,9 +26,9 @@ GIOCO_PANNELLO = 0.5          # spazio tra un cubo e l'altro sul pannello
 
 # Cubi "segnaposto" nella casella del gruppo 3, periodi 6 e 7
 SEGNAPOSTO = [
-    {"numero": "57–71", "simbolo": "La–Lu", "nome": "Lantanidi", "massa": "",
+    {"numero": "57–71", "simbolo": "La–Lu", "nome": "Lantanidi 57–71", "massa": "",
      "categoria": "lantanide", "riga": 6, "colonna": 3, "id": "segnaposto_lantanidi"},
-    {"numero": "89–103", "simbolo": "Ac–Lr", "nome": "Attinidi", "massa": "",
+    {"numero": "89–103", "simbolo": "Ac–Lr", "nome": "Attinidi 89–103", "massa": "",
      "categoria": "attinide", "riga": 7, "colonna": 3, "id": "segnaposto_attinidi"},
 ]
 
@@ -120,10 +120,9 @@ def comando_openscad(c, parte="corpo", uscita=None):
         d["Z"] = c["numero"]
     else:
         d["Z"] = "0"
-        d["numero_testo"] = scad_str(c["numero"])
+        d["mostra_numero"] = "false"
         d["simbolo_testo"] = scad_str(c["simbolo"])
         d["nome_testo"] = scad_str(c["nome"])
-        d["massa_testo"] = scad_str(c["massa"])
     cmd = ["openscad", "-o", uscita]
     for k, v in d.items():
         cmd += ["-D", f"{k}={v}"]

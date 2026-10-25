@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Render a colori di un gruppo di cubi montati, come escono con la stampa
-a cambio filamento: corpo neutro, cornice frontale nel colore della categoria,
-testi in rilievo in un terzo colore.
+a cambio filamento: corpo neutro e testi in rilievo di un altro colore.
+Con CORNICE=1 nell'ambiente anche la cornice frontale prende il colore
+della categoria (terzo filamento, facoltativo).
 
 uso: render_tavola.py uscita.png riga0 riga1 col0 col1 [azimut elevazione]
 """
@@ -23,7 +24,7 @@ import tavola  # noqa: E402
 CORPO = "#ece8e1"
 TESTO = "#26282b"
 PAVIMENTO = "#3b3d40"
-CORNICE_SP = 4.0
+CORNICE_SP = tavola.quote_dal_modello()["cornice"]
 
 
 def mesh_cubo(c, d):
@@ -45,7 +46,8 @@ def rendi(uscita, r0, r1, k0, k1, az=-28, el=16, px=1600):
         scena = []
         for c in cubi:
             off = np.array([(c["colonna"] - k0) * passo, 0, (r1 - c["riga"]) * passo])
-            col = tavola.COLORI_CORNICE.get(c["categoria"], "#999999")
+            col = tavola.COLORI_CORNICE.get(c["categoria"], "#999999") \
+                if os.environ.get("CORNICE") == "1" else CORPO
             scena.append((mesh_cubo(c, d), off, col))
             scena.append((pav, off, None))
     tutti = np.vstack([m.vertices + o for m, o, _ in scena])
