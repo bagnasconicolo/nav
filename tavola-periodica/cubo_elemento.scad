@@ -16,6 +16,13 @@
 // =====================================================================
 
 include <elementi.scad>
+// font incluse nel progetto (licenza OFL): non serve installarle
+use <font/Syne-Bold.ttf>
+use <font/Syne-SemiBold.ttf>
+use <font/IBMPlexSans-Medium.ttf>
+use <font/IBMPlexSans-SemiBold.ttf>
+use <font/IBMPlexMono-Medium.ttf>
+use <font/IBMPlexMono-SemiBold.ttf>
 
 /* [Elemento] */
 Z = 26;                     // numero atomico (0 = testi personalizzati)
@@ -47,11 +54,20 @@ smusso_apertura = 0.8;      // smusso a 45° sul bordo dell'apertura
 /* [Tipografia] */
 testo_modo = "rilievo";     // [rilievo, inciso]
 testo_h = 0.6;              // altezza del rilievo / profondità dell'incisione
-font_simbolo = "Inter Display:style=Bold";
-font_testo = "Inter:style=SemiBold";
-dim_simbolo = 8.5;          // altezza delle maiuscole, in mm
-dim_piccolo = 3.2;          // numero e nome
-spaziatura_nome = 1.18;     // nome in maiuscolo spaziato
+// Syne per il simbolo (display), IBM Plex per i testi, come museo.chicubo.it
+font_simbolo = "Syne:style=Bold";
+// (in alternativa, nome in tondo: font_nome = "IBM Plex Sans:style=Medium",
+//  nome_maiuscolo = false, spaziatura_nome = 1, h_nome = 3.6)
+font_nome = "IBM Plex Mono:style=SemiBold";
+font_numero = "IBM Plex Mono:style=SemiBold";
+// altezze delle MAIUSCOLE in mm (non il "size" di OpenSCAD).
+// Sotto i 3 mm il tratto scende sotto i 0,45 mm: al limite per un ugello da 0,4.
+h_simbolo = 8;
+h_nome = 3;
+h_numero = 3;
+nome_maiuscolo = true;      // nome in maiuscolo spaziato
+spaziatura_nome = 1.12;
+numero_cifre = 0;           // 3: 26 -> 026, come un numero di catalogo
 margine_testo = 4;          // distanza dei testi dai bordi della cornice
 
 /* [Fondale curvo] */
@@ -92,9 +108,10 @@ function car_maiuscolo(c) =
 function unisci(v, i = 0) = i >= len(v) ? "" : str(v[i], unisci(v, i + 1));
 function maiuscolo(s) = unisci([for (c = s) car_maiuscolo(c)]);
 
-T_NUMERO = mostra_numero ? scegli(numero_testo, Z > 0 ? str(dato[0]) : "") : "";
+function zeri(n, cifre) = len(str(n)) >= cifre ? str(n) : zeri(str("0", n), cifre);
+T_NUMERO = mostra_numero ? scegli(numero_testo, Z > 0 ? zeri(dato[0], numero_cifre) : "") : "";
 T_SIMBOLO = scegli(simbolo_testo, dato[1]);
-T_NOME = maiuscolo(scegli(nome_testo, dato[2]));
+T_NOME = nome_maiuscolo ? maiuscolo(scegli(nome_testo, dato[2])) : scegli(nome_testo, dato[2]);
 
 // ---------------------------------------------------------------------
 // Quote derivate
@@ -230,27 +247,38 @@ module fori_fissaggio() {
 
 // ---------------------------------------------------------------------
 // Tipografia
-//   | 26                                      |
-//   | Fe                               FERRO  |   <- stessa linea di base
-// Simbolo a sinistra; a destra il numero allineato alla cima del simbolo
-// e il nome alla sua linea di base. Margini uguali in basso e a sinistra.
+//   |                                     26 |  <- Plex Mono, cima allineata al simbolo
+//   | Fe                               FERRO |  <- Syne / Plex Mono, stessa linea di base
+// Margini uguali in basso e a sinistra; simbolo centrato nella fascia.
 // ---------------------------------------------------------------------
-// Larghezza media dei caratteri in rapporto alla dimensione (misurata su
-// Inter): serve solo a ridurre i nomi lunghi, OpenSCAD 2021 non sa misurarli.
+// OpenSCAD dimensiona i testi con "size", che non è l'altezza delle maiuscole:
+// questi rapporti (misurati sulle font incluse) convertono tra le due.
+K_CAP_SYNE = 0.90;
+K_CAP_PLEX = 0.97;
+// larghezza media di un carattere in rapporto a "size" (misurata): serve solo
+// a ridurre i nomi lunghi, OpenSCAD 2021 non sa misurare un testo.
+function sotto(s, i, n) = unisci([for (j = [i : i + n - 1]) s[j]]);
+function contiene(s, t, i = 0) =
+    i > len(s) - len(t) ? false : sotto(s, i, len(t)) == t ? true : contiene(s, t, i + 1);
+function k_larghezza(font, maiuscolo) =
+    contiene(font, "Mono") ? 0.81 : contiene(font, "Syne") ? 0.95 : maiuscolo ? 0.86 : 0.71;
 function adatta(t, dim, k, max_w) = len(t) == 0 ? dim : min(dim, max_w / (len(t) * k));
 
 module testi_2d() {
+    s_sim = h_simbolo / K_CAP_SYNE;
+    s_num = h_numero / K_CAP_PLEX;
     utile = fascia_h - smusso_apertura;
-    base = (utile - dim_simbolo) / 2;
+    base = (utile - h_simbolo) / 2;
     sx = cornice + margine_testo - 2;
     dx = lato - cornice - margine_testo + 2;
-    w_sim = len(T_SIMBOLO) * dim_simbolo * 0.85;
-    d_nome = adatta(T_NOME, dim_piccolo, 0.78 * spaziatura_nome, dx - sx - w_sim - 8);
-    translate([sx, base]) text(T_SIMBOLO, size = dim_simbolo, font = font_simbolo);
-    translate([dx, base + dim_simbolo - dim_piccolo])
-        text(T_NUMERO, size = dim_piccolo, font = font_testo, halign = "right");
+    w_sim = len(T_SIMBOLO) * s_sim * k_larghezza(font_simbolo, false);
+    s_nome = adatta(T_NOME, h_nome / K_CAP_PLEX, k_larghezza(font_nome, nome_maiuscolo) * spaziatura_nome,
+                    dx - sx - w_sim - 8);
+    translate([sx, base]) text(T_SIMBOLO, size = s_sim, font = font_simbolo);
+    translate([dx, base + h_simbolo - h_numero])
+        text(T_NUMERO, size = s_num, font = font_numero, halign = "right");
     translate([dx, base])
-        text(T_NOME, size = d_nome, font = font_testo, halign = "right", spacing = spaziatura_nome);
+        text(T_NOME, size = s_nome, font = font_nome, halign = "right", spacing = spaziatura_nome);
 }
 
 module testi(h) {
@@ -322,7 +350,7 @@ module dima() {
         translate([vite[0], vite[1], -1]) cylinder(d = dima_pilota, h = 20);
         if (spina) translate([spina_pos[0], spina_pos[1], -1]) cylinder(d = spina_d - 0.2, h = 20);
         translate([lato / 2, lato - 11, 1.2]) linear_extrude(5)
-            text("ALTO", size = 5, font = font_testo, halign = "center");
+            text("ALTO", size = 5, font = font_nome, halign = "center");
     }
 }
 

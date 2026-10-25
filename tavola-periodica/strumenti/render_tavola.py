@@ -30,6 +30,9 @@ CORNICE_SP = tavola.quote_dal_modello()["cornice"]
 def mesh_cubo(c, d):
     out = os.path.join(d, c["id"] + ".stl")
     cmd = tavola.comando_openscad(c, "corpo_appeso", out)
+    # parametri in più per provare varianti: SCAD_D="nome_maiuscolo=true;h_nome=3"
+    for d in filter(None, os.environ.get("SCAD_D", "").split(";")):
+        cmd[-1:-1] = ["-D", d]
     subprocess.run(cmd, check=True, capture_output=True)
     return trimesh.load(out)
 

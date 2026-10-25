@@ -19,11 +19,17 @@ solo il numero atomico.
   dell'apertura sono raggiati a 3 mm e il bordo ha uno smusso a 45°. Il bordo
   esterno del fronte è arrotondato a 1,2 mm: tra due cubi accostati si forma una
   fuga d'ombra regolare, come tra le piastrelle.
-- **Tipografia**: una sola riga, due colonne. A sinistra il simbolo (Inter Display
-  Bold), a destra il numero atomico e il nome in maiuscolo spaziato (Inter
-  SemiBold). Il numero è allineato alla cima del simbolo, il nome alla sua linea
-  di base, con margini uguali in basso e a sinistra. I nomi lunghi si riducono da
-  soli. Niente massa né altri dati.
+- **Tipografia**: le stesse font di museo.chicubo.it, **Syne** e **IBM Plex**.
+  Una sola riga, due colonne:
+  - a sinistra il simbolo in **Syne Bold**, alto 8 mm;
+  - a destra il numero atomico e il nome in **IBM Plex Mono SemiBold**, maiuscolo
+    spaziato, alto 3 mm.
+
+  Il numero è allineato alla cima del simbolo, il nome alla sua linea di base, con
+  margini uguali in basso e a sinistra. I nomi lunghi si riducono da soli. Niente
+  massa né altri dati.
+
+  ![Fronte](anteprime/fronte_righe_6-7.png)
 - **Fondale**: piano, curva da 24 mm di raggio e fondo in un unico pezzo, da
   stampare in un colore scuro opaco. Fa sparire spigoli e fondo e lascia vedere
   solo l'oggetto. Il piano è a filo della fascia, quindi la fascia non copre la
@@ -37,6 +43,7 @@ solo il numero atomico.
 |---|---|
 | `cubo_elemento.scad` | il modello: tutti i parametri sono in cima al file |
 | `elementi.scad` | tabella dei 118 elementi (generata, non modificarla a mano) |
+| `font/` | Syne e IBM Plex (licenza OFL), caricate direttamente dal modello |
 | `dati/elementi.csv` | **dati di partenza**: nomi italiani, categoria (le masse ci sono ma non vengono stampate) |
 | `strumenti/tavola.py` | genera la tabella, calcola i vicini, esporta tutti gli STL, fa lo schema del pannello |
 | `stl/` | 118 elementi + 2 segnaposto già orientati per la stampa, più `comune_fondale.stl` e `comune_dima.stl` |
@@ -59,9 +66,8 @@ python3 strumenti/tavola.py elenco            # posizioni e incastri di ogni cub
 python3 strumenti/tavola.py pannello          # rigenera pannello.svg e fori_pannello.csv
 ```
 
-Serve OpenSCAD (testato con la 2021.01) e il font **Inter** con **Inter Display**
-(gratuito, rsms.me/inter o Google Fonts). Senza Inter OpenSCAD usa un font di
-ripiego: in quel caso cambia `font_simbolo` e `font_testo`.
+Serve OpenSCAD (testato con la 2021.01). Le font sono nella cartella `font/` e il
+modello le carica da lì, quindi non vanno installate.
 `trimesh` (`pip install trimesh`) è facoltativo: serve solo a salvare gli STL in binario.
 
 ## Com'è fatto
@@ -141,7 +147,10 @@ appoggia l'oggetto.
 | `parete`, `fondo`, `cielo`, `schiena` | 1,6 / 2 / 2 / 2 | spessori |
 | `cornice`, `fascia_h` | 3 / 16 | cornice su lati e sopra, fascia con i testi |
 | `raggio_apertura`, `raggio_bordo` | 3 / 1,2 | arrotondamenti |
-| `dim_simbolo`, `dim_piccolo`, `spaziatura_nome` | 8,5 / 3,2 / 1,18 | tipografia |
+| `h_simbolo`, `h_nome`, `h_numero` | 8 / 3 / 3 | altezza delle maiuscole in mm (sotto 3 il tratto diventa troppo sottile per un ugello da 0,4) |
+| `font_simbolo`, `font_nome`, `font_numero` | Syne Bold / Plex Mono SemiBold | per il nome in tondo: `IBM Plex Sans:style=Medium` con `nome_maiuscolo = false` |
+| `nome_maiuscolo`, `spaziatura_nome` | true / 1,12 | nome in maiuscolo spaziato |
+| `numero_cifre` | 0 | 3 per numeri da catalogo (026) |
 | `mostra_numero` | true | toglie il numero atomico |
 | `testo_modo`, `testo_h` | rilievo / 0,6 | oppure `inciso` |
 | `fondale_raggio`, `fondale_sp` | 24 / 1,6 | curva del fondale |

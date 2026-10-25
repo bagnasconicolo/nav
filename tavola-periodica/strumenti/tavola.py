@@ -216,7 +216,7 @@ def pannello():
             w.writerow([r[0], r[1], f"{r[2]:.1f}", f"{r[3]:.1f}", r[4]])
     m = 40
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W + 2*m}mm" height="{H + 2*m}mm" '
-         f'viewBox="{-m} {-m} {W + 2*m} {H + 2*m}" font-family="Inter, sans-serif">',
+         f'viewBox="{-m} {-m} {W + 2*m} {H + 2*m}" font-family="Syne, IBM Plex Mono, sans-serif">',
          f'<rect x="{-m}" y="{-m}" width="{W + 2*m}" height="{H + 2*m}" fill="white"/>']
     for c in cubi:
         x = (c["colonna"] - 1) * passo
