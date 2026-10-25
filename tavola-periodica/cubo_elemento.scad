@@ -65,7 +65,7 @@ font_numero = "IBM Plex Mono:style=SemiBold";
 // Sotto i 3 mm il tratto scende sotto i 0,45 mm: al limite per un ugello da 0,4.
 h_simbolo = 6;
 h_nome = 3;
-h_numero = 3;
+h_numero = 4.5;            // si riduce da solo se non c'è spazio
 nome_maiuscolo = true;      // nome in maiuscolo spaziato
 spaziatura_nome = 1.12;
 numero_cifre = 0;           // 3: 26 -> 026, come un numero di catalogo
@@ -280,7 +280,6 @@ function adatta(t, dim, k, max_w) = len(t) == 0 ? dim : min(dim, max_w / (len(t)
 
 module testi_2d() {
     s_sim = h_simbolo / K_CAP_SYNE;
-    s_num = h_numero / K_CAP_PLEX;
     utile = fascia_h + labbro - smusso_apertura;
     base = (utile - h_simbolo) / 2;
     sx = margine_testo;
@@ -293,8 +292,10 @@ module testi_2d() {
     lato_codice = 6 * codice_cella;
     dx_num = codice ? lato - margine_codice - lato_codice - 2.2 : dx;
     if (codice) translate([lato - margine_codice - lato_codice, (utile - lato_codice) / 2]) marker_2d();
+    // il numero si riduce da solo se non ci sta (es. "89–103" dei segnaposto)
+    s_num = adatta(T_NUMERO, h_numero / K_CAP_PLEX, k_larghezza(font_numero, false), dx_num - sx - w_sim - 3);
     // senza nome il numero scende sulla linea di base del simbolo
-    translate([dx_num, len(T_NOME) > 0 ? base + h_simbolo - h_numero : base])
+    translate([dx_num, len(T_NOME) > 0 ? base + h_simbolo - s_num * K_CAP_PLEX : base])
         text(T_NUMERO, size = s_num, font = font_numero, halign = "right");
     translate([dx, base])
         text(T_NOME, size = s_nome, font = font_nome, halign = "right", spacing = spaziatura_nome);

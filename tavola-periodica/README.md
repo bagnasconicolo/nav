@@ -27,7 +27,9 @@ da un tappino. Per cambiare elemento si cambia solo il numero atomico.
   57 × 56 × 56 mm, la parte piatta del piano circa 44 × 29 mm e l'apertura 55 × 47 mm.
 - **Tipografia**: le font di museo.chicubo.it. Una sola riga sulla stessa linea di
   base: a sinistra il simbolo in **Syne Bold** (6 mm), a destra il numero in **IBM
-  Plex Mono SemiBold** (3 mm) e il marker.
+  Plex Mono SemiBold** (4,5 mm) e il marker. Sui due segnaposto il numero non
+  c'è: "57–71" accanto a "La–Lu" non ci starebbe a una dimensione stampabile, e
+  l'intervallo è già nel simbolo.
 
   ![Fronte](anteprime/fronte_righe_2-3.png)
 - **Colori**: corpo e nicchia scuri, lastra frontale chiara, scritte e marker scuri.
@@ -183,7 +185,7 @@ l'oggetto.
 | `raggio`, `raggio_fondo` | 8 / 8 | spigoli esterni e curva della nicchia verso la schiena |
 | `parete`, `fondo`, `schiena` | 1,2 / 2,4 / 1,6 | spessori |
 | `fascia_h`, `labbro` | 10 / 1 | fascia con i testi; quanto la cornice sporge dentro la nicchia |
-| `h_simbolo`, `h_numero` | 6 / 3 | altezza delle maiuscole in mm (sotto 3 il tratto diventa troppo sottile per un ugello da 0,4) |
+| `h_simbolo`, `h_numero` | 6 / 4,5 | altezza delle maiuscole in mm (sotto 3 il tratto diventa troppo sottile per un ugello da 0,4); il numero si riduce da solo se non ci sta |
 | `codice`, `codice_cella` | true / 1,1 | marker ArUco e lato di una cella |
 | `finestre` | true | finestre sui confini con altri cubi (`finestra_sopra` e `finestra_dx` li imposta lo script) |
 | `mostra_numero`, `mostra_nome` | true / false | con il nome il numero sale sopra di lui, allineato alla cima del simbolo |

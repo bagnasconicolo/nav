@@ -134,7 +134,9 @@ def comando_openscad(c, parte="corpo", uscita=None):
         d["Z"] = c["numero"]
     else:
         d["Z"] = "0"
-        d["numero_testo"] = scad_str(c["numero"])
+        # "57–71" accanto a "La–Lu" non ci starebbe a una dimensione stampabile:
+        # l'intervallo è già nel simbolo, e l'app riconosce il cubo dal marker
+        d["mostra_numero"] = "false"
         d["simbolo_testo"] = scad_str(c["simbolo"])
         d["nome_testo"] = scad_str(c["nome"])
         d["codice_id"] = str(c["codice"])
