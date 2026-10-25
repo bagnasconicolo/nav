@@ -4,7 +4,10 @@ a cambio filamento: corpo neutro e testi in rilievo di un altro colore.
 Con CORNICE=1 nell'ambiente anche la cornice frontale prende il colore
 della categoria (terzo filamento, facoltativo).
 
-uso: render_tavola.py uscita.png riga0 riga1 col0 col1 [azimut elevazione]
+Con USA_STL=1 usa gli STL già esportati in stl/ invece di rigenerarli
+(molto più veloce per la tavola completa) e disegna anche il pannello.
+
+uso: render_tavola.py uscita.png riga0 riga1 col0 col1 [azimut elevazione [pixel]]
 """
 import os
 import subprocess
@@ -24,10 +27,17 @@ import tavola  # noqa: E402
 CORPO = "#ece8e1"
 TESTO = "#26282b"
 PAVIMENTO = "#2f3133"   # fondale
+LEGNO = "#d9c4a0"       # pannello in multistrato
 CORNICE_SP = tavola.quote_dal_modello()["cornice"]
 
 
 def mesh_cubo(c, d):
+    if os.environ.get("USA_STL") == "1":
+        # STL di stampa (retro sul piatto) -> posizione appesa: (X, Y, Z) -> (X, P - Z, Y)
+        m = trimesh.load(os.path.join(tavola.DIR_STL, c["id"] + ".stl"))
+        P = tavola.quote_dal_modello()["profondita"]
+        v = m.vertices
+        return trimesh.Trimesh(np.column_stack([v[:, 0], P - v[:, 2], v[:, 1]]), m.faces)
     out = os.path.join(d, c["id"] + ".stl")
     cmd = tavola.comando_openscad(c, "corpo_appeso", out)
     # parametri in più per provare varianti: SCAD_D="nome_maiuscolo=true;h_nome=3"
@@ -52,7 +62,15 @@ def rendi(uscita, r0, r1, k0, k1, az=-28, el=16, px=1600):
             col = tavola.COLORI_CORNICE.get(c["categoria"], "#999999") \
                 if os.environ.get("CORNICE") == "1" else CORPO
             scena.append((mesh_cubo(c, d), off, col))
-            scena.append((pav, off, None))
+            scena.append((pav, off, PAVIMENTO))
+    if os.environ.get("USA_STL") == "1":
+        # pannello dietro ai cubi, con un bordo di 60 mm
+        q = tavola.quote_dal_modello()
+        w = (k1 - k0 + 1) * passo + 120
+        h = (r1 - r0 + 1) * passo + 120
+        pannello = trimesh.creation.box(extents=[w, 18, h])
+        pannello.apply_translation([w / 2 - 60, q["profondita"] + 9.5, h / 2 - 60])
+        scena.append((pannello, np.zeros(3), LEGNO))
     tutti = np.vstack([m.vertices + o for m, o, _ in scena])
     centro = (tutti.min(0) + tutti.max(0)) / 2
     a, b = np.radians(az), np.radians(el)
@@ -97,8 +115,8 @@ def rendi(uscita, r0, r1, k0, k1, az=-28, el=16, px=1600):
             if not ok.any():
                 continue
             lum = 0.38 + 0.62 * max(0.0, float(nn @ luce))
-            if cornice is None:
-                colore = np.broadcast_to(rgb(PAVIMENTO) * lum, ok.shape + (3,))
+            if cornice in (PAVIMENTO, LEGNO):
+                colore = np.broadcast_to(rgb(cornice) * lum, ok.shape + (3,))
             else:
                 # profondità locale del punto: decide il filamento (strati di stampa)
                 yl = w0 * y_loc[f[0]] + w1 * y_loc[f[1]] + w2 * y_loc[f[2]]
@@ -113,5 +131,5 @@ def rendi(uscita, r0, r1, k0, k1, az=-28, el=16, px=1600):
 
 if __name__ == "__main__":
     a = sys.argv
-    extra = [float(x) for x in a[6:8]]
+    extra = [float(x) for x in a[6:8]] + [int(x) for x in a[8:9]]
     rendi(a[1], int(a[2]), int(a[3]), int(a[4]), int(a[5]), *extra)

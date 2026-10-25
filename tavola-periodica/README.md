@@ -7,6 +7,8 @@ degli studi fotografici, su cui appoggiare l'oggetto. Si fissa al pannello con
 **una sola vite**, nascosta dietro il fondale. Per cambiare elemento si cambia
 solo il numero atomico.
 
+![Tavola completa](anteprime/tavola_completa_3-4.png)
+
 ![Righe 2-3](anteprime/tavola_righe_2-3.png)
 
 | Cubo singolo | Periodi 6-7 con segnaposto | Blocco f |
@@ -48,7 +50,7 @@ solo il numero atomico.
 | `strumenti/tavola.py` | genera la tabella, calcola i vicini, esporta tutti gli STL, fa lo schema del pannello |
 | `stl/` | 118 elementi + 2 segnaposto già orientati per la stampa, più `comune_fondale.stl` e `comune_dima.stl` |
 | `dati/pannello.svg`, `dati/fori_pannello.csv` | schema e quote di foratura del pannello |
-| `strumenti/render_tavola.py`, `strumenti/anteprima.py` | le immagini di questa pagina |
+| `strumenti/render_tavola.py`, `strumenti/anteprima.py` | le immagini di questa pagina (`USA_STL=1 … 1 10 1 18` per la tavola completa) |
 
 ## Uso
 
