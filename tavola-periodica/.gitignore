@@ -1,1 +1,11 @@
 __pycache__/
+# nel repository solo i cubi campione: gli altri si generano con
+# "python3 strumenti/tavola.py esporta tutti"
+stl/*.stl
+!stl/001_H.stl
+!stl/002_He.stl
+!stl/026_Fe.stl
+!stl/079_Au.stl
+!stl/104_Rf.stl
+!stl/segnaposto_lantanidi.stl
+!stl/comune_*.stl

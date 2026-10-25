@@ -6,10 +6,11 @@
 //  Esportazione in blocco: python3 strumenti/tavola.py esporta
 //
 //  Il cubo ha gli spigoli raggiati e dentro una nicchia curva su tutti
-//  i lati, come un'alcova: l'oggetto appoggia sul piano della nicchia,
-//  a filo della fascia con la scritta. Si stampa sdraiato (retro sul
-//  piatto, fronte in alto) senza supporti: tutte le curve stanno sul
-//  piano di stampa oppure "a ciotola" verso il piatto.
+//  i lati, come un'alcova: il fondo del cubo è il piano espositivo e
+//  davanti sale in curva fino alla fascia con la scritta. Si stampa
+//  sdraiato (retro sul piatto, fronte in alto) senza supporti: le curve
+//  stanno sul piano di stampa, scendono "a ciotola" verso il piatto o
+//  non superano i 45°.
 //
 //  Sistema di riferimento (cubo "appeso"): X verso destra, Y dal fronte
 //  (y = 0, aperto) verso il retro, Z verso l'alto.
@@ -39,7 +40,8 @@ parte = "assemblato";       // [assemblato, corpo, testo, tappo, dima, corpo_app
 lato = 60;                  // larghezza = altezza
 profondita = 60;
 raggio = 8;                 // spigoli esterni (davanti e lungo la profondità)
-parete = 1.2;               // pareti (3 linee da 0,4)
+parete = 1.2;               // pareti e tetto (3 linee da 0,4)
+fondo = 2.4;                // fondo = piano espositivo (ospita la scanalatura)
 schiena = 1.6;              // parete posteriore (sta sul piatto)
 raggio_fondo = 8;           // curva tra pareti e fondo della nicchia
 raggio_bordo = 0.8;         // arrotondamento del bordo frontale esterno
@@ -48,7 +50,7 @@ raggio_bordo = 0.8;         // arrotondamento del bordo frontale esterno
 cornice_sp = 2;             // spessore della lastra frontale
 labbro = 1;                 // di quanto la cornice sporge dentro la nicchia
 smusso_apertura = 0.6;      // smusso a 45° sul bordo dell'apertura
-fascia_h = 10;              // fascia con i testi = quota del piano espositivo
+fascia_h = 10;              // fascia con i testi; dietro, il fondo sale in curva fin qui
 
 /* [Tipografia] */
 testo_modo = "rilievo";     // [rilievo, inciso]
@@ -69,6 +71,22 @@ spaziatura_nome = 1.12;
 numero_cifre = 0;           // 3: 26 -> 026, come un numero di catalogo
 margine_testo = 4;          // distanza dei testi dal bordo del cubo
 
+/* [Riconoscimento con la fotocamera] */
+codice = true;              // marker ArUco 4x4 sul fronte, ID = numero atomico
+codice_cella = 1.1;         // lato di un quadratino (il marker è 6 x 6 celle)
+codice_id = 0;              // ID per i cubi senza numero atomico (segnaposto)
+margine_codice = 6;         // distanza del marker dal bordo destro
+
+/* [Alleggerimento] */
+// Finestre nelle pareti che confinano con un altro cubo: da fuori non si
+// vedono. Su ogni confine se ne apre una sola (a destra e sopra), così
+// tra due nicchie vicine resta sempre una parete piena.
+finestre = true;
+finestra_sopra = true;      // lo script le attiva solo se c'è un cubo sopra
+finestra_dx = true;         // ... e a destra
+finestra_margine = 4;       // distanza dagli spigoli raggiati
+finestra_raggio = 5;
+
 /* [Fissaggio al pannello] */
 vite_d = 3.4;               // foro passante (M3)
 svasatura_d = 6.9;          // vite M3 a testa svasata piana (ISO 10642)
@@ -76,7 +94,7 @@ mozzo_h = 3.5;              // sporgenza del mozzo della vite dalla schiena
 tappo_h = 1.4;              // tappo a filo che copre la vite
 spina = true;               // foro cieco per spina antirotazione nel pannello
 spina_d = 4.2;              // spina Ø4
-spina_prof = 5;
+spina_prof = 4;
 dima_pilota = 3.2;          // foro guida della dima per la vite
 gioco = 0.15;
 
@@ -84,7 +102,7 @@ gioco = 0.15;
 lingua_sopra = true;        // linguetta sul lato alto (entra nel cubo sopra)
 scanalatura_sotto = true;
 lingua_w = 5;               // base della linguetta (fianchi a 45°)
-lingua_h = 1.2;
+lingua_h = 1;
 lingua_gioco = 0.25;
 
 /* [Nascosti] */
@@ -112,9 +130,11 @@ T_NOME = !mostra_nome ? "" : nome_maiuscolo ? maiuscolo(scegli(nome_testo, dato[
 // ---------------------------------------------------------------------
 y_fondo = profondita - schiena;                 // faccia interna della schiena
 raggio_nicchia = max(raggio - parete, 0.5);     // angoli della nicchia, concentrici
-z_vano = fascia_h - parete;                     // sotto il piano c'è un vano chiuso
+// curva davanti: parte a 45° dal bordo della fascia e scende tangente al fondo
+raggio_davanti = (fascia_h - fondo) / (1 - cos(45));
+y_curva = cornice_sp + raggio_davanti * sin(45);   // dove finisce la curva
 vite = [lato / 2, (fascia_h + lato - parete) / 2];
-spina_pos = [parete + 11, parete + (z_vano - parete) / 2];
+spina_pos = [vite[0] + svasatura_d / 2 + spina_d / 2 + 2.5, vite[1]];   // nello stesso mozzo
 
 // ---------------------------------------------------------------------
 // Profili nel piano frontale (X-Z) ed estrusioni lungo Y
@@ -125,9 +145,9 @@ module rett_arrotondato(x0, z0, x1, z1, r) {
 }
 // sagoma esterna del cubo, rientrata di "d"
 module esterno_2d(d = 0) { rett_arrotondato(d, d, lato - d, lato - d, raggio - d); }
-// sagoma della nicchia, rientrata di "d"
-module nicchia_2d(d = 0) {
-    rett_arrotondato(parete + d, fascia_h + d, lato - parete - d, lato - parete - d, raggio_nicchia - d);
+// sagoma della nicchia rientrata di "d", con il fondo a quota "zb"
+module nicchia_2d(d = 0, zb = fondo) {
+    rett_arrotondato(parete + d, zb + d, lato - parete - d, lato - parete - d, raggio_nicchia - d);
 }
 // estrude una sagoma X-Z lungo Y, da y0 per una lunghezza l
 module lungo_y(y0, l) { translate([0, y0 + l, 0]) rotate([90, 0, 0]) linear_extrude(l) children(); }
@@ -146,8 +166,12 @@ module pieno() {
 
 module nicchia() {
     rf = raggio_fondo;
+    ra = raggio_davanti;
     hull() {
-        lungo_y(cornice_sp, y_fondo - rf - cornice_sp) nicchia_2d();
+        // davanti: il fondo sale in curva fino alla fascia (massimo 45°: stampabile)
+        for (f = [45 : -5 : 0])
+            lungo_y(cornice_sp + ra * (sin(45) - sin(f)), e) nicchia_2d(0, fondo + ra * (1 - cos(f)));
+        lungo_y(y_curva, y_fondo - rf - y_curva) nicchia_2d();
         // raccordo curvo verso il fondo, su tutti e quattro i lati
         for (a = [0 : 10 : 90]) lungo_y(y_fondo - rf + rf * sin(a) - e, e) nicchia_2d(rf - rf * cos(a));
     }
@@ -155,31 +179,51 @@ module nicchia() {
 
 module apertura() {
     s = smusso_apertura;
-    lungo_y(-1, cornice_sp + 2) nicchia_2d(labbro);
+    lungo_y(-1, cornice_sp + 2) nicchia_2d(labbro, fascia_h);
     hull() {
-        lungo_y(-e, e) nicchia_2d(labbro - s);
-        lungo_y(s, e) nicchia_2d(labbro);
+        lungo_y(-e, e) nicchia_2d(labbro - s, fascia_h);
+        lungo_y(s, e) nicchia_2d(labbro, fascia_h);
     }
 }
 
-// vano chiuso sotto il piano: alleggerisce, e ospita rinforzo e spina
-module vano() {
-    lungo_y(cornice_sp, y_fondo - cornice_sp) intersection() {
-        esterno_2d(parete);
-        translate([0, parete]) square([lato, z_vano - parete]);
-    }
+// sotto la curva davanti resta un cuneo: lo svuoto, lasciando un guscio di
+// "parete" sotto la curva e il fondo pieno (porta la scanalatura). Unione di
+// tratti, non un unico hull: la curva è concava vista da sotto.
+module cuneo_vuoto() {
+    ra = raggio_davanti;
+    function zc(f) = fondo + ra * (1 - cos(f)) - parete;
+    function yc(f) = cornice_sp + ra * (sin(45) - sin(f));
+    passi = [for (f = [45 : -5 : 0]) if (zc(f) > fondo + 1) f];
+    for (i = [0 : len(passi) - 2])
+        hull() for (f = [passi[i], passi[i + 1]])
+            lungo_y(i == 0 && f == passi[0] ? cornice_sp : yc(f), e) intersection() {
+                esterno_2d(parete);
+                translate([0, fondo]) square([lato, zc(f) - fondo]);
+            }
 }
 
-module rinforzi() {
-    // sopra la scanalatura inferiore
-    if (scanalatura_sotto)
-        lungo_y(cornice_sp, y_fondo - cornice_sp + e)
-            translate([lato / 2 - lingua_w / 2 - 2, parete - e]) square([lingua_w + 4, 1.6]);
-    // mozzo della vite al centro della schiena
-    translate([vite[0], y_fondo + e, vite[1]]) rotate([90, 0, 0]) cylinder(d = svasatura_d + 5, h = mozzo_h + e);
-    if (spina)
-        translate([spina_pos[0], y_fondo + e, spina_pos[1]]) rotate([90, 0, 0])
-            cylinder(d = spina_d + 3, h = spina_prof - schiena + 1);
+module finestre() {
+    m = finestra_margine;
+    y0 = cornice_sp + 6;
+    y1 = y_fondo - raggio_fondo - 2;
+    if (finestra_dx)
+        translate([lato - parete - 1, 0, 0]) rotate([90, 0, 90]) linear_extrude(parete + 2)
+            rett_arrotondato(y0, raggio + m, y1, lato - raggio - m, finestra_raggio);
+    // sopra: due finestre, la striscia centrale porta la linguetta
+    if (finestra_sopra)
+        for (x = [[raggio + m, lato / 2 - lingua_w / 2 - 3], [lato / 2 + lingua_w / 2 + 3, lato - raggio - m]])
+            translate([0, 0, lato - parete - 1]) linear_extrude(parete + 2)
+                rett_arrotondato(x[0], y0, x[1], y1, finestra_raggio);
+}
+
+// mozzo al centro della schiena: vite al centro, spina accanto (foro cieco dal retro)
+module mozzo() {
+    hull() {
+        translate([vite[0], y_fondo + e, vite[1]]) rotate([90, 0, 0])
+            cylinder(d = svasatura_d + 5, h = mozzo_h + e);
+        if (spina) translate([spina_pos[0], y_fondo + e, spina_pos[1]]) rotate([90, 0, 0])
+            cylinder(d = spina_d + 3, h = mozzo_h + e);
+    }
 }
 
 function trapezio(w, h, g = 0) = [
@@ -245,11 +289,23 @@ module testi_2d() {
     s_nome = adatta(T_NOME, h_nome / K_CAP_PLEX, k_larghezza(font_nome, nome_maiuscolo) * spaziatura_nome,
                     dx - sx - w_sim - 6);
     translate([sx, base]) text(T_SIMBOLO, size = s_sim, font = font_simbolo);
+    // marker ArUco all'estremità destra, centrato nella fascia; il numero gli sta accanto
+    lato_codice = 6 * codice_cella;
+    dx_num = codice ? lato - margine_codice - lato_codice - 2.2 : dx;
+    if (codice) translate([lato - margine_codice - lato_codice, (utile - lato_codice) / 2]) marker_2d();
     // senza nome il numero scende sulla linea di base del simbolo
-    translate([dx, len(T_NOME) > 0 ? base + h_simbolo - h_numero : base])
+    translate([dx_num, len(T_NOME) > 0 ? base + h_simbolo - h_numero : base])
         text(T_NUMERO, size = s_num, font = font_numero, halign = "right");
     translate([dx, base])
         text(T_NOME, size = s_nome, font = font_nome, halign = "right", spacing = spaziatura_nome);
+}
+
+// celle nere del marker (in rilievo, nel colore del testo); il chiaro è il fronte
+module marker_2d() {
+    bit = ARUCO[Z > 0 ? Z : codice_id];
+    c = codice_cella;
+    for (r = [0 : 5], k = [0 : 5]) if (bit[r * 6 + k] == 0)
+        translate([k * c - 0.005, (5 - r) * c - 0.005]) square(c + 0.01);
 }
 
 module testi(h) { rotate([90, 0, 0]) linear_extrude(h) testi_2d(); }
@@ -257,8 +313,8 @@ module testi(h) { rotate([90, 0, 0]) linear_extrude(h) testi_2d(); }
 module corpo() {
     difference() {
         union() {
-            difference() { pieno(); nicchia(); apertura(); vano(); }
-            rinforzi();
+            difference() { pieno(); nicchia(); apertura(); cuneo_vuoto(); if (finestre) finestre(); }
+            mozzo();
             linguetta();
             if (testo_modo == "rilievo") testi(testo_h);
         }

@@ -4,7 +4,7 @@
 Comandi:
   genera                 rigenera elementi.scad da dati/elementi.csv
   elenco                 stampa posizione e incastri di ogni cubo
-  esporta [Z ...]        esporta gli STL (tutti, o solo i numeri indicati)
+  esporta [Z ...|tutti]  esporta gli STL: di serie solo i campioni, "tutti" per l'intera tavola
   pannello               genera schema di foratura del pannello (SVG + CSV)
 
 Il cubo vero e proprio sta in cubo_elemento.scad; qui ci sono solo i dati
@@ -27,10 +27,17 @@ GIOCO_PANNELLO = 0.5          # spazio tra un cubo e l'altro sul pannello
 # Cubi "segnaposto" nella casella del gruppo 3, periodi 6 e 7
 SEGNAPOSTO = [
     {"numero": "57–71", "simbolo": "La–Lu", "nome": "Lantanidi", "massa": "",
-     "categoria": "lantanide", "riga": 6, "colonna": 3, "id": "segnaposto_lantanidi"},
+     "categoria": "lantanide", "riga": 6, "colonna": 3, "id": "segnaposto_lantanidi", "codice": 119},
     {"numero": "89–103", "simbolo": "Ac–Lr", "nome": "Attinidi", "massa": "",
-     "categoria": "attinide", "riga": 7, "colonna": 3, "id": "segnaposto_attinidi"},
+     "categoria": "attinide", "riga": 7, "colonna": 3, "id": "segnaposto_attinidi", "codice": 120},
 ]
+
+# Cubi esportati di serie: un campione per tipo di caso (bordi, nomi lunghi, segnaposto)
+CAMPIONI = ["1", "2", "26", "79", "104", "segnaposto_lantanidi"]
+
+# Marker ArUco sul fronte, per il riconoscimento con la fotocamera.
+# ID del marker = numero atomico; 119 e 120 per i due segnaposto.
+DIZIONARIO_ARUCO = "DICT_4X4_250"
 
 
 def posizione(z):
@@ -73,6 +80,7 @@ def con_vicini(cubi):
         r, k = c["riga"], c["colonna"]
         c["lingua_sopra"] = (r - 1, k) in occupate
         c["scanalatura_sotto"] = (r + 1, k) in occupate
+        c["vicino_dx"] = (r, k + 1) in occupate
     return cubi
 
 
@@ -88,6 +96,15 @@ def genera():
         righe.append("  [{}, {}, {}, {}, {}, {}, {}],".format(
             e["numero"], scad_str(e["simbolo"]), scad_str(e["nome"]),
             scad_str(e["massa"]), scad_str(e["categoria"]), e["riga"], e["colonna"]))
+    righe.append("];")
+    # bit dei marker ArUco 6x6 (bordo compreso), riga per riga dall'alto: 0 = nero
+    import cv2
+    diz = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, DIZIONARIO_ARUCO))
+    righe.append(f"// marker ArUco {DIZIONARIO_ARUCO}, indice = ID (0..120)")
+    righe.append("ARUCO = [")
+    for i in range(121):
+        bit = (cv2.aruco.generateImageMarker(diz, i, 6) > 0).astype(int).flatten()
+        righe.append("  [" + ",".join(map(str, bit)) + "],")
     righe.append("];")
     with open(SCAD_DATI, "w", encoding="utf-8") as f:
         f.write("\n".join(righe) + "\n")
@@ -110,6 +127,8 @@ def comando_openscad(c, parte="corpo", uscita=None):
         "parte": scad_str(parte),
         "lingua_sopra": b(c["lingua_sopra"]),
         "scanalatura_sotto": b(c["scanalatura_sotto"]),
+        "finestra_sopra": b(c["lingua_sopra"]),
+        "finestra_dx": b(c["vicino_dx"]),
     }
     if str(c["numero"]).isdigit():
         d["Z"] = c["numero"]
@@ -118,6 +137,7 @@ def comando_openscad(c, parte="corpo", uscita=None):
         d["numero_testo"] = scad_str(c["numero"])
         d["simbolo_testo"] = scad_str(c["simbolo"])
         d["nome_testo"] = scad_str(c["nome"])
+        d["codice_id"] = str(c["codice"])
     cmd = ["openscad", "-o", uscita]
     for k, v in d.items():
         cmd += ["-D", f"{k}={v}"]
@@ -136,7 +156,8 @@ def binario(percorso):
 def esporta(numeri):
     os.makedirs(DIR_STL, exist_ok=True)
     cubi = con_vicini(tutti_i_cubi())
-    if numeri:
+    if numeri != ["tutti"]:
+        numeri = numeri or CAMPIONI
         cubi = [c for c in cubi if c["numero"] in numeri or c["simbolo"] in numeri
                 or c["id"] in numeri]
 
