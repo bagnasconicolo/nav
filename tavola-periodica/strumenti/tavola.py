@@ -26,9 +26,9 @@ GIOCO_PANNELLO = 0.5          # spazio tra un cubo e l'altro sul pannello
 
 # Cubi "segnaposto" nella casella del gruppo 3, periodi 6 e 7
 SEGNAPOSTO = [
-    {"numero": "57–71", "simbolo": "La–Lu", "nome": "Lantanidi 57–71", "massa": "",
+    {"numero": "57–71", "simbolo": "La–Lu", "nome": "Lantanidi", "massa": "",
      "categoria": "lantanide", "riga": 6, "colonna": 3, "id": "segnaposto_lantanidi"},
-    {"numero": "89–103", "simbolo": "Ac–Lr", "nome": "Attinidi 89–103", "massa": "",
+    {"numero": "89–103", "simbolo": "Ac–Lr", "nome": "Attinidi", "massa": "",
      "categoria": "attinide", "riga": 7, "colonna": 3, "id": "segnaposto_attinidi"},
 ]
 
@@ -120,7 +120,7 @@ def comando_openscad(c, parte="corpo", uscita=None):
         d["Z"] = c["numero"]
     else:
         d["Z"] = "0"
-        d["mostra_numero"] = "false"
+        d["numero_testo"] = scad_str(c["numero"])
         d["simbolo_testo"] = scad_str(c["simbolo"])
         d["nome_testo"] = scad_str(c["nome"])
     cmd = ["openscad", "-o", uscita]
@@ -155,7 +155,7 @@ def esporta(numeri):
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 2) as ex:
         list(ex.map(uno, cubi))
     # parti comuni, uguali per tutti i cubi
-    for parte in ("pavimento", "dima"):
+    for parte in ("fondale", "dima"):
         out = os.path.join(DIR_STL, f"comune_{parte}.stl")
         subprocess.run(["openscad", "-o", out, "-D", f'parte="{parte}"', SCAD], check=True)
         binario(out)
@@ -187,7 +187,7 @@ def quote_dal_modello():
     def num(nome):
         return float(re.search(nome + r" = ([\d.]+)", testo).group(1))
     return {"lato": num("LATO"), "profondita": num("PROFONDITA"), "cornice": num("CORNICE"),
-            "vite": coppia("VITE"), "cavo_led": coppia("CAVO_LED"), "cavo_vano": coppia("CAVO_VANO")}
+            "vite": coppia("VITE"), "spina": coppia("SPINA")}
 
 
 def pannello():
@@ -195,12 +195,9 @@ def pannello():
     Origine in basso a sinistra del primo cubo; coordinate in mm."""
     q = quote_dal_modello()
     LATO = q["lato"]
-    vx, vz = q["vite"]
     # (nome, x, z, diametro consigliato) rispetto all'angolo basso-sinistro del cubo
-    tipi = [("vite M4 - foro per inserto filettato", vx, vz, 6),
-            ("spina Ø6", LATO - vx, vz, 6),
-            ("cavo LED", *q["cavo_led"], 8),
-            ("cavo vano tecnico", *q["cavo_vano"], 10)]
+    tipi = [("vite M4 - foro per inserto filettato", *q["vite"], 6),
+            ("spina Ø6", *q["spina"], 6)]
     cubi = con_vicini(tutti_i_cubi())
     passo = LATO + GIOCO_PANNELLO
     righe_tot = max(c["riga"] for c in cubi)
@@ -236,7 +233,7 @@ def pannello():
             s.append(f'<circle cx="{x + xf}" cy="{y + LATO - zf}" r="{d/2}" '
                      f'fill="none" stroke="#c00" stroke-width="0.6"/>')
     s.append(f'<text x="0" y="{H + 25}" font-size="14">Pannello {W:.0f} × {H:.0f} mm — '
-             f'passo {passo} mm — in rosso i fori: vite, spina, cavi. '
+             f'passo {passo} mm — in rosso i fori: vite (centro) e spina. '
              f'Quote esatte in dati/fori_pannello.csv</text>')
     s.append("</svg>")
     with open(os.path.join(RADICE, "dati", "pannello.svg"), "w", encoding="utf-8") as f:

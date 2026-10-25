@@ -23,7 +23,7 @@ import tavola  # noqa: E402
 
 CORPO = "#ece8e1"
 TESTO = "#26282b"
-PAVIMENTO = "#3b3d40"
+PAVIMENTO = "#2f3133"   # fondale
 CORNICE_SP = tavola.quote_dal_modello()["cornice"]
 
 
@@ -39,8 +39,8 @@ def rendi(uscita, r0, r1, k0, k1, az=-28, el=16, px=1600):
             if r0 <= c["riga"] <= r1 and k0 <= c["colonna"] <= k1]
     passo = 100.5
     with tempfile.TemporaryDirectory() as d:
-        pav = os.path.join(d, "pav.stl")
-        subprocess.run(["openscad", "-o", pav, "-D", 'parte="pavimento_appeso"', tavola.SCAD],
+        pav = os.path.join(d, "fondale.stl")
+        subprocess.run(["openscad", "-o", pav, "-D", 'parte="fondale_appeso"', tavola.SCAD],
                        check=True, capture_output=True)
         pav = trimesh.load(pav)
         scena = []

@@ -5,10 +5,14 @@
 //  Per testi personalizzati: Z = 0 e compilare i campi *_testo.
 //  Esportazione in blocco: python3 strumenti/tavola.py esporta
 //
+//  Due pezzi per elemento:
+//   - il cubo (guscio con cornice e targhetta), stampato sdraiato:
+//     retro sul piatto, fronte con la scritta in alto, senza supporti;
+//   - il fondale curvo, uguale per tutti, da stampare in un colore a
+//     contrasto: fa da piano espositivo e nasconde la vite.
+//
 //  Sistema di riferimento (cubo "appeso"): X verso destra, Y dal fronte
-//  (y = 0, aperto) verso il retro, Z verso l'alto. L'esportazione ruota
-//  il pezzo "sdraiato": retro sul piatto, fronte con la scritta in alto.
-//  In quella posizione non servono supporti.
+//  (y = 0, aperto) verso il retro, Z verso l'alto.
 // =====================================================================
 
 include <elementi.scad>
@@ -21,7 +25,7 @@ nome_testo = "";
 mostra_numero = true;
 
 /* [Parte da generare] */
-parte = "assemblato";       // [assemblato, corpo, testo, pavimento, dima, corpo_appeso, pavimento_appeso, sezione, info]
+parte = "assemblato";       // [assemblato, corpo, testo, fondale, dima, corpo_appeso, fondale_appeso, sezione, info]
 
 /* [Dimensioni] */
 lato = 100;                 // larghezza = altezza
@@ -29,39 +33,32 @@ profondita = 100;
 parete = 1.6;               // pareti laterali (4 linee da 0,4)
 fondo = 2;                  // parete inferiore
 cielo = 2;                  // parete superiore
-schiena = 1.6;              // parete posteriore (sta sul piatto)
-smusso = 0.6;               // smusso sugli spigoli anteriori
+schiena = 2;                // parete posteriore (sta sul piatto)
+raggio_bordo = 1.2;         // arrotondamento del bordo frontale esterno:
+                            // tra due cubi accostati diventa una fuga d'ombra
 
-/* [Cornice e targhetta] */
-cornice_sp = 3;             // spessore della cornice frontale
-visiera_h = 10;             // fascia alta: nasconde il LED
-fascia_h = 13;              // fascia bassa con i testi (= quota del piano espositivo)
-smusso_apertura = 1;        // smusso a 45° sul bordo dell'apertura
+/* [Cornice] */
+cornice_sp = 3;             // spessore (profondità) della cornice frontale
+cornice = 3;                // larghezza della cornice su lati e sopra
+fascia_h = 16;              // fascia bassa con i testi
+raggio_apertura = 3;        // raggio degli angoli dell'apertura
+smusso_apertura = 0.8;      // smusso a 45° sul bordo dell'apertura
+
+/* [Tipografia] */
 testo_modo = "rilievo";     // [rilievo, inciso]
 testo_h = 0.6;              // altezza del rilievo / profondità dell'incisione
-font_simbolo = "Inter:style=Bold";
+font_simbolo = "Inter Display:style=Bold";
 font_testo = "Inter:style=SemiBold";
-// dimensioni massime: il nome si riduce da solo se è lungo
-dim_simbolo = 7.5;
-dim_numero = 3.4;
-dim_nome = 4.6;
-margine_testo = 3.5;
+dim_simbolo = 8.5;          // altezza delle maiuscole, in mm
+dim_piccolo = 3.2;          // numero e nome
+spaziatura_nome = 1.18;     // nome in maiuscolo spaziato
+margine_testo = 4;          // distanza dei testi dai bordi della cornice
 
-/* [Illuminazione] */
-led = true;                 // canale per striscia LED sotto la visiera, inclinato a 45°
-led_larghezza = 5.5;        // striscia COB da 5 mm
-led_profondita = 1.6;
-cavo_d = 3.5;               // tunnel cavi nello spigolo alto destro, esce dal retro
-raccordo = 9;               // smusso interno negli spigoli alti (contiene il tunnel)
-foro_vano = 7;              // foro passacavi del vano tecnico (0 = niente)
-
-/* [Vano tecnico e pavimento] */
-costola = 2;                // appoggi laterali del pavimento
-battuta = 2.5;              // appoggio anteriore del pavimento
-blocco_retro = 5;           // appoggio posteriore, contiene vite e spina
-pav_sp = 2;                 // spessore del pavimento estraibile
+/* [Fondale curvo] */
+fondale_sp = 1.6;               // 4 linee da 0,4
+fondale_raggio = 24;        // raggio della curva tra piano e fondo
+fondale_distanza = 2.5;     // distacco dalla schiena (lo spazio della testa della vite)
 gioco = 0.3;
-tacca_dito = 8;             // raggio della tacca per sollevare il pavimento
 
 /* [Fissaggio al pannello] */
 vite_d = 4.5;               // foro passante (M4)
@@ -81,7 +78,7 @@ lingua_h = 1.2;
 lingua_gioco = 0.25;
 
 /* [Nascosti] */
-$fn = 48;
+$fn = 64;
 e = 0.01;
 
 // ---------------------------------------------------------------------
@@ -89,119 +86,119 @@ e = 0.01;
 // ---------------------------------------------------------------------
 dato = Z > 0 ? ELEMENTI[Z - 1] : ["", "", "", "", "", 0, 0];
 function scegli(personale, tabella) = personale != "" ? personale : tabella;
+// maiuscolo (anche per le vocali accentate più comuni)
+function car_maiuscolo(c) =
+    let (o = ord(c)) (o >= 97 && o <= 122) || (o >= 224 && o <= 254 && o != 247) ? chr(o - 32) : c;
+function unisci(v, i = 0) = i >= len(v) ? "" : str(v[i], unisci(v, i + 1));
+function maiuscolo(s) = unisci([for (c = s) car_maiuscolo(c)]);
+
 T_NUMERO = mostra_numero ? scegli(numero_testo, Z > 0 ? str(dato[0]) : "") : "";
 T_SIMBOLO = scegli(simbolo_testo, dato[1]);
-T_NOME = scegli(nome_testo, dato[2]);
+T_NOME = maiuscolo(scegli(nome_testo, dato[2]));
 
 // ---------------------------------------------------------------------
 // Quote derivate
 // ---------------------------------------------------------------------
-z_appoggio = fascia_h - pav_sp;               // dove appoggia il pavimento
-y_blocco = profondita - schiena - blocco_retro;
-vite_x = parete + costola + svasatura_d / 2 + 1;
-vite_z = fondo + (z_appoggio - fondo) / 2;
-lingua_lato_z = vite_z;                       // linguetta laterale, nel vano tecnico
-cavo_x = lato - parete - 2.6;
-cavo_z = lato - cielo - 2.6;
-y_led = cornice_sp + (visiera_h - cielo) / 2; // centro del piano inclinato del LED
-z_led = lato - (visiera_h + cielo) / 2;
+z_piano = fascia_h;                            // piano espositivo a filo della fascia
+z_appoggio = z_piano - fondale_sp;             // dove appoggia il fondale davanti
+y_fondo = profondita - schiena;                // faccia interna della schiena
+vite = [lato / 2, lato / 2];                   // vite al centro, dietro il fondale
+spina_pos = [parete + 9, fondo + 6];           // spina nell'angolo basso, sotto il piano
+z_lingua_lato = fondo + (z_appoggio - fondo) / 2;
 
 // ---------------------------------------------------------------------
 // Utilità
 // ---------------------------------------------------------------------
 // Prisma da un poligono nel piano Y-Z, esteso lungo X da x0 a x1
-module prisma_yz(punti, x0, x1) {
-    translate([x0, 0, 0]) rotate([90, 0, 90])
-        linear_extrude(x1 - x0) polygon(punti);
-}
-// Prisma da un poligono nel piano X-Z, esteso lungo Y da y0 a y1
-module prisma_xz(punti, y0, y1) {
-    translate([0, y1, 0]) rotate([90, 0, 0])
-        linear_extrude(y1 - y0) polygon(punti);
+module prisma_yz(x0, x1) {
+    translate([x0, 0, 0]) rotate([90, 0, 90]) linear_extrude(x1 - x0) children();
 }
 // Profilo trapezoidale della linguetta (base sul piano, punta verso +v)
 function trapezio(w, h, g = 0) = [
     [-w / 2 - g, -e], [w / 2 + g, -e],
     [w / 2 - h + g, h + g], [-w / 2 + h - g, h + g]];
 
+module rett_arrotondato(w, h, r) {
+    translate([r, r]) offset(r = r) square([w - 2 * r, h - 2 * r]);
+}
+
 // ---------------------------------------------------------------------
-// Corpo
+// Guscio
 // ---------------------------------------------------------------------
 module guscio_pieno() {
+    r = raggio_bordo;
     hull() {
-        translate([smusso, 0, smusso]) cube([lato - 2 * smusso, e, lato - 2 * smusso]);
-        translate([0, smusso, 0]) cube([lato, profondita - smusso, lato]);
+        // bordo frontale a quarto di cerchio
+        for (a = [0 : 15 : 90]) {
+            rientro = r - r * sin(a);
+            translate([rientro, r - r * cos(a), rientro])
+                cube([lato - 2 * rientro, e, lato - 2 * rientro]);
+        }
+        translate([0, r, 0]) cube([lato, profondita - r, lato]);
     }
 }
 
-module guscio() {
+module apertura() {
+    // luce della cornice, con angoli raggiati e smusso a 45° sul fronte
+    w = lato - 2 * cornice;
+    h = lato - fascia_h - cornice;
+    s = smusso_apertura;
+    translate([cornice, 0, fascia_h]) rotate([90, 0, 0]) {
+        translate([0, 0, -cornice_sp - 1]) linear_extrude(cornice_sp + 2)
+            rett_arrotondato(w, h, raggio_apertura);
+        hull() {
+            translate([0, 0, -s]) linear_extrude(e) rett_arrotondato(w, h, raggio_apertura);
+            translate([-s, -s, e]) linear_extrude(e) rett_arrotondato(w + 2 * s, h + 2 * s, raggio_apertura + s);
+        }
+    }
+}
+
+module corpo_guscio() {
     difference() {
         guscio_pieno();
-        translate([parete, -1, fondo])
-            cube([lato - 2 * parete, profondita - schiena + 1, lato - fondo - cielo]);
+        // cavità interna
+        translate([parete, cornice_sp, fondo])
+            cube([lato - 2 * parete, profondita - schiena - cornice_sp, lato - fondo - cielo]);
+        apertura();
     }
+    // dietro la fascia: lastra a 45° che regge il bordo del fondale.
+    // Resta cava dietro: si stampa senza supporti e non spreca materiale.
+    y_b = cornice_sp + 2;
+    t = 1.6 * sqrt(2);
+    prisma_yz(parete - e, lato - parete + e)
+        polygon([[y_b - t - 1, z_appoggio], [y_b, z_appoggio],
+                 [y_b + z_appoggio - fondo, fondo - e], [y_b + z_appoggio - fondo - t, fondo - e]]);
 }
 
-module cornice() {
-    // fronte: solo visiera e fascia, ai lati l'apertura arriva alle pareti
-    difference() {
-        intersection() {
-            guscio_pieno();
-            cube([lato, cornice_sp, lato]);
-        }
-        translate([parete, -1, fascia_h])
-            cube([lato - 2 * parete, cornice_sp + 2, lato - fascia_h - visiera_h]);
-        // smusso a 45° sul bordo dell'apertura
-        hull() {
-            translate([parete - smusso_apertura, -e, fascia_h - smusso_apertura])
-                cube([lato - 2 * parete + 2 * smusso_apertura, e,
-                      lato - fascia_h - visiera_h + 2 * smusso_apertura]);
-            translate([parete, smusso_apertura, fascia_h])
-                cube([lato - 2 * parete, e, lato - fascia_h - visiera_h]);
-        }
-    }
-    // la visiera: cuneo a 45° che porta il LED
-    prisma_yz([[0, lato - visiera_h], [cornice_sp, lato - visiera_h],
-               [cornice_sp + visiera_h - cielo, lato - cielo + e], [0, lato - cielo + e]],
-              parete - e, lato - parete + e);
-    // dietro la fascia: lastra a 45° che regge il bordo anteriore del pavimento
-    // (cava dietro, così si stampa senza supporti e senza sprecare materiale)
-    y_b = cornice_sp + battuta;
-    t = pav_sp * sqrt(2);
-    prisma_yz([[y_b - t, z_appoggio], [y_b, z_appoggio],
-               [y_b + z_appoggio - fondo, fondo - e], [y_b + z_appoggio - fondo - t, fondo - e]],
-              parete - e, lato - parete + e);
-}
-
-module vano_tecnico() {
+// rinforzi nascosti sotto il piano, dove le pareti ospitano scanalature e spina
+module rinforzi() {
     y0 = cornice_sp;
-    y1 = profondita - schiena + e;
-    h = z_appoggio - fondo + e;
-    // costole laterali su cui appoggia il pavimento (ospitano la scanalatura sinistra)
-    for (x = [parete - e, lato - parete - costola + e])
-        translate([x, y0, fondo - e]) cube([costola, y1 - y0, h]);
-    // blocco posteriore: appoggio del pavimento, vite e spina
-    translate([parete, y_blocco, fondo - e]) cube([lato - 2 * parete, blocco_retro + e, h]);
-    // rinforzo sopra la scanalatura inferiore
+    y1 = y_fondo + e;
+    if (scanalatura_sx)
+        translate([parete - e, y0, z_lingua_lato - lingua_w / 2 - 1.5])
+            cube([1.6, y1 - y0, lingua_w + 3]);
     if (scanalatura_sotto)
         translate([lato / 2 - lingua_w / 2 - 2, y0, fondo - e]) cube([lingua_w + 4, y1 - y0, 1.6]);
-}
-
-module raccordi_alti() {
-    for (s = [0, 1]) mirror([s, 0, 0]) translate([-s * lato, 0, 0])
-        prisma_xz([[parete - e, lato - cielo + e], [parete + raccordo, lato - cielo + e],
-                   [parete - e, lato - cielo - raccordo]],
-                  cornice_sp, profondita - schiena + e);
+    // mozzo della vite: porta la svasatura e regge il fondale
+    translate([vite[0], y_fondo + e, vite[1]]) rotate([90, 0, 0])
+        cylinder(d = 16, h = fondale_distanza + e);
+    // due appoggi in alto per il fondale
+    for (x = [lato * 0.2, lato * 0.8])
+        translate([x, y_fondo + e, lato - cielo - 14]) rotate([90, 0, 0])
+            cylinder(d = 8, h = fondale_distanza + e);
+    if (spina)
+        translate([spina_pos[0], y_fondo + e, spina_pos[1]]) rotate([90, 0, 0])
+            cylinder(d = 11, h = spina_prof - schiena + 1.2);
 }
 
 module linguette() {
     if (lingua_sopra)
-        translate([lato / 2, smusso, lato]) rotate([-90, 0, 0])
-            linear_extrude(profondita - smusso)
+        translate([lato / 2, raggio_bordo, lato]) rotate([-90, 0, 0])
+            linear_extrude(profondita - raggio_bordo)
                 mirror([0, 1, 0]) polygon(trapezio(lingua_w, lingua_h));
     if (lingua_dx)
-        translate([lato, smusso, lingua_lato_z]) rotate([-90, 0, 0])
-            linear_extrude(profondita - smusso)
+        translate([lato, raggio_bordo, z_lingua_lato]) rotate([-90, 0, 0])
+            linear_extrude(profondita - raggio_bordo)
                 rotate(90) mirror([0, 1, 0]) polygon(trapezio(lingua_w, lingua_h));
 }
 
@@ -211,58 +208,49 @@ module scanalature() {
             linear_extrude(profondita + 2)
                 mirror([0, 1, 0]) polygon(trapezio(lingua_w, lingua_h, lingua_gioco));
     if (scanalatura_sx)
-        translate([0, -1, lingua_lato_z]) rotate([-90, 0, 0])
+        translate([0, -1, z_lingua_lato]) rotate([-90, 0, 0])
             linear_extrude(profondita + 2)
                 rotate(90) mirror([0, 1, 0]) polygon(trapezio(lingua_w, lingua_h, lingua_gioco));
 }
 
-module canale_led() {
-    translate([0, y_led, z_led]) rotate([45, 0, 0])
-        translate([parete + 1, -led_larghezza / 2, -1])
-            cube([lato - 2 * parete - 2, led_larghezza, led_profondita + 1]);
-    // tunnel cavi dentro il raccordo alto destro, fino al retro
-    translate([cavo_x, cornice_sp + 1, cavo_z]) rotate([-90, 0, 0])
-        cylinder(d = cavo_d, h = profondita);
-}
-
 module fori_fissaggio() {
-    // vite a testa svasata: la testa resta a filo del blocco, sotto il pavimento.
-    // Il cono si allarga verso il fronte, cioè verso l'alto in stampa: niente supporti.
-    translate([vite_x, 0, vite_z]) rotate([-90, 0, 0]) {
-        translate([0, 0, y_blocco - 1]) cylinder(d = vite_d, h = profondita);
-        translate([0, 0, y_blocco - 1]) cylinder(d = svasatura_d, h = 1 + e);
-        translate([0, 0, y_blocco]) cylinder(d1 = svasatura_d, d2 = vite_d, h = (svasatura_d - vite_d) / 2);
+    // vite a testa svasata, a filo del mozzo. Il cono si allarga verso il
+    // fronte, cioè verso l'alto in stampa: niente supporti.
+    y_mozzo = y_fondo - fondale_distanza;
+    translate([vite[0], 0, vite[1]]) rotate([-90, 0, 0]) {
+        translate([0, 0, y_mozzo - 1]) cylinder(d = vite_d, h = profondita);
+        translate([0, 0, y_mozzo - 1]) cylinder(d = svasatura_d, h = 1 + e);
+        translate([0, 0, y_mozzo]) cylinder(d1 = svasatura_d, d2 = vite_d, h = (svasatura_d - vite_d) / 2);
     }
     // spina antirotazione: foro cieco dal retro
     if (spina)
-        translate([lato - vite_x, profondita - spina_prof, vite_z]) rotate([-90, 0, 0])
+        translate([spina_pos[0], profondita - spina_prof, spina_pos[1]]) rotate([-90, 0, 0])
             cylinder(d = spina_d, h = spina_prof + 1);
-    // passacavi del vano tecnico
-    if (foro_vano > 0)
-        translate([lato / 2, y_blocco - 1, vite_z]) rotate([-90, 0, 0])
-            cylinder(d = foro_vano, h = blocco_retro + schiena + 2);
 }
 
 // ---------------------------------------------------------------------
-// Testi: una riga sola. Numero piccolo e simbolo a sinistra, nome a destra.
+// Tipografia
+//   | 26                                      |
+//   | Fe                               FERRO  |   <- stessa linea di base
+// Simbolo a sinistra; a destra il numero allineato alla cima del simbolo
+// e il nome alla sua linea di base. Margini uguali in basso e a sinistra.
 // ---------------------------------------------------------------------
-// Larghezza media dei caratteri di Inter in rapporto a "size" (misurata):
-// serve a impaginare e ridurre i testi lunghi, OpenSCAD 2021 non sa misurarli.
-function larghezza(t, dim, k) = len(t) * dim * k;
+// Larghezza media dei caratteri in rapporto alla dimensione (misurata su
+// Inter): serve solo a ridurre i nomi lunghi, OpenSCAD 2021 non sa misurarli.
 function adatta(t, dim, k, max_w) = len(t) == 0 ? dim : min(dim, max_w / (len(t) * k));
 
 module testi_2d() {
-    sx = parete + margine_testo;
-    dx = lato - parete - margine_testo;
-    base = (fascia_h - smusso_apertura - dim_simbolo) / 2;   // simbolo centrato nella fascia
-    w_num = len(T_NUMERO) > 0 ? larghezza(T_NUMERO, dim_numero, 0.66) + 1.6 : 0;
-    w_sim = larghezza(T_SIMBOLO, dim_simbolo, 0.9);
-    d_nome = adatta(T_NOME, dim_nome, 0.76, dx - sx - w_num - w_sim - 6);
-    // numero in alto, allineato alla cima del simbolo (come un esponente)
-    translate([sx, base + dim_simbolo - dim_numero])
-        text(T_NUMERO, size = dim_numero, font = font_testo);
-    translate([sx + w_num, base]) text(T_SIMBOLO, size = dim_simbolo, font = font_simbolo);
-    translate([dx, base]) text(T_NOME, size = d_nome, font = font_testo, halign = "right");
+    utile = fascia_h - smusso_apertura;
+    base = (utile - dim_simbolo) / 2;
+    sx = cornice + margine_testo - 2;
+    dx = lato - cornice - margine_testo + 2;
+    w_sim = len(T_SIMBOLO) * dim_simbolo * 0.85;
+    d_nome = adatta(T_NOME, dim_piccolo, 0.78 * spaziatura_nome, dx - sx - w_sim - 8);
+    translate([sx, base]) text(T_SIMBOLO, size = dim_simbolo, font = font_simbolo);
+    translate([dx, base + dim_simbolo - dim_piccolo])
+        text(T_NUMERO, size = dim_piccolo, font = font_testo, halign = "right");
+    translate([dx, base])
+        text(T_NOME, size = d_nome, font = font_testo, halign = "right", spacing = spaziatura_nome);
 }
 
 module testi(h) {
@@ -272,33 +260,47 @@ module testi(h) {
 module corpo() {
     difference() {
         union() {
-            guscio();
-            cornice();
-            vano_tecnico();
-            raccordi_alti();
+            corpo_guscio();
+            rinforzi();
             linguette();
             if (testo_modo == "rilievo") testi(testo_h);
         }
         scanalature();
-        if (led) canale_led();
         fori_fissaggio();
         if (testo_modo == "inciso") translate([0, testo_h, 0]) testi(testo_h + 1);
     }
 }
 
 // ---------------------------------------------------------------------
-// Pavimento estraibile (copre il vano tecnico, regge l'oggetto)
+// Fondale curvo: piano espositivo + curva + fondo, in un pezzo solo.
+// Si infila dal fronte dopo aver avvitato il cubo e nasconde la vite.
 // ---------------------------------------------------------------------
-module pavimento() {
-    x0 = parete + gioco;
-    y0 = cornice_sp + gioco;
-    w = lato - 2 * parete - 2 * gioco;
-    d = profondita - schiena - cornice_sp - 2 * gioco;
-    difference() {
-        translate([x0, y0, z_appoggio]) cube([w, d, pav_sp]);
-        // tacca sul bordo posteriore: per sollevarlo e far passare i cavi
-        translate([lato / 2, y0 + d, z_appoggio - 1]) cylinder(r = tacca_dito, h = pav_sp + 2);
+module profilo_fondale() {
+    t = fondale_sp;
+    R = fondale_raggio;
+    y0 = cornice_sp + gioco;                    // bordo anteriore del piano
+    yb = y_fondo - fondale_distanza - gioco;    // faccia posteriore del fondo
+    cy = yb - t - R;                            // centro della curva
+    cz = z_piano + R;
+    zt = lato - cielo - gioco;                  // bordo superiore
+    // piano
+    translate([y0, z_piano - t]) square([cy - y0, t]);
+    // fondo
+    translate([yb - t, cz]) square([t, zt - cz]);
+    // curva
+    intersection() {
+        difference() {
+            translate([cy, cz]) circle(r = R + t, $fn = 160);
+            translate([cy, cz]) circle(r = R, $fn = 160);
+        }
+        translate([cy, cz - R - t]) square([R + t, R + t]);
     }
+    // gamba centrale sotto il piano
+    translate([(y0 + cy) / 2 - t / 2, fondo + gioco]) square([t, z_piano - t - fondo - gioco + e]);
+}
+
+module fondale() {
+    prisma_yz(parete + gioco, lato - parete - gioco) profilo_fondale();
 }
 
 // ---------------------------------------------------------------------
@@ -307,20 +309,20 @@ module pavimento() {
 module dima() {
     difference() {
         union() {
-            // telaio leggero invece di una lastra piena
             difference() {
                 cube([lato, lato, 2]);
-                translate([22, 22, -1]) cube([lato - 44, lato - 44, 4]);
+                translate([16, 16, -1]) cube([lato - 32, lato - 32, 4]);
             }
-            for (x = [vite_x, lato - vite_x]) translate([x, vite_z, 0]) cylinder(d = 12, h = 10);
-            translate([lato / 2 - 8, vite_z - 6, 0]) cube([16, 12, 2]);
+            // bracci verso la vite al centro
+            for (a = [45, 135, 225, 315]) translate([lato / 2, lato / 2, 0]) rotate(a)
+                translate([0, -4, 0]) cube([lato * 0.66, 8, 2]);
+            translate([vite[0], vite[1], 0]) cylinder(d = 12, h = 10);
+            if (spina) translate([spina_pos[0], spina_pos[1], 0]) cylinder(d = 12, h = 10);
         }
-        translate([vite_x, vite_z, -1]) cylinder(d = dima_pilota, h = 20);
-        if (spina) translate([lato - vite_x, vite_z, -1]) cylinder(d = spina_d - 0.2, h = 20);
-        // segni per i fori passacavo (punta da 2 mm, poi si allarga)
-        for (p = [[cavo_x, cavo_z], [lato / 2, vite_z]]) translate([p[0], p[1], -1]) cylinder(d = 2, h = 5);
-        translate([lato / 2, lato - 14, 1.2]) linear_extrude(5)
-            text("ALTO", size = 6, font = font_simbolo, halign = "center");
+        translate([vite[0], vite[1], -1]) cylinder(d = dima_pilota, h = 20);
+        if (spina) translate([spina_pos[0], spina_pos[1], -1]) cylinder(d = spina_d - 0.2, h = 20);
+        translate([lato / 2, lato - 11, 1.2]) linear_extrude(5)
+            text("ALTO", size = 5, font = font_testo, halign = "center");
     }
 }
 
@@ -333,21 +335,26 @@ module per_stampa() {
 }
 
 if (parte == "corpo") per_stampa() corpo();
-else if (parte == "pavimento") translate([0, 0, -z_appoggio]) pavimento();
+// fondale in piedi sul suo profilo: niente supporti
+else if (parte == "fondale") fondale_in_piedi();
 else if (parte == "dima") dima();
 // solo i testi, già nella posizione di stampa: per assegnare loro un altro filamento
 else if (parte == "testo") per_stampa() testi(testo_h);
 // stessi pezzi nella posizione "appesa", per anteprime e montaggi
 else if (parte == "corpo_appeso") corpo();
-else if (parte == "pavimento_appeso") pavimento();
+else if (parte == "fondale_appeso") fondale();
 else if (parte == "sezione") intersection() {
-    union() { corpo(); pavimento(); }
+    union() { corpo(); fondale(); }
     translate([lato / 2, -10, -10]) cube([lato, profondita + 20, lato + 20]);
 }
 else if (parte == "info")
-    echo(VITE = [vite_x, vite_z], LATO = lato, CAVO_LED = [cavo_x, cavo_z], CAVO_VANO = [lato / 2, vite_z],
-         PROFONDITA = profondita, CORNICE = cornice_sp);
+    echo(VITE = vite, SPINA = spina_pos, LATO = lato, PROFONDITA = profondita, CORNICE = cornice_sp);
 else {
     color("#e9e6df") corpo();
-    color("#3b3d40") pavimento();
+    color("#2f3133") fondale();
+}
+
+module fondale_in_piedi() {
+    // il profilo Y-Z diventa la base sul piatto, l'estrusione va in altezza
+    linear_extrude(lato - 2 * parete - 2 * gioco) profilo_fondale();
 }
