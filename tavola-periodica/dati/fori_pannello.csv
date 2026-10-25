@@ -1,241 +1,241 @@
 cubo,foro,x_mm_da_sinistra,y_mm_dal_basso,diametro_mm
-001_H,vite M4 - foro per inserto filettato,50.0,954.5,6
-001_H,spina Ø6,10.6,912.5,6
-002_He,vite M4 - foro per inserto filettato,1758.5,954.5,6
-002_He,spina Ø6,1719.1,912.5,6
-003_Li,vite M4 - foro per inserto filettato,50.0,854.0,6
-003_Li,spina Ø6,10.6,812.0,6
-004_Be,vite M4 - foro per inserto filettato,150.5,854.0,6
-004_Be,spina Ø6,111.1,812.0,6
-005_B,vite M4 - foro per inserto filettato,1256.0,854.0,6
-005_B,spina Ø6,1216.6,812.0,6
-006_C,vite M4 - foro per inserto filettato,1356.5,854.0,6
-006_C,spina Ø6,1317.1,812.0,6
-007_N,vite M4 - foro per inserto filettato,1457.0,854.0,6
-007_N,spina Ø6,1417.6,812.0,6
-008_O,vite M4 - foro per inserto filettato,1557.5,854.0,6
-008_O,spina Ø6,1518.1,812.0,6
-009_F,vite M4 - foro per inserto filettato,1658.0,854.0,6
-009_F,spina Ø6,1618.6,812.0,6
-010_Ne,vite M4 - foro per inserto filettato,1758.5,854.0,6
-010_Ne,spina Ø6,1719.1,812.0,6
-011_Na,vite M4 - foro per inserto filettato,50.0,753.5,6
-011_Na,spina Ø6,10.6,711.5,6
-012_Mg,vite M4 - foro per inserto filettato,150.5,753.5,6
-012_Mg,spina Ø6,111.1,711.5,6
-013_Al,vite M4 - foro per inserto filettato,1256.0,753.5,6
-013_Al,spina Ø6,1216.6,711.5,6
-014_Si,vite M4 - foro per inserto filettato,1356.5,753.5,6
-014_Si,spina Ø6,1317.1,711.5,6
-015_P,vite M4 - foro per inserto filettato,1457.0,753.5,6
-015_P,spina Ø6,1417.6,711.5,6
-016_S,vite M4 - foro per inserto filettato,1557.5,753.5,6
-016_S,spina Ø6,1518.1,711.5,6
-017_Cl,vite M4 - foro per inserto filettato,1658.0,753.5,6
-017_Cl,spina Ø6,1618.6,711.5,6
-018_Ar,vite M4 - foro per inserto filettato,1758.5,753.5,6
-018_Ar,spina Ø6,1719.1,711.5,6
-019_K,vite M4 - foro per inserto filettato,50.0,653.0,6
-019_K,spina Ø6,10.6,611.0,6
-020_Ca,vite M4 - foro per inserto filettato,150.5,653.0,6
-020_Ca,spina Ø6,111.1,611.0,6
-021_Sc,vite M4 - foro per inserto filettato,251.0,653.0,6
-021_Sc,spina Ø6,211.6,611.0,6
-022_Ti,vite M4 - foro per inserto filettato,351.5,653.0,6
-022_Ti,spina Ø6,312.1,611.0,6
-023_V,vite M4 - foro per inserto filettato,452.0,653.0,6
-023_V,spina Ø6,412.6,611.0,6
-024_Cr,vite M4 - foro per inserto filettato,552.5,653.0,6
-024_Cr,spina Ø6,513.1,611.0,6
-025_Mn,vite M4 - foro per inserto filettato,653.0,653.0,6
-025_Mn,spina Ø6,613.6,611.0,6
-026_Fe,vite M4 - foro per inserto filettato,753.5,653.0,6
-026_Fe,spina Ø6,714.1,611.0,6
-027_Co,vite M4 - foro per inserto filettato,854.0,653.0,6
-027_Co,spina Ø6,814.6,611.0,6
-028_Ni,vite M4 - foro per inserto filettato,954.5,653.0,6
-028_Ni,spina Ø6,915.1,611.0,6
-029_Cu,vite M4 - foro per inserto filettato,1055.0,653.0,6
-029_Cu,spina Ø6,1015.6,611.0,6
-030_Zn,vite M4 - foro per inserto filettato,1155.5,653.0,6
-030_Zn,spina Ø6,1116.1,611.0,6
-031_Ga,vite M4 - foro per inserto filettato,1256.0,653.0,6
-031_Ga,spina Ø6,1216.6,611.0,6
-032_Ge,vite M4 - foro per inserto filettato,1356.5,653.0,6
-032_Ge,spina Ø6,1317.1,611.0,6
-033_As,vite M4 - foro per inserto filettato,1457.0,653.0,6
-033_As,spina Ø6,1417.6,611.0,6
-034_Se,vite M4 - foro per inserto filettato,1557.5,653.0,6
-034_Se,spina Ø6,1518.1,611.0,6
-035_Br,vite M4 - foro per inserto filettato,1658.0,653.0,6
-035_Br,spina Ø6,1618.6,611.0,6
-036_Kr,vite M4 - foro per inserto filettato,1758.5,653.0,6
-036_Kr,spina Ø6,1719.1,611.0,6
-037_Rb,vite M4 - foro per inserto filettato,50.0,552.5,6
-037_Rb,spina Ø6,10.6,510.5,6
-038_Sr,vite M4 - foro per inserto filettato,150.5,552.5,6
-038_Sr,spina Ø6,111.1,510.5,6
-039_Y,vite M4 - foro per inserto filettato,251.0,552.5,6
-039_Y,spina Ø6,211.6,510.5,6
-040_Zr,vite M4 - foro per inserto filettato,351.5,552.5,6
-040_Zr,spina Ø6,312.1,510.5,6
-041_Nb,vite M4 - foro per inserto filettato,452.0,552.5,6
-041_Nb,spina Ø6,412.6,510.5,6
-042_Mo,vite M4 - foro per inserto filettato,552.5,552.5,6
-042_Mo,spina Ø6,513.1,510.5,6
-043_Tc,vite M4 - foro per inserto filettato,653.0,552.5,6
-043_Tc,spina Ø6,613.6,510.5,6
-044_Ru,vite M4 - foro per inserto filettato,753.5,552.5,6
-044_Ru,spina Ø6,714.1,510.5,6
-045_Rh,vite M4 - foro per inserto filettato,854.0,552.5,6
-045_Rh,spina Ø6,814.6,510.5,6
-046_Pd,vite M4 - foro per inserto filettato,954.5,552.5,6
-046_Pd,spina Ø6,915.1,510.5,6
-047_Ag,vite M4 - foro per inserto filettato,1055.0,552.5,6
-047_Ag,spina Ø6,1015.6,510.5,6
-048_Cd,vite M4 - foro per inserto filettato,1155.5,552.5,6
-048_Cd,spina Ø6,1116.1,510.5,6
-049_In,vite M4 - foro per inserto filettato,1256.0,552.5,6
-049_In,spina Ø6,1216.6,510.5,6
-050_Sn,vite M4 - foro per inserto filettato,1356.5,552.5,6
-050_Sn,spina Ø6,1317.1,510.5,6
-051_Sb,vite M4 - foro per inserto filettato,1457.0,552.5,6
-051_Sb,spina Ø6,1417.6,510.5,6
-052_Te,vite M4 - foro per inserto filettato,1557.5,552.5,6
-052_Te,spina Ø6,1518.1,510.5,6
-053_I,vite M4 - foro per inserto filettato,1658.0,552.5,6
-053_I,spina Ø6,1618.6,510.5,6
-054_Xe,vite M4 - foro per inserto filettato,1758.5,552.5,6
-054_Xe,spina Ø6,1719.1,510.5,6
-055_Cs,vite M4 - foro per inserto filettato,50.0,452.0,6
-055_Cs,spina Ø6,10.6,410.0,6
-056_Ba,vite M4 - foro per inserto filettato,150.5,452.0,6
-056_Ba,spina Ø6,111.1,410.0,6
-057_La,vite M4 - foro per inserto filettato,251.0,150.5,6
-057_La,spina Ø6,211.6,108.5,6
-058_Ce,vite M4 - foro per inserto filettato,351.5,150.5,6
-058_Ce,spina Ø6,312.1,108.5,6
-059_Pr,vite M4 - foro per inserto filettato,452.0,150.5,6
-059_Pr,spina Ø6,412.6,108.5,6
-060_Nd,vite M4 - foro per inserto filettato,552.5,150.5,6
-060_Nd,spina Ø6,513.1,108.5,6
-061_Pm,vite M4 - foro per inserto filettato,653.0,150.5,6
-061_Pm,spina Ø6,613.6,108.5,6
-062_Sm,vite M4 - foro per inserto filettato,753.5,150.5,6
-062_Sm,spina Ø6,714.1,108.5,6
-063_Eu,vite M4 - foro per inserto filettato,854.0,150.5,6
-063_Eu,spina Ø6,814.6,108.5,6
-064_Gd,vite M4 - foro per inserto filettato,954.5,150.5,6
-064_Gd,spina Ø6,915.1,108.5,6
-065_Tb,vite M4 - foro per inserto filettato,1055.0,150.5,6
-065_Tb,spina Ø6,1015.6,108.5,6
-066_Dy,vite M4 - foro per inserto filettato,1155.5,150.5,6
-066_Dy,spina Ø6,1116.1,108.5,6
-067_Ho,vite M4 - foro per inserto filettato,1256.0,150.5,6
-067_Ho,spina Ø6,1216.6,108.5,6
-068_Er,vite M4 - foro per inserto filettato,1356.5,150.5,6
-068_Er,spina Ø6,1317.1,108.5,6
-069_Tm,vite M4 - foro per inserto filettato,1457.0,150.5,6
-069_Tm,spina Ø6,1417.6,108.5,6
-070_Yb,vite M4 - foro per inserto filettato,1557.5,150.5,6
-070_Yb,spina Ø6,1518.1,108.5,6
-071_Lu,vite M4 - foro per inserto filettato,1658.0,150.5,6
-071_Lu,spina Ø6,1618.6,108.5,6
-072_Hf,vite M4 - foro per inserto filettato,351.5,452.0,6
-072_Hf,spina Ø6,312.1,410.0,6
-073_Ta,vite M4 - foro per inserto filettato,452.0,452.0,6
-073_Ta,spina Ø6,412.6,410.0,6
-074_W,vite M4 - foro per inserto filettato,552.5,452.0,6
-074_W,spina Ø6,513.1,410.0,6
-075_Re,vite M4 - foro per inserto filettato,653.0,452.0,6
-075_Re,spina Ø6,613.6,410.0,6
-076_Os,vite M4 - foro per inserto filettato,753.5,452.0,6
-076_Os,spina Ø6,714.1,410.0,6
-077_Ir,vite M4 - foro per inserto filettato,854.0,452.0,6
-077_Ir,spina Ø6,814.6,410.0,6
-078_Pt,vite M4 - foro per inserto filettato,954.5,452.0,6
-078_Pt,spina Ø6,915.1,410.0,6
-079_Au,vite M4 - foro per inserto filettato,1055.0,452.0,6
-079_Au,spina Ø6,1015.6,410.0,6
-080_Hg,vite M4 - foro per inserto filettato,1155.5,452.0,6
-080_Hg,spina Ø6,1116.1,410.0,6
-081_Tl,vite M4 - foro per inserto filettato,1256.0,452.0,6
-081_Tl,spina Ø6,1216.6,410.0,6
-082_Pb,vite M4 - foro per inserto filettato,1356.5,452.0,6
-082_Pb,spina Ø6,1317.1,410.0,6
-083_Bi,vite M4 - foro per inserto filettato,1457.0,452.0,6
-083_Bi,spina Ø6,1417.6,410.0,6
-084_Po,vite M4 - foro per inserto filettato,1557.5,452.0,6
-084_Po,spina Ø6,1518.1,410.0,6
-085_At,vite M4 - foro per inserto filettato,1658.0,452.0,6
-085_At,spina Ø6,1618.6,410.0,6
-086_Rn,vite M4 - foro per inserto filettato,1758.5,452.0,6
-086_Rn,spina Ø6,1719.1,410.0,6
-087_Fr,vite M4 - foro per inserto filettato,50.0,351.5,6
-087_Fr,spina Ø6,10.6,309.5,6
-088_Ra,vite M4 - foro per inserto filettato,150.5,351.5,6
-088_Ra,spina Ø6,111.1,309.5,6
-089_Ac,vite M4 - foro per inserto filettato,251.0,50.0,6
-089_Ac,spina Ø6,211.6,8.0,6
-090_Th,vite M4 - foro per inserto filettato,351.5,50.0,6
-090_Th,spina Ø6,312.1,8.0,6
-091_Pa,vite M4 - foro per inserto filettato,452.0,50.0,6
-091_Pa,spina Ø6,412.6,8.0,6
-092_U,vite M4 - foro per inserto filettato,552.5,50.0,6
-092_U,spina Ø6,513.1,8.0,6
-093_Np,vite M4 - foro per inserto filettato,653.0,50.0,6
-093_Np,spina Ø6,613.6,8.0,6
-094_Pu,vite M4 - foro per inserto filettato,753.5,50.0,6
-094_Pu,spina Ø6,714.1,8.0,6
-095_Am,vite M4 - foro per inserto filettato,854.0,50.0,6
-095_Am,spina Ø6,814.6,8.0,6
-096_Cm,vite M4 - foro per inserto filettato,954.5,50.0,6
-096_Cm,spina Ø6,915.1,8.0,6
-097_Bk,vite M4 - foro per inserto filettato,1055.0,50.0,6
-097_Bk,spina Ø6,1015.6,8.0,6
-098_Cf,vite M4 - foro per inserto filettato,1155.5,50.0,6
-098_Cf,spina Ø6,1116.1,8.0,6
-099_Es,vite M4 - foro per inserto filettato,1256.0,50.0,6
-099_Es,spina Ø6,1216.6,8.0,6
-100_Fm,vite M4 - foro per inserto filettato,1356.5,50.0,6
-100_Fm,spina Ø6,1317.1,8.0,6
-101_Md,vite M4 - foro per inserto filettato,1457.0,50.0,6
-101_Md,spina Ø6,1417.6,8.0,6
-102_No,vite M4 - foro per inserto filettato,1557.5,50.0,6
-102_No,spina Ø6,1518.1,8.0,6
-103_Lr,vite M4 - foro per inserto filettato,1658.0,50.0,6
-103_Lr,spina Ø6,1618.6,8.0,6
-104_Rf,vite M4 - foro per inserto filettato,351.5,351.5,6
-104_Rf,spina Ø6,312.1,309.5,6
-105_Db,vite M4 - foro per inserto filettato,452.0,351.5,6
-105_Db,spina Ø6,412.6,309.5,6
-106_Sg,vite M4 - foro per inserto filettato,552.5,351.5,6
-106_Sg,spina Ø6,513.1,309.5,6
-107_Bh,vite M4 - foro per inserto filettato,653.0,351.5,6
-107_Bh,spina Ø6,613.6,309.5,6
-108_Hs,vite M4 - foro per inserto filettato,753.5,351.5,6
-108_Hs,spina Ø6,714.1,309.5,6
-109_Mt,vite M4 - foro per inserto filettato,854.0,351.5,6
-109_Mt,spina Ø6,814.6,309.5,6
-110_Ds,vite M4 - foro per inserto filettato,954.5,351.5,6
-110_Ds,spina Ø6,915.1,309.5,6
-111_Rg,vite M4 - foro per inserto filettato,1055.0,351.5,6
-111_Rg,spina Ø6,1015.6,309.5,6
-112_Cn,vite M4 - foro per inserto filettato,1155.5,351.5,6
-112_Cn,spina Ø6,1116.1,309.5,6
-113_Nh,vite M4 - foro per inserto filettato,1256.0,351.5,6
-113_Nh,spina Ø6,1216.6,309.5,6
-114_Fl,vite M4 - foro per inserto filettato,1356.5,351.5,6
-114_Fl,spina Ø6,1317.1,309.5,6
-115_Mc,vite M4 - foro per inserto filettato,1457.0,351.5,6
-115_Mc,spina Ø6,1417.6,309.5,6
-116_Lv,vite M4 - foro per inserto filettato,1557.5,351.5,6
-116_Lv,spina Ø6,1518.1,309.5,6
-117_Ts,vite M4 - foro per inserto filettato,1658.0,351.5,6
-117_Ts,spina Ø6,1618.6,309.5,6
-118_Og,vite M4 - foro per inserto filettato,1758.5,351.5,6
-118_Og,spina Ø6,1719.1,309.5,6
-segnaposto_lantanidi,vite M4 - foro per inserto filettato,251.0,452.0,6
-segnaposto_lantanidi,spina Ø6,211.6,410.0,6
-segnaposto_attinidi,vite M4 - foro per inserto filettato,251.0,351.5,6
-segnaposto_attinidi,spina Ø6,211.6,309.5,6
+001_H,vite M4 - foro per inserto filettato,30.0,578.9,6
+001_H,spina Ø6,12.2,549.5,6
+002_He,vite M4 - foro per inserto filettato,1058.5,578.9,6
+002_He,spina Ø6,1040.7,549.5,6
+003_Li,vite M4 - foro per inserto filettato,30.0,518.4,6
+003_Li,spina Ø6,12.2,489.0,6
+004_Be,vite M4 - foro per inserto filettato,90.5,518.4,6
+004_Be,spina Ø6,72.7,489.0,6
+005_B,vite M4 - foro per inserto filettato,756.0,518.4,6
+005_B,spina Ø6,738.2,489.0,6
+006_C,vite M4 - foro per inserto filettato,816.5,518.4,6
+006_C,spina Ø6,798.7,489.0,6
+007_N,vite M4 - foro per inserto filettato,877.0,518.4,6
+007_N,spina Ø6,859.2,489.0,6
+008_O,vite M4 - foro per inserto filettato,937.5,518.4,6
+008_O,spina Ø6,919.7,489.0,6
+009_F,vite M4 - foro per inserto filettato,998.0,518.4,6
+009_F,spina Ø6,980.2,489.0,6
+010_Ne,vite M4 - foro per inserto filettato,1058.5,518.4,6
+010_Ne,spina Ø6,1040.7,489.0,6
+011_Na,vite M4 - foro per inserto filettato,30.0,457.9,6
+011_Na,spina Ø6,12.2,428.5,6
+012_Mg,vite M4 - foro per inserto filettato,90.5,457.9,6
+012_Mg,spina Ø6,72.7,428.5,6
+013_Al,vite M4 - foro per inserto filettato,756.0,457.9,6
+013_Al,spina Ø6,738.2,428.5,6
+014_Si,vite M4 - foro per inserto filettato,816.5,457.9,6
+014_Si,spina Ø6,798.7,428.5,6
+015_P,vite M4 - foro per inserto filettato,877.0,457.9,6
+015_P,spina Ø6,859.2,428.5,6
+016_S,vite M4 - foro per inserto filettato,937.5,457.9,6
+016_S,spina Ø6,919.7,428.5,6
+017_Cl,vite M4 - foro per inserto filettato,998.0,457.9,6
+017_Cl,spina Ø6,980.2,428.5,6
+018_Ar,vite M4 - foro per inserto filettato,1058.5,457.9,6
+018_Ar,spina Ø6,1040.7,428.5,6
+019_K,vite M4 - foro per inserto filettato,30.0,397.4,6
+019_K,spina Ø6,12.2,368.0,6
+020_Ca,vite M4 - foro per inserto filettato,90.5,397.4,6
+020_Ca,spina Ø6,72.7,368.0,6
+021_Sc,vite M4 - foro per inserto filettato,151.0,397.4,6
+021_Sc,spina Ø6,133.2,368.0,6
+022_Ti,vite M4 - foro per inserto filettato,211.5,397.4,6
+022_Ti,spina Ø6,193.7,368.0,6
+023_V,vite M4 - foro per inserto filettato,272.0,397.4,6
+023_V,spina Ø6,254.2,368.0,6
+024_Cr,vite M4 - foro per inserto filettato,332.5,397.4,6
+024_Cr,spina Ø6,314.7,368.0,6
+025_Mn,vite M4 - foro per inserto filettato,393.0,397.4,6
+025_Mn,spina Ø6,375.2,368.0,6
+026_Fe,vite M4 - foro per inserto filettato,453.5,397.4,6
+026_Fe,spina Ø6,435.7,368.0,6
+027_Co,vite M4 - foro per inserto filettato,514.0,397.4,6
+027_Co,spina Ø6,496.2,368.0,6
+028_Ni,vite M4 - foro per inserto filettato,574.5,397.4,6
+028_Ni,spina Ø6,556.7,368.0,6
+029_Cu,vite M4 - foro per inserto filettato,635.0,397.4,6
+029_Cu,spina Ø6,617.2,368.0,6
+030_Zn,vite M4 - foro per inserto filettato,695.5,397.4,6
+030_Zn,spina Ø6,677.7,368.0,6
+031_Ga,vite M4 - foro per inserto filettato,756.0,397.4,6
+031_Ga,spina Ø6,738.2,368.0,6
+032_Ge,vite M4 - foro per inserto filettato,816.5,397.4,6
+032_Ge,spina Ø6,798.7,368.0,6
+033_As,vite M4 - foro per inserto filettato,877.0,397.4,6
+033_As,spina Ø6,859.2,368.0,6
+034_Se,vite M4 - foro per inserto filettato,937.5,397.4,6
+034_Se,spina Ø6,919.7,368.0,6
+035_Br,vite M4 - foro per inserto filettato,998.0,397.4,6
+035_Br,spina Ø6,980.2,368.0,6
+036_Kr,vite M4 - foro per inserto filettato,1058.5,397.4,6
+036_Kr,spina Ø6,1040.7,368.0,6
+037_Rb,vite M4 - foro per inserto filettato,30.0,336.9,6
+037_Rb,spina Ø6,12.2,307.5,6
+038_Sr,vite M4 - foro per inserto filettato,90.5,336.9,6
+038_Sr,spina Ø6,72.7,307.5,6
+039_Y,vite M4 - foro per inserto filettato,151.0,336.9,6
+039_Y,spina Ø6,133.2,307.5,6
+040_Zr,vite M4 - foro per inserto filettato,211.5,336.9,6
+040_Zr,spina Ø6,193.7,307.5,6
+041_Nb,vite M4 - foro per inserto filettato,272.0,336.9,6
+041_Nb,spina Ø6,254.2,307.5,6
+042_Mo,vite M4 - foro per inserto filettato,332.5,336.9,6
+042_Mo,spina Ø6,314.7,307.5,6
+043_Tc,vite M4 - foro per inserto filettato,393.0,336.9,6
+043_Tc,spina Ø6,375.2,307.5,6
+044_Ru,vite M4 - foro per inserto filettato,453.5,336.9,6
+044_Ru,spina Ø6,435.7,307.5,6
+045_Rh,vite M4 - foro per inserto filettato,514.0,336.9,6
+045_Rh,spina Ø6,496.2,307.5,6
+046_Pd,vite M4 - foro per inserto filettato,574.5,336.9,6
+046_Pd,spina Ø6,556.7,307.5,6
+047_Ag,vite M4 - foro per inserto filettato,635.0,336.9,6
+047_Ag,spina Ø6,617.2,307.5,6
+048_Cd,vite M4 - foro per inserto filettato,695.5,336.9,6
+048_Cd,spina Ø6,677.7,307.5,6
+049_In,vite M4 - foro per inserto filettato,756.0,336.9,6
+049_In,spina Ø6,738.2,307.5,6
+050_Sn,vite M4 - foro per inserto filettato,816.5,336.9,6
+050_Sn,spina Ø6,798.7,307.5,6
+051_Sb,vite M4 - foro per inserto filettato,877.0,336.9,6
+051_Sb,spina Ø6,859.2,307.5,6
+052_Te,vite M4 - foro per inserto filettato,937.5,336.9,6
+052_Te,spina Ø6,919.7,307.5,6
+053_I,vite M4 - foro per inserto filettato,998.0,336.9,6
+053_I,spina Ø6,980.2,307.5,6
+054_Xe,vite M4 - foro per inserto filettato,1058.5,336.9,6
+054_Xe,spina Ø6,1040.7,307.5,6
+055_Cs,vite M4 - foro per inserto filettato,30.0,276.4,6
+055_Cs,spina Ø6,12.2,247.0,6
+056_Ba,vite M4 - foro per inserto filettato,90.5,276.4,6
+056_Ba,spina Ø6,72.7,247.0,6
+057_La,vite M4 - foro per inserto filettato,151.0,94.9,6
+057_La,spina Ø6,133.2,65.5,6
+058_Ce,vite M4 - foro per inserto filettato,211.5,94.9,6
+058_Ce,spina Ø6,193.7,65.5,6
+059_Pr,vite M4 - foro per inserto filettato,272.0,94.9,6
+059_Pr,spina Ø6,254.2,65.5,6
+060_Nd,vite M4 - foro per inserto filettato,332.5,94.9,6
+060_Nd,spina Ø6,314.7,65.5,6
+061_Pm,vite M4 - foro per inserto filettato,393.0,94.9,6
+061_Pm,spina Ø6,375.2,65.5,6
+062_Sm,vite M4 - foro per inserto filettato,453.5,94.9,6
+062_Sm,spina Ø6,435.7,65.5,6
+063_Eu,vite M4 - foro per inserto filettato,514.0,94.9,6
+063_Eu,spina Ø6,496.2,65.5,6
+064_Gd,vite M4 - foro per inserto filettato,574.5,94.9,6
+064_Gd,spina Ø6,556.7,65.5,6
+065_Tb,vite M4 - foro per inserto filettato,635.0,94.9,6
+065_Tb,spina Ø6,617.2,65.5,6
+066_Dy,vite M4 - foro per inserto filettato,695.5,94.9,6
+066_Dy,spina Ø6,677.7,65.5,6
+067_Ho,vite M4 - foro per inserto filettato,756.0,94.9,6
+067_Ho,spina Ø6,738.2,65.5,6
+068_Er,vite M4 - foro per inserto filettato,816.5,94.9,6
+068_Er,spina Ø6,798.7,65.5,6
+069_Tm,vite M4 - foro per inserto filettato,877.0,94.9,6
+069_Tm,spina Ø6,859.2,65.5,6
+070_Yb,vite M4 - foro per inserto filettato,937.5,94.9,6
+070_Yb,spina Ø6,919.7,65.5,6
+071_Lu,vite M4 - foro per inserto filettato,998.0,94.9,6
+071_Lu,spina Ø6,980.2,65.5,6
+072_Hf,vite M4 - foro per inserto filettato,211.5,276.4,6
+072_Hf,spina Ø6,193.7,247.0,6
+073_Ta,vite M4 - foro per inserto filettato,272.0,276.4,6
+073_Ta,spina Ø6,254.2,247.0,6
+074_W,vite M4 - foro per inserto filettato,332.5,276.4,6
+074_W,spina Ø6,314.7,247.0,6
+075_Re,vite M4 - foro per inserto filettato,393.0,276.4,6
+075_Re,spina Ø6,375.2,247.0,6
+076_Os,vite M4 - foro per inserto filettato,453.5,276.4,6
+076_Os,spina Ø6,435.7,247.0,6
+077_Ir,vite M4 - foro per inserto filettato,514.0,276.4,6
+077_Ir,spina Ø6,496.2,247.0,6
+078_Pt,vite M4 - foro per inserto filettato,574.5,276.4,6
+078_Pt,spina Ø6,556.7,247.0,6
+079_Au,vite M4 - foro per inserto filettato,635.0,276.4,6
+079_Au,spina Ø6,617.2,247.0,6
+080_Hg,vite M4 - foro per inserto filettato,695.5,276.4,6
+080_Hg,spina Ø6,677.7,247.0,6
+081_Tl,vite M4 - foro per inserto filettato,756.0,276.4,6
+081_Tl,spina Ø6,738.2,247.0,6
+082_Pb,vite M4 - foro per inserto filettato,816.5,276.4,6
+082_Pb,spina Ø6,798.7,247.0,6
+083_Bi,vite M4 - foro per inserto filettato,877.0,276.4,6
+083_Bi,spina Ø6,859.2,247.0,6
+084_Po,vite M4 - foro per inserto filettato,937.5,276.4,6
+084_Po,spina Ø6,919.7,247.0,6
+085_At,vite M4 - foro per inserto filettato,998.0,276.4,6
+085_At,spina Ø6,980.2,247.0,6
+086_Rn,vite M4 - foro per inserto filettato,1058.5,276.4,6
+086_Rn,spina Ø6,1040.7,247.0,6
+087_Fr,vite M4 - foro per inserto filettato,30.0,215.9,6
+087_Fr,spina Ø6,12.2,186.5,6
+088_Ra,vite M4 - foro per inserto filettato,90.5,215.9,6
+088_Ra,spina Ø6,72.7,186.5,6
+089_Ac,vite M4 - foro per inserto filettato,151.0,34.4,6
+089_Ac,spina Ø6,133.2,5.0,6
+090_Th,vite M4 - foro per inserto filettato,211.5,34.4,6
+090_Th,spina Ø6,193.7,5.0,6
+091_Pa,vite M4 - foro per inserto filettato,272.0,34.4,6
+091_Pa,spina Ø6,254.2,5.0,6
+092_U,vite M4 - foro per inserto filettato,332.5,34.4,6
+092_U,spina Ø6,314.7,5.0,6
+093_Np,vite M4 - foro per inserto filettato,393.0,34.4,6
+093_Np,spina Ø6,375.2,5.0,6
+094_Pu,vite M4 - foro per inserto filettato,453.5,34.4,6
+094_Pu,spina Ø6,435.7,5.0,6
+095_Am,vite M4 - foro per inserto filettato,514.0,34.4,6
+095_Am,spina Ø6,496.2,5.0,6
+096_Cm,vite M4 - foro per inserto filettato,574.5,34.4,6
+096_Cm,spina Ø6,556.7,5.0,6
+097_Bk,vite M4 - foro per inserto filettato,635.0,34.4,6
+097_Bk,spina Ø6,617.2,5.0,6
+098_Cf,vite M4 - foro per inserto filettato,695.5,34.4,6
+098_Cf,spina Ø6,677.7,5.0,6
+099_Es,vite M4 - foro per inserto filettato,756.0,34.4,6
+099_Es,spina Ø6,738.2,5.0,6
+100_Fm,vite M4 - foro per inserto filettato,816.5,34.4,6
+100_Fm,spina Ø6,798.7,5.0,6
+101_Md,vite M4 - foro per inserto filettato,877.0,34.4,6
+101_Md,spina Ø6,859.2,5.0,6
+102_No,vite M4 - foro per inserto filettato,937.5,34.4,6
+102_No,spina Ø6,919.7,5.0,6
+103_Lr,vite M4 - foro per inserto filettato,998.0,34.4,6
+103_Lr,spina Ø6,980.2,5.0,6
+104_Rf,vite M4 - foro per inserto filettato,211.5,215.9,6
+104_Rf,spina Ø6,193.7,186.5,6
+105_Db,vite M4 - foro per inserto filettato,272.0,215.9,6
+105_Db,spina Ø6,254.2,186.5,6
+106_Sg,vite M4 - foro per inserto filettato,332.5,215.9,6
+106_Sg,spina Ø6,314.7,186.5,6
+107_Bh,vite M4 - foro per inserto filettato,393.0,215.9,6
+107_Bh,spina Ø6,375.2,186.5,6
+108_Hs,vite M4 - foro per inserto filettato,453.5,215.9,6
+108_Hs,spina Ø6,435.7,186.5,6
+109_Mt,vite M4 - foro per inserto filettato,514.0,215.9,6
+109_Mt,spina Ø6,496.2,186.5,6
+110_Ds,vite M4 - foro per inserto filettato,574.5,215.9,6
+110_Ds,spina Ø6,556.7,186.5,6
+111_Rg,vite M4 - foro per inserto filettato,635.0,215.9,6
+111_Rg,spina Ø6,617.2,186.5,6
+112_Cn,vite M4 - foro per inserto filettato,695.5,215.9,6
+112_Cn,spina Ø6,677.7,186.5,6
+113_Nh,vite M4 - foro per inserto filettato,756.0,215.9,6
+113_Nh,spina Ø6,738.2,186.5,6
+114_Fl,vite M4 - foro per inserto filettato,816.5,215.9,6
+114_Fl,spina Ø6,798.7,186.5,6
+115_Mc,vite M4 - foro per inserto filettato,877.0,215.9,6
+115_Mc,spina Ø6,859.2,186.5,6
+116_Lv,vite M4 - foro per inserto filettato,937.5,215.9,6
+116_Lv,spina Ø6,919.7,186.5,6
+117_Ts,vite M4 - foro per inserto filettato,998.0,215.9,6
+117_Ts,spina Ø6,980.2,186.5,6
+118_Og,vite M4 - foro per inserto filettato,1058.5,215.9,6
+118_Og,spina Ø6,1040.7,186.5,6
+segnaposto_lantanidi,vite M4 - foro per inserto filettato,151.0,276.4,6
+segnaposto_lantanidi,spina Ø6,133.2,247.0,6
+segnaposto_attinidi,vite M4 - foro per inserto filettato,151.0,215.9,6
+segnaposto_attinidi,spina Ø6,133.2,186.5,6

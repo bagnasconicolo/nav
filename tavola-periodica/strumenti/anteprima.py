@@ -36,14 +36,15 @@ def rendi(uscita, vista, voci, px=1100):
     luce = np.array([-0.45, -0.8, 0.6]); luce /= np.linalg.norm(luce)
     img = np.ones((px, px, 3)) * np.array([0.96, 0.95, 0.93])
     zb = np.full((px, px), np.inf)
-    scala = px / 175 * zoom
+    scala = px / 175 * zoom * 100 / max(np.ptp(trimesh.load(voci[0][0]).vertices, axis=0))
     for percorso, colore in voci:
         m = trimesh.load(percorso)
-        v = (m.vertices - np.array([50, 50, cz])) @ R.T   # vista: x destra, y profondità, z su
+        c = (m.bounds[0] + m.bounds[1]) / 2
+        v = (m.vertices - np.array([c[0], c[1], c[2] if vista != "fascia" else cz])) @ R.T
         n = m.face_normals @ R.T
         rgb = np.array(matplotlib.colors.to_rgb(colore))
-        # facce sul piano di taglio della vista "sezione" (x = 50): colore a parte
-        taglio = np.all(np.abs(m.vertices[m.faces][:, :, 0] - 50) < 1e-3, axis=1) \
+        # facce sul piano di taglio della vista "sezione" (il lato sinistro del pezzo tagliato)
+        taglio = np.all(np.abs(m.vertices[m.faces][:, :, 0] - m.bounds[0][0]) < 1e-3, axis=1) \
             if vista == "sezione" else np.zeros(len(m.faces), bool)
         for f, nn, tg in zip(m.faces, n, taglio):
             if nn[1] > 0.02:      # faccia rivolta lontano dalla camera

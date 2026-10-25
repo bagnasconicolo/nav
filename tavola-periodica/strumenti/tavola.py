@@ -73,8 +73,6 @@ def con_vicini(cubi):
         r, k = c["riga"], c["colonna"]
         c["lingua_sopra"] = (r - 1, k) in occupate
         c["scanalatura_sotto"] = (r + 1, k) in occupate
-        c["lingua_dx"] = (r, k + 1) in occupate
-        c["scanalatura_sx"] = (r, k - 1) in occupate
     return cubi
 
 
@@ -99,8 +97,7 @@ def genera():
 def elenco():
     for c in con_vicini(tutti_i_cubi()):
         print(f"{c['id']:<22} r{c['riga']:>2} c{c['colonna']:>2}  "
-              f"su:{int(c['lingua_sopra'])} giu:{int(c['scanalatura_sotto'])} "
-              f"dx:{int(c['lingua_dx'])} sx:{int(c['scanalatura_sx'])}  {c['nome']}")
+              f"su:{int(c['lingua_sopra'])} giu:{int(c['scanalatura_sotto'])}  {c['nome']}")
 
 
 def b(v):
@@ -113,8 +110,6 @@ def comando_openscad(c, parte="corpo", uscita=None):
         "parte": scad_str(parte),
         "lingua_sopra": b(c["lingua_sopra"]),
         "scanalatura_sotto": b(c["scanalatura_sotto"]),
-        "lingua_dx": b(c["lingua_dx"]),
-        "scanalatura_sx": b(c["scanalatura_sx"]),
     }
     if str(c["numero"]).isdigit():
         d["Z"] = c["numero"]
@@ -155,7 +150,7 @@ def esporta(numeri):
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 2) as ex:
         list(ex.map(uno, cubi))
     # parti comuni, uguali per tutti i cubi
-    for parte in ("fondale", "dima"):
+    for parte in ("tappo", "dima"):
         out = os.path.join(DIR_STL, f"comune_{parte}.stl")
         subprocess.run(["openscad", "-o", out, "-D", f'parte="{parte}"', SCAD], check=True)
         binario(out)
@@ -187,7 +182,8 @@ def quote_dal_modello():
     def num(nome):
         return float(re.search(nome + r" = ([\d.]+)", testo).group(1))
     return {"lato": num("LATO"), "profondita": num("PROFONDITA"), "cornice": num("CORNICE"),
-            "vite": coppia("VITE"), "spina": coppia("SPINA")}
+            "vite": coppia("VITE"), "spina": coppia("SPINA"),
+            "tappo": tuple(map(float, re.search(r"TAPPO = \[([\d.]+), ([\d.]+), ([\d.]+)\]", testo).groups()))}
 
 
 def pannello():
