@@ -7,13 +7,13 @@ sono solo **simbolo, numero atomico e un piccolo marker** che un'app potrà
 riconoscere con la fotocamera. Si fissa al pannello con **una sola vite**, coperta
 da un tappino. Per cambiare elemento si cambia solo il numero atomico.
 
-![Tavola completa](anteprime/tavola_completa_3-4.png)
+![Tavola completa](anteprime/pitch_tavola.png)
 
-![Righe 2-3](anteprime/tavola_righe_2-3.png)
+![Dettaglio](anteprime/pitch_dettaglio.png)
 
-| Cubo singolo | Periodi 6-7 con segnaposto | Blocco f |
-|---|---|---|
-| ![Ferro](anteprime/cubo_ferro.png) | ![Periodi 6-7](anteprime/tavola_righe_6-7.png) | ![Blocco f](anteprime/blocco_f.png) |
+![Anatomia del cubo](anteprime/pitch_fronte.png)
+
+![Montaggio](anteprime/pitch_esploso.png)
 
 ## Design
 
@@ -30,8 +30,6 @@ da un tappino. Per cambiare elemento si cambia solo il numero atomico.
   Plex Mono SemiBold** (4,5 mm) e il marker. Sui due segnaposto il numero non
   c'è: "57–71" accanto a "La–Lu" non ci starebbe a una dimensione stampabile, e
   l'intervallo è già nel simbolo.
-
-  ![Fronte](anteprime/fronte_righe_2-3.png)
 - **Colori**: corpo e nicchia scuri, lastra frontale chiara, scritte e marker scuri.
   Si ottiene con due cambi filamento in altezza, senza pezzi separati.
 
@@ -72,9 +70,10 @@ grande c'è il parametro `codice_cella`.
 | `dati/elementi.csv` | **dati di partenza**: nomi italiani, masse e categorie (utili all'app; sul cubo vanno solo simbolo e numero) |
 | `strumenti/tavola.py` | genera la tabella, calcola i vicini, esporta gli STL, fa lo schema del pannello |
 | `stl/` | **solo campioni**: H, He, Fe, Au, Rf, un segnaposto, più `comune_tappo.stl` e `comune_dima.stl` |
-| `anteprime/` | render per presentazioni |
+| `anteprime/` | render per presentazioni (`pitch_*.png`) e viste tecniche (`sezione.png`, `retro.png`) |
 | `dati/pannello.svg`, `dati/fori_pannello.csv` | schema e quote di foratura del pannello |
-| `strumenti/render_tavola.py`, `strumenti/anteprima.py` | i render (`USA_STL=1 … 1 10 1 18` per la tavola completa, dopo `esporta tutti`) |
+| `strumenti/pitch.py`, `strumenti/render_blender.py` | render Blender per presentazioni, con le didascalie |
+| `strumenti/render_tavola.py`, `strumenti/anteprima.py` | render tecnici veloci (sezione, retro, controlli) |
 
 ## Uso
 
@@ -93,6 +92,18 @@ python3 strumenti/tavola.py elenco            # posizioni e incastri di ogni cub
 python3 strumenti/tavola.py pannello          # rigenera pannello.svg e fori_pannello.csv
 python3 strumenti/tavola.py genera            # dopo aver modificato dati/elementi.csv (serve opencv-python)
 ```
+
+**Render per presentazioni** (servono Blender e matplotlib; prima `esporta tutti`):
+
+```bash
+python3 strumenti/pitch.py                    # tavola, dettaglio, fronte, esploso
+python3 strumenti/pitch.py esploso            # solo uno
+CAMPIONI=24 python3 strumenti/pitch.py fronte # prova veloce, con più rumore
+```
+
+Le didascalie sono in `DIDASCALIE_FRONTE` e `DIDASCALIE_ESPLOSO` in
+`strumenti/pitch.py`. Le etichette si dispongono da sole a destra o a sinistra,
+senza incrociarsi.
 
 Serve OpenSCAD (testato con la 2021.01). Le font sono nella cartella `font/` e il
 modello le carica da lì, quindi non vanno installate.
