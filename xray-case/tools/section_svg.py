@@ -3,8 +3,9 @@ Uso: python3 tools/section_svg.py > render/section.svg"""
 import math
 
 tube_d, tube_seated_h, anode_rim_h = 38, 120, 55
-socket_h, tray_h, hv_clear = 15, 20, 40
-lead_t, lead_tol, wall_in, wall_out = 2.0, 0.4, 2.4, 2.4
+socket_h, tray_h, hv_clear = 15, 20, 50
+lead_n, plinth_h = 3, 50
+lead_t, lead_tol, wall_in, wall_out = 3.0, 0.6, 2.4, 2.4
 floor_t, chan_floor, feet_h = 3, 1.2, 5
 window_d, membrane_t, boss_h = 20, 0.8, 6
 
@@ -16,9 +17,9 @@ win_z = floor_t + lead_t + tray_h + socket_h + anode_rim_h
 z_sock = floor_t + lead_t + tray_h
 z_tube = z_sock + socket_h
 
-S = 3.2                       # px per mm
+S = 2.75                      # px per mm
 W, Hpx = 1000, 900
-ox, oz = 470, 790        # origine (y=0, z=0)
+ox, oz = 470, 700        # origine (y=0, z=0)
 def X(y): return ox + y*S
 def Z(z): return oz - z*S
 out = []
@@ -39,12 +40,17 @@ PLA, PB = "#7fa7c9", "#4a4a4a"
 for s in (-1, 1):
     rect(s*hi, floor_t, s*c_in, H, PLA)
     rect(s*c_out, 0, s*outer, H, PLA)
-    rect(s*(c_in + lead_tol/2), chan_floor, s*(c_in + lead_tol/2 + lead_t), H, PB)
-    rect(s*(outer-18), -feet_h, s*(outer-2), 0, PLA)
+    for i in range(lead_n):
+        rect(s*(c_in + lead_tol/2 + i), chan_floor, s*(c_in + lead_tol/2 + i + 1), H, PB if i % 2 == 0 else '#777')
 rect(-outer, 0, outer, chan_floor, PLA); rect(-c_in, 0, c_in, floor_t, PLA)
-rect(-(cav-0.5)/2, floor_t, (cav-0.5)/2, floor_t + lead_t, PB)
+for i in range(lead_n): rect(-(cav-0.5)/2, floor_t + i, (cav-0.5)/2, floor_t + i + 1, PB if i % 2 == 0 else '#777')
+# basamento con connettori
+po = outer + 3.3
+rect(-po, -plinth_h, po, -plinth_h + 3, '#3d5a5a')
+for s_ in (-1, 1): rect(s_*po, -plinth_h, s_*(outer - 5), 4, '#3d5a5a')
+text(0, -plinth_h/2 + 2, 'basamento: connettori FIL/K · INTLK · GND · AUX sul retro', 11, 'middle', '#333')
 # coperchio
-rect(-outer, H, outer, H + lead_t, PB)
+for i in range(lead_n): rect(-outer, H + i, outer, H + i + 1, PB if i % 2 == 0 else '#777')
 rect(-outer-2.8, H + lead_t, outer+2.8, H + lead_t + 3, PLA)
 for s in (-1, 1): rect(s*(outer+0.4), H - 8, s*(outer+2.8), H + lead_t + 3, PLA)
 # finestra: foro esterno, foro piombo, membrana
@@ -83,8 +89,8 @@ for ang in (-35, -15, 0, 15, 35):
     line(10, ez, 10 + 45*math.cos(a), ez + 45*math.sin(a), "#e33", 1.6, "5,3", marker=True)
 line(-hi, win_z, fy - 40, win_z, "#e33", 3, marker=True)
 # quote
-line(8, ez - 6, hi, ez - 6, "#06c", 1, "3,2"); text(outer + 6, ez - 12, "≥ 40 mm aria AT → piombo", 11, c="#06c")
-line(-30, H - hv_clear, -30, H, "#06c", 1, "3,2"); text(-28, H - 22, "≥ 40 mm", 11, c="#06c")
+line(8, ez - 6, hi, ez - 6, "#06c", 1, "3,2"); text(outer + 6, ez - 12, "≥ 50 mm aria AT → piombo", 11, c="#06c")
+line(-30, H - hv_clear, -30, H, "#06c", 1, "3,2"); text(-28, H - 22, "≥ 50 mm", 11, c="#06c")
 # etichette
 text(-outer - 2, win_z - 40, "finestra Ø20 nel piombo", 11, "end")
 text(-outer - 2, win_z - 53, "+ membrana stampata 0,8 mm", 11, "end")
@@ -94,9 +100,9 @@ text(outer + 6, ez + 4, "anello di emissione:", 12, c="#c00", bold=True)
 text(outer + 6, ez - 3, "bordo inferiore della placca", 11, c="#c00")
 text(0, z_tube + tube_seated_h + 4, "cappuccio anodico (+AT)", 11, "middle")
 text(0, z_sock - 14, "supporto + zoccolo UX4", 11, "middle")
-text(0, H + 14, "coperchio: Pb 2 mm sotto, PETG sopra", 11, "middle")
-text(outer + 6, H - 30, "parete: PETG 2,4 | Pb 2 | PETG 2,4", 11)
-text(0, -feet_h - 9, "fondo: PETG 3 + Pb 2 (il Pb delle pareti scende sotto quello del fondo)", 11, "middle")
+text(0, H + 14, "coperchio: 3 fogli Pb 1 mm sotto, PETG sopra (+ passante AT)", 11, "middle")
+text(outer + 6, H - 30, "parete: PETG 2,4 | 3 × Pb 1 mm | PETG 2,4", 11)
+text(0, -plinth_h - 12, "fondo: PETG 3 + 3 × Pb 1 mm (il Pb delle pareti scende sotto quello del fondo)", 11, "middle")
 
 svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{Hpx}" viewBox="0 0 {W} {Hpx}" '
        f'font-family="Helvetica,Arial,sans-serif"><rect width="100%" height="100%" fill="white"/>'
