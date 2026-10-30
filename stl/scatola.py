@@ -1,5 +1,6 @@
 # Scatola + coperchio per porta-fiala (case-ampoules_rigido).
-# Scatola: stesso ingombro dell'originale (80x60x45), pareti/fondo più spessi, passacavi in alto sul lato corto, due torrette per viti al centro dei lati corti.
+# Scatola: stesso ingombro dell'originale (80x60x45), pareti/fondo più spessi, passacavi in alto sul lato corto,
+# due fori per boccole banana sul lato corto opposto, due torrette per viti al centro dei lati corti.
 # Coperchio: piastra piena (solo i 2 fori viti) con culla che tiene il porta-fiala orizzontale,
 # centrato, apertura verso l'alto, asse perpendicolare al lato lungo.
 import trimesh, numpy as np
@@ -19,9 +20,14 @@ D_GUIDA  = 2.5     # foro guida nella torretta
 R_TORR   = 4.0
 H_TORR   = 14.0
 P_GUIDA  = 12.0
-# passacavi in alto sul lato corto, ai lati della torretta centrale
+# passacavi in alto sul lato corto,
+# due fori per boccole banana sul lato corto opposto, ai lati della torretta centrale
 D_CAVO, H_CAVO = 6.0, 9.0
 PASSACAVI_Y = (CY-14.0, CY+14.0)
+# boccole banana alimentazione sul lato corto opposto (x = X0): Ø8 e interasse come l'originale,
+# abbassate a z=20 per lasciare spazio ai dadi sotto la torretta della vite
+D_BANANA, Z_BANANA = 8.0, 20.0
+BANANA_Y = (CY-8.33, CY+8.33)
 VITI = [(X0+PARETE+1.5, CY), (X1-PARETE-1.5, CY)]   # al centro dei lati corti
 
 # coperchio + culla
@@ -70,6 +76,10 @@ for y in PASSACAVI_Y:
     t = trimesh.creation.box(extents=[PARETE*3, D_CAVO, H_CAVO])
     t.apply_translation([X1-PARETE/2, y, H-H_CAVO/2+D_CAVO/2+0.5])
     fori.append(trimesh.boolean.union([f, t]))
+for y in BANANA_Y:
+    f = cylinder(radius=D_BANANA/2, height=PARETE*3, sections=64)
+    f.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    f.apply_translation([X0+PARETE/2, y, Z_BANANA]); fori.append(f)
 box = box.difference(trimesh.boolean.union(
     fori + [cyl(D_GUIDA/2, x, y, H-P_GUIDA, H+1) for (x, y) in VITI]))
 print('scatola', box.is_watertight, box.bounds.round(2).tolist(), round(box.volume, 1))
