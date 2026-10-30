@@ -1,6 +1,5 @@
 # Scatola + coperchio per porta-fiala (case-ampoules_rigido).
-# Scatola: stesso ingombro dell'originale (80x60x45), pareti/fondo più spessi, due fori Ø8 sul lato corto
-# come nell'originale, due torrette per viti al centro dei lati corti.
+# Scatola: stesso ingombro dell'originale (80x60x45), pareti/fondo più spessi, passacavi in alto sul lato corto, due torrette per viti al centro dei lati corti.
 # Coperchio: piastra piena (solo i 2 fori viti) con culla che tiene il porta-fiala orizzontale,
 # centrato, apertura verso l'alto, asse perpendicolare al lato lungo.
 import trimesh, numpy as np
@@ -20,6 +19,9 @@ D_GUIDA  = 2.5     # foro guida nella torretta
 R_TORR   = 4.0
 H_TORR   = 14.0
 P_GUIDA  = 12.0
+# passacavi in alto sul lato corto, ai lati della torretta centrale
+D_CAVO, H_CAVO = 6.0, 9.0
+PASSACAVI_Y = (CY-14.0, CY+14.0)
 VITI = [(X0+PARETE+1.5, CY), (X1-PARETE-1.5, CY)]   # al centro dei lati corti
 
 # coperchio + culla
@@ -51,12 +53,15 @@ for (x, y) in VITI:
                                cone(0.3, R_TORR, x, y, H-H_TORR-R_TORR, H-H_TORR)])   # 45°: niente supporti
     torri.append(t.intersection(outer))
 box = trimesh.boolean.union([box] + torri)
-# i due fori Ø8 dell'originale sul lato corto (x = X1)
+# passacavi: tacche a U sul lato corto (x = X1), aperte in alto; col coperchio chiuso diventano fori
 fori = []
-for y in (-13.44, 3.22):
-    f = cylinder(radius=4.0, height=PARETE*3, sections=64)
+for y in PASSACAVI_Y:
+    f = cylinder(radius=D_CAVO/2, height=PARETE*3, sections=64)
     f.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
-    f.apply_translation([X1-PARETE/2, y, 30.0]); fori.append(f)
+    f.apply_translation([X1-PARETE/2, y, H-H_CAVO+D_CAVO/2])
+    t = trimesh.creation.box(extents=[PARETE*3, D_CAVO, H_CAVO])
+    t.apply_translation([X1-PARETE/2, y, H-H_CAVO/2+D_CAVO/2+0.5])
+    fori.append(trimesh.boolean.union([f, t]))
 box = box.difference(trimesh.boolean.union(
     fori + [cyl(D_GUIDA/2, x, y, H-P_GUIDA, H+1) for (x, y) in VITI]))
 print('scatola', box.is_watertight, box.bounds.round(2).tolist(), round(box.volume, 1))
