@@ -1,6 +1,6 @@
 # Tappo scorrevole per il collare superiore di case-ampoules_rigido:
 # entra con gioco nell'anello Ø31, costola che scorre nella fessura posteriore (fa anche da finecorsa),
-# foro centrale sotto per inserto a caldo 1/4"-20.
+# foro guida centrale sotto per avvitare direttamente una vite 1/4"-20 nella plastica.
 import trimesh, numpy as np
 from trimesh.creation import cylinder, box
 
@@ -11,8 +11,8 @@ SLOT_W   = 3.0            # larghezza fessura nel collare
 GIOCO_C  = 0.15           # gioco per lato della costola
 R_COSTOLA = 19.0          # fin dove sporge la costola (esterno collare = 19.5)
 H_COSTOLA = 6.0           # alta 6 mm, in cima al tappo (il tappo può scendere 13-6 = 7 mm sotto il bordo)
-D_INSERTO = 8.7           # foro per inserto a caldo 1/4" (verifica sulla scheda del tuo inserto)
-P_INSERTO = 13.5          # profondità foro
+D_FORO    = 5.4           # foro guida per vite 1/4"-20 autofilettante nella plastica (5.2 = più presa, 5.6 = più facile)
+P_FORO    = 15.0          # profondità foro (lascia 3 mm di fondo)
 SMUSSO    = 0.6
 SEC = 160
 
@@ -36,9 +36,9 @@ cut = trimesh.creation.extrude_polygon(
 cut.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0])); cut.apply_translation([0, (w+2)/2, 0])
 cost = cost.difference(cut)
 body = trimesh.boolean.union([body, cost])
-# foro inserto 1/4" al centro della faccia inferiore, con invito
-foro = trimesh.boolean.union([frustum(D_INSERTO/2, D_INSERTO/2, -1, P_INSERTO),
-                              frustum(D_INSERTO/2+0.6, D_INSERTO/2, -0.01, 0.6)])
+# foro guida 1/4" al centro della faccia inferiore, con invito
+foro = trimesh.boolean.union([frustum(D_FORO/2, D_FORO/2, -1, P_FORO),
+                              frustum(6.6/2, D_FORO/2, -0.01, (6.6-D_FORO)/2)])
 body = body.difference(foro)
 print(body.is_watertight, body.bounds.round(2).tolist(), round(body.volume, 1))
 # orientato per la stampa: faccia superiore sul piatto, foro verso l'alto
