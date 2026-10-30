@@ -28,7 +28,15 @@ VITI = [(X0+PARETE+1.5, CY), (X1-PARETE-1.5, CY)]   # al centro dei lati corti
 SP_COP  = 3.0
 R_CASE  = 19.5     # raggio esterno porta-fiala
 GIOCO   = 0.25
-SP_CULLA = 3.0
+SP_CULLA = 3.0     # spessore sotto il tubo
+LAT_CULLA = 2.5    # spessore pareti laterali all'altezza dell'asse (devono flettere per lo scatto)
+# scatto: sopra l'asse le pareti hanno un dentino che si chiude sui bordi del mezzo cilindro
+SCATTO   = 0.6     # interferenza per lato (0.4 = più morbido, 0.8 = più duro)
+H_DENTE  = 1.5     # tratto dritto del dentino sopra l'asse
+H_INVITO = 2.0     # smusso d'ingresso sopra il dentino
+# bordo del coperchio: battuta che entra nella scatola
+H_BORDO  = 3.0
+GIOCO_BORDO = 0.3  # per lato
 SEC = 160
 
 def rrect(x0, x1, y0, y1, r):
@@ -68,14 +76,29 @@ print('scatola', box.is_watertight, box.bounds.round(2).tolist(), round(box.volu
 box.export(__file__.replace('scatola.py', 'scatola.stl'))
 
 # ---------------- coperchio ----------------
-lid = prism(rrect(X0, X1, Y0, Y1, R_ANG), 0, SP_COP)
+# battuta (z 0..H_BORDO) che entra nella scatola, piastra sopra (H_BORDO..H_BORDO+SP_COP)
+g = PARETE + GIOCO_BORDO
+bordo = prism(rrect(X0+g, X1-g, Y0+g, Y1-g, R_ANG-PARETE), 0, H_BORDO+0.01)
+bordo = bordo.difference(trimesh.boolean.union(
+    [cyl(R_TORR+GIOCO_BORDO, x, y, -1, H_BORDO+1) for (x, y) in VITI]))      # incavi per le torrette
+z_pia = H_BORDO + SP_COP
+lid = trimesh.boolean.union([bordo, prism(rrect(X0, X1, Y0, Y1, R_ANG), H_BORDO, z_pia)])
+# culla a scatto: profilo nel piano xz, estruso lungo y
 rc = R_CASE + GIOCO
-z_asse = SP_COP + SP_CULLA + rc
-culla = prism(sbox(CX-rc-SP_CULLA, Y0, CX+rc+SP_CULLA, Y1), SP_COP-0.01, z_asse)
-tubo = cylinder(radius=rc, height=(Y1-Y0)+2, sections=SEC)
-tubo.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
-tubo.apply_translation([CX, CY, z_asse])
-lid = trimesh.boolean.union([lid, culla.difference(tubo)])
-lid = lid.difference(trimesh.boolean.union([cyl(D_PASS/2, x, y, -1, SP_COP+1) for (x, y) in VITI]))
+z_asse = z_pia + SP_CULLA + rc
+w = rc + LAT_CULLA
+wd = R_CASE - SCATTO                     # semiapertura del dentino
+z_top = z_asse + H_DENTE + H_INVITO
+from shapely.geometry import Polygon
+a = np.linspace(np.pi, 2*np.pi, 90)
+prof = Polygon([(CX-w, z_pia-0.01), (CX+w, z_pia-0.01), (CX+w, z_top), (CX+wd+H_INVITO, z_top),
+                (CX+wd, z_asse+H_DENTE), (CX+wd, z_asse), (CX+rc, z_asse)]
+               + [(CX+rc*np.cos(t), z_asse+rc*np.sin(t)) for t in a[::-1]][1:-1]
+               + [(CX-rc, z_asse), (CX-wd, z_asse), (CX-wd, z_asse+H_DENTE), (CX-wd-H_INVITO, z_top), (CX-w, z_top)])
+culla = extrude_polygon(prof, Y1-Y0)                 # profilo in xy, estrusione lungo z ...
+culla.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))   # ... y->z, z->-y
+culla.apply_translation([0, Y1, 0])
+lid = trimesh.boolean.union([lid, culla])
+lid = lid.difference(trimesh.boolean.union([cyl(D_PASS/2, x, y, -1, z_pia+1) for (x, y) in VITI]))
 print('coperchio', lid.is_watertight, lid.bounds.round(2).tolist(), round(lid.volume, 1))
 lid.export(__file__.replace('scatola.py', 'coperchio.stl'))
