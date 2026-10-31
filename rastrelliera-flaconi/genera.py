@@ -7,19 +7,19 @@ from manifold3d import Manifold, CrossSection, JoinType
 
 # ---------------- parametri (mm) ----------------
 D_FLACONE = 40.0
-GIOCO     = 0.5          # gioco radiale (PETG-CF: fori escono leggermente stretti)
+GIOCO     = 1.0          # gioco radiale -> foro Ø42
 D_FORO    = D_FLACONE + 2 * GIOCO   # 41
 PASSO     = 46.0         # interasse fori -> parete di 5 mm tra i fori
-BORDO     = 6.0          # parete esterna minima
-H         = 30.0         # altezza rastrelliera
-FONDO     = 3.0          # spessore fondo -> tasca profonda 27 mm (~39% del flacone)
+BORDO     = 4.0          # parete esterna minima
+H         = 26.0         # altezza rastrelliera
+FONDO     = 2.0          # fondo -> tasca profonda 24 mm (~34% del flacone)
 R_ANGOLI  = 8.0          # raggio angoli esterni
 SMUSSO    = 1.2          # smusso spigolo superiore esterno
 INVITO    = 1.5          # smusso d'invito sul bordo dei fori
 PIEDE     = 0.6          # smusso anti-"zampa d'elefante" alla base
 TACCA_L   = 20.0         # larghezza tacca frontale (presa / etichetta)
-TACCA_P   = 15.0         # profondità tacca dall'alto
-D_FORO_FONDO = 14.0      # foro nel fondo (spingi-fuori / scarico / meno materiale)
+TACCA_P   = 13.0         # profondità tacca dall'alto
+D_FORO_FONDO = 26.0      # foro grande nel fondo: meno materiale, si spinge fuori il flacone
 SEG = 128
 
 def blocco_arrotondato(w, d):
@@ -50,7 +50,7 @@ def tasca(x, y, d_bordo, tacca=True):
 
 def fila():
     w = 4 * PASSO + D_FORO + 2 * BORDO
-    d = D_FORO + 2 * BORDO + 4
+    d = D_FORO + 2 * BORDO
     m = blocco_arrotondato(w, d)
     for i in range(5):
         m -= tasca((i - 2) * PASSO, 0, d / 2)

@@ -2,12 +2,12 @@
 
 | File | Ingombro | Note |
 |---|---|---|
-| `rastrelliera_5_fila.stl` | 237 × 57 × 30 mm | 5 in fila, una tacca frontale per ogni flacone |
-| `rastrelliera_5_sfalsata.stl` | 145 × 93 × 30 mm | 3 dietro + 2 davanti a 60°, più compatta e stabile |
+| `rastrelliera_5_fila.stl` | 234 × 50 × 26 mm | 5 in fila, una tacca frontale per ogni flacone |
+| `rastrelliera_5_sfalsata.stl` | 142 × 90 × 26 mm | 3 dietro + 2 davanti a 60°, più compatta e stabile |
 
-Caratteristiche: fori Ø41 (gioco 0,5 mm per lato), tasca profonda 27 mm (~40% del flacone),
+Caratteristiche: fori Ø42 (gioco 1 mm per lato), tasca profonda 24 mm (~34% del flacone),
 smusso d'invito sui fori, tacca frontale a U per afferrare il flacone e leggere l'etichetta,
-foro Ø14 nel fondo per spingere fuori il flacone, angoli R8, smusso alla base contro la
+foro Ø26 nel fondo per spingere fuori il flacone, angoli R8, smusso alla base contro la
 "zampa d'elefante". Tutto è parametrico in `genera.py` (`pip install manifold3d trimesh`).
 
 ## Impostazioni consigliate (Creality Print, PETG-CF)
