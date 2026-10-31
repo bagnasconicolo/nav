@@ -75,12 +75,12 @@ def campo(pw):
     r = np.hypot(x-XC, z-Z_ASSE)
     z_fronte = Z_ASSE + RA
     # ripiano (sotto la faccia della scatola), tra i due fianchi
-    rip = rbox(p, [X0-g, Y_FACCIA-SP, ZB-g-SP], [X1+g, Y_FACCIA, Z_CULLA], R_BORDO)
+    rip = rbox(p, [X0-g, Y_FACCIA-SP, ZB-g-SP], [X1+g, Y_FACCIA+R_BORDO+1, Z_CULLA], R_BORDO)
     if FINESTRA_RIPIANO > 0:
         fin = rbox(p, [X0+FINESTRA_RIPIANO, -BIG, ZB+FINESTRA_RIPIANO], [X1-FINESTRA_RIPIANO, BIG, -FINESTRA_RIPIANO], 6.0)
         rip = smax(rip, -fin, 1.5)
     # fianchi: sagoma nel piano (y,z) con angoli raggiati, da terra al ripiano
-    sag = rbox(np.stack([y, z], -1), [Y_BASE-60, ZB-g-SP], [Y_FACCIA, z_fronte], R_SAGOMA)
+    sag = rbox(np.stack([y, z], -1), [Y_BASE-60, ZB-g-SP], [Y_FACCIA+R_SAGOMA+1, z_fronte], R_SAGOMA)
     ell = (np.hypot((pw[..., 1]-ARCO_YC)/ARCO_A, zw/ARCO_B) - 1) * min(ARCO_A, ARCO_B)
     sag = smax(sag, -ell, 3.0)                                   # arco
     sag = np.maximum(sag, -zw)                                   # tagliata a terra
@@ -97,6 +97,9 @@ def campo(pw):
                        np.maximum(y - (Y_LEDGE - PEND*(RI - r)), Y_BASE - y))
     anel = np.minimum(anel, ledge)
     corpo = smin(smin(rip, fianchi, R_GIUNTO), anel, R_GIUNTO)
+    # faccia superiore del ripiano e dei fianchi perfettamente piana e a spigolo vivo:
+    # è la faccia che va sul piatto, così tutto parte da lì (niente regioni sospese)
+    corpo = np.maximum(corpo, y - Y_FACCIA)
     # i raccordi non devono invadere tubo e scatola
     tubo = np.maximum(r - RI, Y_LEDGE - PEND*(RI - r) - y)
     scat = sbox(p, [X0-g, Y_FACCIA, ZB-g], [X1+g, BIG, Z_CULLA])
