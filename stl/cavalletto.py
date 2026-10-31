@@ -1,7 +1,7 @@
 # Cavalletto leggero: tiene scatola + porta-fiala con il tubo verticale, inclinato all'indietro.
 # Struttura a lastre sottili con raccordi morbidi:
 #  - ripiano su cui appoggia la faccia grande della scatola (con un'apertura che lo alleggerisce)
-#  - due fianchi sottili che scendono a terra
+#  - due fianchi sottili che scendono a terra, alleggeriti da un arco ellittico
 #  - anello che accoglie la coppa del tubo e sale fino al ripiano dietro al tubo;
 #    davanti si apre con un taglio curvo a 45° che lascia vedere la fiala.
 # Modellato come campo di distanza (SDF), convertito in mesh. L'STL è già orientato per la stampa
@@ -17,6 +17,8 @@ R_BORDO  = 1.2        # arrotondamento dei bordi delle lastre
 R_GIUNTO = 3.0        # raccordo tra le parti
 FINESTRA_RIPIANO = 12.0   # cornice del ripiano attorno all'apertura (0 = ripiano pieno)
 H_ANELLO = 10.0       # altezza dell'anello davanti alla coppa
+ARCO_PIEDE  = 16.0    # larghezza dei piedi ai lati dell'arco nei fianchi
+ARCO_FASCIA = 12.0    # materiale minimo sopra la chiave dell'arco
 RES     = 0.35
 
 # assieme in coordinate "A": scatola x[-25,55] y[-35,25] z[-45,0], coperchio sopra (z>0),
@@ -41,6 +43,15 @@ a = np.linspace(0, 2*np.pi, 180)
 anello = np.c_[XC+RA*np.cos(a), np.full(180, Y_BASE), Z_ASSE+RA*np.sin(a)]
 tz = -(anello @ n).min()
 T = np.eye(4); T[:3, :3] = R; T[2, 3] = tz
+
+# arco ellittico nei fianchi (nel piano verticale del mondo), aperto a terra
+def _mondo(yA, zA): return np.array([0, yA, zA]) @ R.T + [0, 0, tz]
+_dav = _mondo((-tz - n[2]*(Z_ASSE+RA)) / n[1], Z_ASSE+RA)[1]     # piede davanti a terra (Y mondo)
+_die = _mondo((-tz - n[2]*(ZB-g-SP)) / n[1], ZB-g-SP)[1]          # piede dietro a terra (Y mondo)
+ARCO_A = (_die - _dav)/2 - ARCO_PIEDE
+ARCO_YC = (_die + _dav)/2
+_t0, _t1 = _mondo(Y_FACCIA, Z_ASSE+RA), _mondo(Y_FACCIA, ZB-g-SP)  # bordo superiore del fianco
+ARCO_B = _t0[2] + (ARCO_YC-_t0[1])*(_t1[2]-_t0[2])/(_t1[1]-_t0[1]) - ARCO_FASCIA
 
 def sbox(p, lo, hi):
     c = (np.array(lo)+hi)/2; h = (np.array(hi)-lo)/2
@@ -68,6 +79,8 @@ def campo(pw):
         rip = smax(rip, -fin, 1.5)
     # fianchi: sagoma nel piano (y,z) con angoli raggiati, da terra al ripiano
     sag = rbox(np.stack([y, z], -1), [Y_BASE-60, ZB-g-SP], [Y_FACCIA, z_fronte], R_SAGOMA)
+    ell = (np.hypot((pw[..., 1]-ARCO_YC)/ARCO_A, zw/ARCO_B) - 1) * min(ARCO_A, ARCO_B)
+    sag = smax(sag, -ell, 3.0)                                   # arco
     sag = np.maximum(sag, -zw)                                   # tagliata a terra
     fx = np.minimum(np.abs(x-(X0-g-SP/2)), np.abs(x-(X1+g+SP/2))) - SP/2
     fianchi = lastra(sag, fx, R_BORDO)
