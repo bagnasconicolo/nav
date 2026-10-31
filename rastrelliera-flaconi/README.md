@@ -1,21 +1,22 @@
-# Rastrelliera 5 flaconi (Ø40 × 70 mm) — Creality K2, PETG-CF
+# COROLLA — portaflaconi per 5 flaconi (Ø40 × 70 mm) · Creality K2, PETG-CF
 
-![](render/render_flaconi.png)
+![](render/render_corolla_flaconi.png)
 
-Una forma sola: una capsula bassa e continua, 231 × 49 × 20 mm, 88 cm³.
-Nessuna scritta, nessuna tacca, nessun foro a vista — solo cinque cavità.
+Cinque flaconi in cerchio, ognuno inclinato di 7° verso l'esterno: il gruppo si apre come una
+corolla. Il corpo è un pentalobo morbido che abbraccia ogni flacone, con un vuoto al centro.
+Si prende da qualsiasi lato, occupa poco spazio sul banco e non ha un "davanti".
 
-- Fori Ø42 (gioco 1 mm per lato), tasche profonde 18,4 mm, fondo pieno 1,6 mm
-- Pareti uniformi da 3,5 mm: esterne e tra i fori hanno lo stesso spessore
-- Bordo superiore raccordato R2, imbocco dei fori raccordato R1,2
-- Linea d'ombra alla base: smusso rientrante 1,2 mm a 45° — il pezzo sembra sospeso;
-  si stampa senza supporti e fa anche da anti "zampa d'elefante"
+- 129 × 126 × 22 mm, 123 cm³ pieni (con infill al 10–15 % sono pochi grammi)
+- Fori Ø42 (gioco 1 mm per lato); tasche inclinate profonde circa 18 mm
+- Raccordi concavi R14 tra i lobi, bordo superiore R2, imbocco dei fori R1 (orizzontale)
+- Linea d'ombra alla base: smusso rientrante di 1,2 mm a 45°, senza supporti
+- Il lobo è dimensionato sul punto critico (il bordo esterno in alto, dove la tasca inclinata
+  si avvicina alla parete): lì restano comunque 1,5 mm di piano più i raccordi
 
-Parametrico in `genera.py` (`pip install manifold3d trimesh`).
+Parametrico in `genera.py` (`INCLINA`, `H`, `D_CENTRO`, `R_VITA`…) — `pip install manifold3d trimesh`.
 
 ## Stampa (Creality Print, PETG-CF)
-- Ugello temprato 0,4 (o 0,6), layer 0,2 mm — 0,16 per raccordi più lisci
+- Ugello temprato 0,4, layer 0,2 (0,12–0,16 con layer adattivi per raccordi più lisci)
 - 250–260 °C, piatto 70–80 °C, ventola 20–40 %
 - 3 perimetri, 5 strati superiori, gyroid 10–15 %, **stiratura** sulla faccia superiore
-- Nessun supporto; filamento asciugato (65 °C, 6–8 h)
-- Cucitura: "posteriore" o "allineata", così la faccia frontale resta pulita
+- Nessun supporto. Cucitura "allineata" su un lobo, o "dietro"
