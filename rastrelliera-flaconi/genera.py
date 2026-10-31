@@ -3,7 +3,7 @@ Genera gli STL con manifold3d:  pip install manifold3d numpy
 """
 import math
 import numpy as np
-from manifold3d import Manifold, CrossSection, JoinType
+from manifold3d import Manifold, CrossSection, JoinType, FillRule
 
 # ---------------- parametri (mm) ----------------
 D_FLACONE = 40.0
@@ -22,7 +22,15 @@ TACCA_P   = 13.0         # profondità tacca dall'alto
 D_FORO_FONDO = 26.0      # foro grande nel fondo: meno materiale, si spinge fuori il flacone
 SEG = 128
 
-def blocco_arrotondato(w, d):
+# ---------------- scritte bicolore (CFS) ----------------
+ETICHETTE = ["Li", "Na", "Cu", "B", "K"]   # una per foro, da sinistra a destra
+FASCIA    = 12.0         # gradino frontale su cui stanno le scritte (versione in fila)
+H_FASCIA  = 12.0         # altezza del gradino (basso = meno materiale)
+H_TESTO   = 7.0          # altezza delle maiuscole
+INCASSO   = 0.6          # profondità scritta = 3 layer da 0,2 -> pochi cambi colore
+FONT      = "DejaVu Sans"
+
+def blocco_arrotondato(w, d, H=H):
     """Parallelepipedo w x d x H con angoli raggiati, smusso sopra e alla base."""
     def sez(off):
         base = CrossSection.square((w - 2 * R_ANGOLI, d - 2 * R_ANGOLI), center=True)
@@ -48,6 +56,36 @@ def tasca(x, y, d_bordo, tacca=True):
         t += box + cil
     return t
 
+def testo(s, x, y):
+    """Scritta s centrata in (x, y), come CrossSection, alta H_TESTO (maiuscole)."""
+    from matplotlib.textpath import TextPath
+    from matplotlib.font_manager import FontProperties
+    fp = FontProperties(family=FONT, weight="bold")
+    cap = TextPath((0, 0), "H", size=1, prop=fp).get_extents().height
+    tp = TextPath((0, 0), s, size=H_TESTO / cap, prop=fp)
+    polys = [p for p in tp.to_polygons(closed_only=True) if len(p) > 2]
+    cs = CrossSection(polys, FillRule.EvenOdd)
+    (x0, y0), (x1, y1) = cs.bounds()[:2], cs.bounds()[2:]
+    return cs.translate((x - (x0 + x1) / 2, y - (y0 + y1) / 2))
+
+def fila_scritte():
+    """Versione in fila con fascia frontale e scritte incassate. Ritorna (base, scritte)."""
+    w = 4 * PASSO + D_FORO + 2 * BORDO
+    d_corpo = D_FORO + 2 * BORDO
+    d = d_corpo + FASCIA
+    corpo = blocco_arrotondato(w, d_corpo).translate((0, FASCIA / 2, 0))
+    gradino = blocco_arrotondato(w, d, H_FASCIA)
+    m = corpo + gradino
+    y_foro = FASCIA / 2
+    y_testo = (-d / 2 + SMUSSO + y_foro - d_corpo / 2) / 2
+    z_top = H_FASCIA
+    scritte = Manifold()
+    for i in range(5):
+        m -= tasca((i - 2) * PASSO, y_foro, 0, tacca=False)
+        scritte += Manifold.extrude(testo(ETICHETTE[i], (i - 2) * PASSO, y_testo), INCASSO).translate(
+            (0, 0, z_top - INCASSO))
+    return m - scritte, scritte
+
 def fila():
     w = 4 * PASSO + D_FORO + 2 * BORDO
     d = D_FORO + 2 * BORDO
@@ -67,6 +105,11 @@ def sfalsata():
         m -= tasca((i - 0.5) * PASSO, -dy / 2, d / 2 - dy / 2)
     return m
 
+def to_tm(m):
+    import trimesh
+    mesh = m.to_mesh()
+    return trimesh.Trimesh(np.asarray(mesh.vert_properties)[:, :3], np.asarray(mesh.tri_verts))
+
 def salva(m, nome):
     mesh = m.to_mesh()
     v = np.asarray(mesh.vert_properties)[:, :3]
@@ -81,3 +124,12 @@ def salva(m, nome):
 if __name__ == "__main__":
     salva(fila(), "rastrelliera_5_fila.stl")
     salva(sfalsata(), "rastrelliera_5_sfalsata.stl")
+    base, scritte = fila_scritte()
+    salva(base, "rastrelliera_5_scritte_BASE.stl")
+    salva(scritte, "rastrelliera_5_scritte_TESTO.stl")
+    import trimesh
+    sc = trimesh.Scene()
+    sc.add_geometry(to_tm(base), node_name="base", geom_name="base")
+    sc.add_geometry(to_tm(scritte), node_name="scritte", geom_name="scritte")
+    sc.export("rastrelliera_5_scritte_bicolore.3mf")
+    print("rastrelliera_5_scritte_bicolore.3mf: base + scritte")

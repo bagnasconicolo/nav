@@ -18,3 +18,14 @@ foro Ø26 nel fondo per spingere fuori il flacone, angoli R8, smusso alla base c
 - Asciugare il filamento (65 °C, 6–8 h) prima della stampa
 
 Se i flaconi entrano troppo stretti/larghi, modifica `GIOCO` in `genera.py` e rigenera.
+
+## Versione con scritte bicolore (CFS)
+`rastrelliera_5_scritte_bicolore.3mf` (oppure i due STL `_BASE` + `_TESTO`): versione in fila
+con un gradino frontale alto 12 mm su cui stanno le sigle **Li · Na · Cu · B · K**, incassate
+di 0,6 mm (alte 7 mm, DejaVu Sans Bold) e riempite con il secondo colore.
+234 × 62 × 26 mm, 163 cm³ pieni.
+
+In Creality Print: apri il 3MF → quando chiede, carica come **un solo oggetto con più parti** →
+assegna lo slot CFS del colore base alla parte `base` e un altro slot alla parte `scritte`.
+Con layer 0,2 i cambi colore sono solo 3 layer (z 11,4–12), quindi poco spreco di spurgo.
+Le sigle si cambiano nella lista `ETICHETTE` di `genera.py`.
