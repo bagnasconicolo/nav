@@ -3,7 +3,7 @@
 #  - ripiano su cui appoggia la faccia grande della scatola (con un'apertura che lo alleggerisce)
 #  - due fianchi sottili che scendono a terra, alleggeriti da un arco ellittico
 #  - anello che accoglie la coppa del tubo e sale fino al ripiano dietro al tubo;
-#    davanti si apre con un taglio curvo a 45° che lascia vedere la fiala.
+#    davanti si apre con un taglio curvo che lascia vedere la fiala.
 # Modellato come campo di distanza (SDF), convertito in mesh. L'STL è già orientato per la stampa
 # (ripiano sul piatto): nessun supporto.
 import numpy as np, trimesh
@@ -33,7 +33,9 @@ g = GIOCO
 RI = R_TUBO + g                          # raggio interno anello
 RA = RI + SP                             # raggio esterno anello
 Y_LEDGE = Y_FONDO - g                    # dove appoggia il bordo della coppa
-Y_BASE = Y_LEDGE - 3.0                   # fondo dell'anello (smusso 45° di 3 mm)
+Y_BASE = Y_LEDGE - 3.0                   # fondo dell'anello
+# pendenza degli orli dell'anello rispetto al piano di stampa: 60° (tan) -> niente supporti
+PEND = np.tan(np.radians(60))
 
 # --- A -> mondo: y_A verticale, inclinata indietro (verso -z_A); l'anello tocca terra
 th = np.radians(INCLINAZIONE)
@@ -85,18 +87,18 @@ def campo(pw):
     fx = np.minimum(np.abs(x-(X0-g-SP/2)), np.abs(x-(X1+g+SP/2))) - SP/2
     fianchi = lastra(sag, fx, R_BORDO)
     # anello per la coppa: tutto intorno in basso; dietro sale fino al ripiano;
-    # davanti il bordo sale lungo l'arco a 45° fino al ripiano
+    # davanti il bordo sale lungo l'arco (a 60° rispetto al piano di stampa) fino al ripiano
     phi = np.abs(np.arctan2(x-XC, z-Z_ASSE))                     # 0 = davanti
-    y_lim = np.minimum(Y_LEDGE + H_ANELLO + RA*phi, Y_FACCIA)
+    y_lim = np.minimum(Y_LEDGE + H_ANELLO + PEND*RA*phi, Y_FACCIA)
     guscio = np.abs(r - (RI+RA)/2) - SP/2
     anel = np.maximum(guscio, np.maximum(y - y_lim, Y_BASE - y))
-    # smusso interno a 45° su cui appoggia il bordo della coppa
-    ledge = np.maximum(np.maximum((RI - 3.0) - r, r - RA + 0.01),
-                       np.maximum(y - (Y_LEDGE - (RI - r)), Y_BASE - y))
+    # smusso interno (60°) su cui appoggia il bordo della coppa
+    ledge = np.maximum(np.maximum((RI - 3.0/PEND) - r, r - RA + 0.01),
+                       np.maximum(y - (Y_LEDGE - PEND*(RI - r)), Y_BASE - y))
     anel = np.minimum(anel, ledge)
     corpo = smin(smin(rip, fianchi, R_GIUNTO), anel, R_GIUNTO)
     # i raccordi non devono invadere tubo e scatola
-    tubo = np.maximum(r - RI, Y_LEDGE - (RI - r) - y)
+    tubo = np.maximum(r - RI, Y_LEDGE - PEND*(RI - r) - y)
     scat = sbox(p, [X0-g, Y_FACCIA, ZB-g], [X1+g, BIG, Z_CULLA])
     d = np.maximum(corpo, -np.minimum(tubo, scat))
     return np.maximum(d, -zw)
