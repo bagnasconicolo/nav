@@ -1,7 +1,7 @@
 # Cavalletto leggero: tiene scatola + porta-fiala con il tubo verticale, inclinato all'indietro.
 # Struttura a lastre sottili con raccordi morbidi:
 #  - ripiano su cui appoggia la faccia grande della scatola (con un'apertura che lo alleggerisce)
-#  - due fianchi sottili che scendono a terra, alleggeriti da un arco ellittico, arrotondati davanti in alto
+#  - due fianchi sottili che scendono a terra, alleggeriti da un arco ellittico, smussati davanti in alto
 #  - fessura passacavo dall'apertura del ripiano lungo il retro dell'anello fino a terra
 #  - anello che accoglie la coppa del tubo e sale fino al ripiano dietro al tubo;
 #    davanti si apre con un taglio curvo che lascia vedere la fiala.
@@ -20,8 +20,7 @@ FINESTRA_RIPIANO = 12.0   # cornice del ripiano attorno all'apertura (0 = ripian
 H_ANELLO = 10.0       # altezza dell'anello davanti alla coppa
 ARCO_PIEDE  = 16.0    # larghezza dei piedi ai lati dell'arco nei fianchi
 ARCO_FASCIA = 12.0    # materiale minimo sopra la chiave dell'arco
-R_GAMBE = 14.0        # raggio dell'arrotondamento degli angoli alti davanti dei fianchi
-                      # (l'arco si ferma a 45° sul piano di stampa: niente supporti)
+SMUSSO_GAMBE = 10.0   # smusso a 45° degli angoli alti davanti dei fianchi
 FESSURA = 4.0         # larghezza fessura passacavo (apertura del ripiano -> dietro l'anello -> base)
 RES     = 0.35
 
@@ -88,8 +87,7 @@ def campo(pw):
     ell = (np.hypot((pw[..., 1]-ARCO_YC)/ARCO_A, zw/ARCO_B) - 1) * min(ARCO_A, ARCO_B)
     sag = smax(sag, -ell, 3.0)                                   # arco
     sag = np.maximum(sag, -zw)                                   # tagliata a terra
-    yc, zc = Y_FACCIA - R_GAMBE*np.sqrt(0.5), z_fronte - R_GAMBE          # angolo alto davanti arrotondato
-    sag = np.maximum(sag, np.minimum(np.minimum(y - yc, z - zc), np.hypot(y - yc, z - zc) - R_GAMBE))
+    sag = np.maximum(sag, ((y - Y_FACCIA) + (z - z_fronte) + SMUSSO_GAMBE) / np.sqrt(2))   # smusso davanti in alto
     fx = np.minimum(np.abs(x-(X0-g-SP/2)), np.abs(x-(X1+g+SP/2))) - SP/2
     fianchi = lastra(sag, fx, R_BORDO)
     # anello per la coppa: tutto intorno in basso; dietro sale fino al ripiano;

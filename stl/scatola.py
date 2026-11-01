@@ -28,6 +28,9 @@ PASSACAVI_Y = (CY-14.0, CY+14.0)
 # abbassate a z=20 per lasciare spazio ai dadi sotto la torretta della vite
 D_BANANA, Z_BANANA = 8.0, 20.0
 BANANA_Y = (CY-8.33, CY+8.33)
+# foro cavi sulla faccia grande (lato lungo y = Y0) che appoggia sul cavalletto:
+# cade dentro l'apertura rettangolare del ripiano, sulla fessura passacavo
+D_FORO_FACCIA, Z_FORO_FACCIA = 8.0, 26.0
 VITI = [(X0+PARETE+1.5, CY), (X1-PARETE-1.5, CY)]   # al centro dei lati corti
 
 # coperchio + culla
@@ -80,6 +83,9 @@ for y in BANANA_Y:
     f = cylinder(radius=D_BANANA/2, height=PARETE*3, sections=64)
     f.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
     f.apply_translation([X0+PARETE/2, y, Z_BANANA]); fori.append(f)
+f = cylinder(radius=D_FORO_FACCIA/2, height=PARETE*3, sections=64)
+f.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+f.apply_translation([CX, Y0+PARETE/2, Z_FORO_FACCIA]); fori.append(f)
 box = box.difference(trimesh.boolean.union(
     fori + [cyl(D_GUIDA/2, x, y, H-P_GUIDA, H+1) for (x, y) in VITI]))
 print('scatola', box.is_watertight, box.bounds.round(2).tolist(), round(box.volume, 1))
