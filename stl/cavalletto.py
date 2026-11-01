@@ -2,6 +2,7 @@
 # Struttura a lastre sottili con raccordi morbidi:
 #  - ripiano su cui appoggia la faccia grande della scatola (con un'apertura che lo alleggerisce)
 #  - due fianchi sottili che scendono a terra, alleggeriti da un arco ellittico, smussati davanti in alto
+#  - dorsino di rinforzo sotto il ripiano, sul bordo posteriore
 #  - fessura passacavo dall'apertura del ripiano lungo il retro dell'anello fino a terra
 #  - anello che accoglie la coppa del tubo e sale fino al ripiano dietro al tubo;
 #    davanti si apre con un taglio curvo che lascia vedere la fiala.
@@ -21,6 +22,7 @@ H_ANELLO = 10.0       # altezza dell'anello davanti alla coppa
 ARCO_PIEDE  = 16.0    # larghezza dei piedi ai lati dell'arco nei fianchi
 ARCO_FASCIA = 12.0    # materiale minimo sopra la chiave dell'arco
 SMUSSO_GAMBE = 10.0   # smusso a 45° degli angoli alti davanti dei fianchi
+H_DORSO = 10.0        # dorsino di rinforzo sotto il ripiano, sul bordo posteriore (0 = niente)
 FESSURA = 4.0         # larghezza fessura passacavo (apertura del ripiano -> dietro l'anello -> base)
 RES     = 0.35
 
@@ -101,6 +103,9 @@ def campo(pw):
                        np.maximum(y - (Y_LEDGE - PEND*(RI - r)), Y_BASE - y))
     anel = np.minimum(anel, ledge)
     corpo = smin(smin(rip, fianchi, R_GIUNTO), anel, R_GIUNTO)
+    if H_DORSO > 0:   # dorsino: lastra sotto il ripiano lungo il bordo posteriore, da fianco a fianco
+        dorso = rbox(p, [X0-g-1, Y_FACCIA-SP-H_DORSO, ZB-g-SP], [X1+g+1, Y_FACCIA, ZB-g], R_BORDO)
+        corpo = smin(corpo, dorso, R_GIUNTO)
     # faccia superiore del ripiano e dei fianchi perfettamente piana e a spigolo vivo:
     # è la faccia che va sul piatto, così tutto parte da lì (niente regioni sospese)
     corpo = np.maximum(corpo, y - Y_FACCIA)
@@ -110,7 +115,7 @@ def campo(pw):
     d = np.maximum(corpo, -np.minimum(tubo, scat))
     # fessura passacavo: dall'apertura del ripiano, attraverso il ripiano fino all'anello,
     # poi lungo tutta la parete posteriore dell'anello fino a terra
-    fes = sbox(p, [XC-FESSURA/2, -BIG, ZB+FINESTRA_RIPIANO+2], [XC+FESSURA/2, BIG, Z_ASSE-RI+0.5])
+    fes = sbox(p, [XC-FESSURA/2, -BIG, ZB+FINESTRA_RIPIANO+2], [XC+FESSURA/2, BIG, Z_ASSE-RI+3.0])   # +3: taglia anche lo smusso alla base
     d = smax(d, -fes, 0.8)
     return np.maximum(d, -zw)
 
