@@ -15,25 +15,16 @@ parte = "tutto"; // [tutto, base, nut, nut_x3, prova]
 spessore_retro = 3;       // fondo pieno dietro le canalature (mm)
 profondita = 10;          // profondità delle canalature (mm)
 raggio_pianta = 1.2;      // arrotonda gli spigoli in pianta (vette, angoli delle canalature)
-raccordo_bordo = 2;       // raccordo dello spigolo frontale esterno
-raccordo_canalature = 0.8;  // raccordo del labbro delle canalature
-smusso_retro = 0.6;       // piccolo smusso sul retro (evita il "piede d'elefante")
-passo_raccordo = 0.3;     // altezza dei gradini del raccordo (≈ altezza layer)
 
 /* [Nut] */
-nut_largh_alto = 9.2;
-nut_largh_basso = 5.5;
-nut_altezza = 13.4;
-nut_spess_alto = 7;       // deve stare < profondita
-nut_spess_basso = 5.5;
-nut_raggio = 0.8;          // arrotondamento spigoli
-cavo_foro = 2.1;          // cavetto acciaio Ø1.5 o cordino Ø2
-sede_nodo = 4;            // Ø della sede in cima per il nodo / la ghiera
-sede_prof = 2.5;
+nut_altezza = 13.4;       // il profilo della foto viene scalato a questa altezza
+nut_spessore = 5;         // piastrina: deve stare < profondita
+nut_raggio = 0.6;         // arrotondamento degli spigoli
+cavo_foro = 2;            // cavetto acciaio Ø1.5 (o cordino Ø1.5)
 
 /* [Fissaggio a muro] */
 asola_foro = 7;     // Ø testa vite
-asola_gambo = 3.5;   // Ø gambo vite
+asola_gambo = 3.5;  // Ø gambo vite
 asola_corsa = 5;
 tasca_vite = 10;    // spazio per la testa dentro il corpo
 tasca_prof = 3;
@@ -43,8 +34,13 @@ $fn = 32;
 H = spessore_retro + profondita;
 asole = [[24.1,41.6],[79.9,41.6]];
 // posizione dei nut nell'anteprima: [x, y in cima, rotazione, colore]
-nut_foto = [[20.4,10.4,0,"Gold"],[47.9,31.6,0,"Crimson"],
-            [76.6,16.4,0,"SeaGreen"]];
+nut_foto = [[20.4,10.4,0,"Gold"],[47.9,31.6,0,"Crimson"],[76.6,16.4,0,"SeaGreen"]];
+
+// Profilo dei nut della foto (lato sinistro concavo, due scalini a destra),
+// in unità della foto: alto 86.
+nut_profilo = [[-15,0],[15,0],[17,4],[22,20],[21,25],[24,30],[24,36],[28,44],
+               [30,56],[30,78],[27,84],[20,86],[-22,86],[-29,84],[-31,76],
+               [-27,60],[-21,36],[-19,8],[-17,2]];
 
 // ricalcate dalla foto: sagoma e canalature (tolta quella del nut blu) (mm, y=0 alla base)
 // tolto il picco di destra insieme alla canalatura del nut blu
@@ -61,29 +57,17 @@ module liscia(r) offset(r=r) offset(delta=-r) offset(r=-r) offset(delta=r) child
 module sagoma2d()     liscia(raggio_pianta) polygon(sagoma);
 module canalature2d() liscia(raggio_pianta) for (c = canalature) polygon(c);
 
-// pianta del corpo con il bordo rientrato di d e le canalature allargate di c
-module corpo2d(d=0, c=0)
+module corpo2d()
   offset(r=raggio_pianta) offset(delta=-raggio_pianta)    // arrotonda i labbri all'imbocco
-    difference() { offset(delta=-d) sagoma2d(); offset(r=c) canalature2d(); }
-
-function quarto(R, z) = R - sqrt(max(0, R*R - z*z));   // profilo del raccordo
+    difference() { sagoma2d(); canalature2d(); }
 
 // ------------------------------------------------------------------ 3D
 module base() {
-  Rb = raccordo_bordo; Rc = raccordo_canalature;
-  zr = H - Rb;                                // inizio del raccordo frontale
-  n = ceil(Rb / passo_raccordo);
   difference() {
     union() {
-      linear_extrude(smusso_retro) offset(delta=-smusso_retro) sagoma2d();
-      translate([0,0,smusso_retro]) linear_extrude(spessore_retro - smusso_retro + 0.01) sagoma2d();
-      translate([0,0,spessore_retro]) linear_extrude(zr - spessore_retro + 0.01) corpo2d();
-      // raccordo frontale a gradini (invisibili a layer 0.2-0.3)
-      for (i = [0:n-1]) {
-        z = (i + 1) * passo_raccordo;
-        translate([0,0,zr + i*passo_raccordo]) linear_extrude(passo_raccordo + 0.01)
-          corpo2d(quarto(Rb, z), quarto(Rc, max(0, z - (Rb - Rc))));
-      }
+      linear_extrude(spessore_retro + 0.01) sagoma2d();
+      // corpo con le canalature: fianchi dritti come il legno tagliato
+      translate([0,0,spessore_retro]) linear_extrude(profondita) corpo2d();
     }
     // asole a buco di serratura nel retro + tasca per la testa della vite:
     // la testa entra nel foro grande, poi il portachiavi scende e la vite resta nell'asola
@@ -99,25 +83,25 @@ module base() {
   }
 }
 
-// Nut: tronco di piramide con spigoli arrotondati, stampato in piedi
-// (lato stretto sul piatto). Il cavo passa nel foro centrale e si ferma
-// con un nodo o una ghiera nella sede in cima.
+// Nut: piastrina col profilo della foto. Si stampa in piedi, lato stretto sul
+// piatto. Il cavo entra dal basso nel foro centrale e si ferma in cima con una
+// ghiera da crimpare.
+module nut2d() scale(nut_altezza/86) polygon(nut_profilo);
+
 module nut() {
   r = nut_raggio;
-  a = nut_largh_alto/2 - r;  b = nut_largh_basso/2 - r;
-  c = nut_spess_alto/2 - r;  d = nut_spess_basso/2 - r;
   difference() {
-    hull() {
-      linear_extrude(0.01) offset(r=r) square([2*b, 2*d], center=true);
-      for (sx=[-1,1], sy=[-1,1]) translate([sx*a, sy*c, nut_altezza - r]) sphere(r=r);
-    }
-    translate([0,0,-1]) cylinder(d=cavo_foro, h=nut_altezza+2);
-    translate([0,0,nut_altezza - sede_prof]) cylinder(d=sede_nodo, h=sede_prof+1);
-    translate([0,0,-0.01]) cylinder(d1=cavo_foro+1, d2=cavo_foro, h=0.5);
+    rotate([90,0,0])
+      minkowski() {
+        linear_extrude(nut_spessore - 2*r, center=true) offset(delta=-r) nut2d();
+        sphere(r=r, $fn=12);
+      }
+    translate([0,0,-1]) cylinder(d=cavo_foro, h=nut_altezza+2, $fn=20);
+    translate([0,0,-5]) cube(10, center=true);   // piede piatto sul piatto di stampa
   }
 }
 
-module nut_x3() for (i=[0:2]) translate([i*13,0,0]) nut();
+module nut_x3() for (i=[0:2]) translate([i*14,0,0]) nut();
 
 if (parte == "base") base();
 else if (parte == "nut") nut();
@@ -128,6 +112,6 @@ else {
   color("BurlyWood") base();
   color("SaddleBrown") linear_extrude(spessore_retro + 0.05) offset(delta=-0.3) sagoma2d();  // fondo scuro come l'originale
   for (n = nut_foto) color(n[3])
-    translate([n[0], n[1], spessore_retro + nut_spess_alto/2 + 0.5])
+    translate([n[0], n[1], spessore_retro + nut_spessore/2 + 0.3])
       rotate(n[2]) translate([0, -nut_altezza, 0]) rotate([-90,0,0]) nut();
 }
