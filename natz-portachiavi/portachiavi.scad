@@ -14,7 +14,9 @@ parte = "tutto"; // [tutto, base, nut, nut_x3, prova]
 /* [Base] */
 spessore_retro = 3;       // fondo pieno dietro le canalature (mm)
 profondita = 10;          // profondità delle canalature (mm)
-raggio_pianta = 1.2;      // arrotonda gli spigoli in pianta (vette, angoli delle canalature)
+raggio_pianta = 1.2;      // arrotonda gli spigoli in pianta delle canalature
+raggio_vette = 4;         // arrotonda vette e spalle della montagna
+raggio_selle = 2;         // arrotonda le selle (angoli rientranti del contorno)
 raggio_bordo = 1.5;       // arrotondamento dei bordi sul davanti (contorno e canalature)
 
 /* [Nut] */
@@ -37,15 +39,16 @@ asole = [[23,41.5],[48,50]];   // a quote diverse: a destra il legno è stretto
 // posizione dei nut nell'anteprima: [x, y in cima, rotazione, colore]
 nut_foto = [[20.4,10.4,0,"Gold"],[47.9,31.6,0,"Crimson"],[76.6,16.4,0,"SeaGreen"]];
 
-// Profilo dei nut della foto (lato sinistro concavo, due scalini a destra),
-// in unità della foto: alto 86.
-nut_profilo = [[-15,0],[15,0],[17,4],[22,20],[21,25],[24,30],[24,36],[28,44],
-               [30,56],[30,78],[27,84],[20,86],[-22,86],[-29,84],[-31,76],
-               [-27,60],[-21,36],[-19,8],[-17,2]];
+// Profilo dei nut: trapezio simmetrico con i fianchi leggermente concavi,
+// ricavato dai nut della foto (unità della foto, alto 86). Si definisce
+// solo il lato destro, il sinistro è speculare.
+nut_mezzo = [[15,0],[17,2],[19,8],[21,36],[27,60],[31,76],[29,84],[22,86]];
+nut_profilo = concat(nut_mezzo,
+                     [for (i = [len(nut_mezzo)-1:-1:0]) [-nut_mezzo[i][0], nut_mezzo[i][1]]]);
 
 // ricalcate dalla foto: sagoma e canalature (tolta quella del nut blu) (mm, y=0 alla base)
 // versanti spezzati; a destra il gradino segue il taglio della canalatura centrale
-sagoma = [[93,0],[92,26.5],[80,41.5],[74.2,67.1],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[15,44],[9.5,24],[0,0]];
+sagoma = [[93,0],[92,26.5],[80,41.5],[78.5,62],[67,101],[50.4,70.8],[45.3,62],[41.6,62],[29.5,80.5],[15,44],[9.5,24],[0,0]];
 
 canalature = [
   [[24.4,35.3],[22.3,34.4],[23.4,24.8],[14.3,8.9],[15.1,-3.0],[22.4,-3.0],[23.5,6.2],[31.9,21.5],[31.4,24.3]],
@@ -55,7 +58,10 @@ canalature = [
 // ------------------------------------------------------------------ 2D
 module liscia(r) offset(r=r) offset(delta=-r) offset(r=-r) offset(delta=r) children();
 
-module sagoma2d()     liscia(raggio_pianta) polygon(sagoma);
+module sagoma2d()
+  offset(r=raggio_vette) offset(delta=-raggio_vette)
+  offset(r=-raggio_selle) offset(delta=raggio_selle)
+    polygon(sagoma);
 module canalature2d() liscia(raggio_pianta) for (c = canalature) polygon(c);
 
 module corpo2d()

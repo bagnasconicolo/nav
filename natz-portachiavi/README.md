@@ -14,7 +14,7 @@ della canalatura centrale.
 | File | Cosa |
 |---|---|
 | `portachiavi.scad` | modello parametrico OpenSCAD (misure nel Customizer) |
-| `stl/base.stl` | la montagna, 96 × 107 × 13 mm |
+| `stl/base.stl` | la montagna, 93 × 101 × 13 mm |
 | `stl/nut.stl` | un nut |
 | `stl/nut_x3.stl` | 3 nut sul piatto (se li fai dello stesso colore) |
 | `stl/prova.stl` | pezzetto di base per provare l'incastro di un nut |
@@ -33,7 +33,7 @@ openscad -D 'parte="nut"' -o stl/nut.stl portachiavi.scad
 
 ## Stampa
 
-Ingombro 96 × 107 mm: ci sta su qualsiasi stampante.
+Ingombro 93 × 101 mm: ci sta su qualsiasi stampante.
 
 - **Base**: PLA effetto legno (o PLA marrone chiaro), stampata **col retro sul
   piatto** così com'è nello STL. Nessun supporto: le canalature sono aperte verso
@@ -43,8 +43,8 @@ Ingombro 96 × 107 mm: ci sta su qualsiasi stampante.
   3 mm, poi cambio filamento (pausa al layer a 3 mm) e il resto in legno chiaro.
   I bordi sul davanti (contorno e canalature) sono arrotondati con raggio
   1.5 mm (`raggio_bordo`); il lato sul piatto resta a spigolo vivo.
-- **Nut**: piastrine spesse 5 mm col profilo dei nut della foto (lato concavo,
-  due scalini sull'altro lato). 3 colori (giallo, rosso, verde), stampati in
+- **Nut**: piastrine spesse 5 mm, trapezio simmetrico con i fianchi
+  leggermente concavi. 3 colori (giallo, rosso, verde), stampati in
   piedi con il lato stretto sul piatto. Nessun supporto, 100 % infill. Se
   tendono a staccarsi dal piatto, usa un brim.
 
