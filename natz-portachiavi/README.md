@@ -20,7 +20,8 @@ della canalatura centrale.
 | `stl/prova.stl` | pezzetto di base per provare l'incastro di un nut |
 
 Rigenerare gli STL dopo una modifica (la base ci mette circa 3 minuti per
-via dell'arrotondamento dei bordi):
+via dell'arrotondamento dei bordi; l'anteprima `parte="tutto"` usa
+`stl/base.stl`, quindi rigenera prima quello):
 
 ```bash
 openscad -D 'parte="base"' -o stl/base.stl portachiavi.scad

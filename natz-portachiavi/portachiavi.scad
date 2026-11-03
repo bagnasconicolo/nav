@@ -124,7 +124,8 @@ else if (parte == "nut_x3") nut_x3();
 // pezzetto di base attorno alla strettoia del nut rosso: per provare l'incastro
 else if (parte == "prova") intersection() { base(); translate([36.7,10.7,-1]) cube([23,28,H+2]); }
 else {
-  color("BurlyWood") base();
+  // l'anteprima usa l'STL già generato (l'arrotondamento è lento da ricalcolare)
+  color("BurlyWood") import("stl/base.stl");
   color("SaddleBrown") linear_extrude(spessore_retro + 0.05) offset(delta=-0.3) sagoma2d();  // fondo scuro come l'originale
   for (n = nut_foto) color(n[3])
     translate([n[0], n[1], spessore_retro + nut_spessore/2 + 0.3])
