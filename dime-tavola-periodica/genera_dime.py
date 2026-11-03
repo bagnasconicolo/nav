@@ -16,7 +16,7 @@ SEAM_X = -22.5          # giunzione: tra il gruppo 9 e il 10 (meta' esatta del p
 PLEXI_L, PLEXI_R = -1272.5, 1227.5
 PANEL_W = 1250.0
 PANEL_H = 1250.0
-PANEL_TOP = 505.0       # bordo superiore -> fori della 1a riga a 65 mm dal bordo
+PANEL_TOP = 520.0       # bordo superiore -> fori della 1a riga a 80 mm dal bordo (tavola centrata in altezza)
 PANEL_BOT = PANEL_TOP - PANEL_H
 MARGIN = 10.0           # bianco attorno al pannello nel PDF (pagina 1270 x 1270)
 
@@ -50,6 +50,12 @@ assert len(holes) == 236, len(holes)
 row_ys = sorted({round(y, 3) for _, y, _ in holes}, reverse=True)
 assert len(row_ys) == 9
 
+# Sul plexi il blocco f e' sfalsato di 60 mm rispetto alle colonne del corpo:
+# nessun taglio dritto lo eviterebbe. Sul legno lo spostiamo di 60 mm a sinistra,
+# allineandolo sotto i gruppi 3-17 (La sotto Sc/Y), cosi' un solo taglio dritto basta.
+F_SHIFT = -60.0
+holes = [(x + (F_SHIFT if round(y, 3) in (-495.0, -620.0) else 0.0), y, r) for x, y, r in holes]
+
 cubes = []   # (Z, row, xc, yc, [(x,y,r),(x,y,r)])
 for ri, ry in enumerate(row_ys, start=1):
     xs = sorted((h for h in holes if round(h[1], 3) == ry), key=lambda h: h[0])
@@ -60,79 +66,46 @@ for ri, ry in enumerate(row_ys, start=1):
         if ri <= 7:
             col = round((xc + 1085) / 125) + 1
         else:
-            col = round((xc + 775) / 125) + 1
+            col = round((xc + 775 - F_SHIFT) / 125) + 1
         cubes.append((element_at(ri, col), ri, xc, ry, [a, b]))
 assert sorted(c[0] for c in cubes) == list(range(1, 119))
 
-# --- giunzione a gradino ------------------------------------------------------
-# Il blocco f e' sfalsato di mezzo cubo (62.5 mm) rispetto al corpo della tavola,
-# quindi nessun taglio dritto evita tutti i cubi. La giunzione fa un gradino:
-#   - periodi 1-7: tra gruppo 9 e 10            (x = -22.5)
-#   - lantanidi/attinidi: tra Eu|Gd e Am|Cm      (x = +37.5)
-#   - il gradino orizzontale passa nello spazio tra periodo 7 e lantanidi.
-SEAM_LOW_X = 37.5
-STEP_Y = -420.0   # libero sia con fori centrati nel cubo sia con fori a 30 mm dall'alto
 CUBE = 120.0
-CUBE_TOP_OFF = 32.5  # presunto: bordo alto cella 125 a 32.5 mm sopra i fori (da margini del plexi)
-
-def seam_x(y):
-    return SEAM_X if y > STEP_Y else SEAM_LOW_X
 
 def side_of(x, y):
-    return "A" if x < seam_x(y) else "B"
+    return "A" if x < SEAM_X else "B"
 
-POLY = {
-    "A": [(PLEXI_L, PANEL_TOP), (SEAM_X, PANEL_TOP), (SEAM_X, STEP_Y), (SEAM_LOW_X, STEP_Y),
-          (SEAM_LOW_X, PANEL_BOT), (PLEXI_L, PANEL_BOT)],
-    "B": [(SEAM_X, PANEL_TOP), (PLEXI_R, PANEL_TOP), (PLEXI_R, PANEL_BOT), (SEAM_LOW_X, PANEL_BOT),
-          (SEAM_LOW_X, STEP_Y), (SEAM_X, STEP_Y)],
-}
-
-# controllo: nessun cubo (120 mm) attraversa la giunzione
+# controllo: nessun cubo (120 mm) attraversa il taglio
 for Z, ri, xc, yc, hs in cubes:
-    sx = seam_x(yc)
-    assert not (xc - CUBE / 2 < sx < xc + CUBE / 2), SYMS[Z - 1]
-    assert side_of(*hs[0][:2]) == side_of(*hs[1][:2])
+    assert not (xc - CUBE / 2 < SEAM_X < xc + CUBE / 2), SYMS[Z - 1]
 
 # --- disegno ----------------------------------------------------------------
 def make(name, side):
-    poly = POLY[side]
-    x0 = min(p[0] for p in poly); x1 = max(p[0] for p in poly)
-    W = x1 - x0
+    x0 = PLEXI_L if side == "A" else SEAM_X
+    x1 = x0 + PANEL_W
+    W = PANEL_W
     c = canvas.Canvas(name, pagesize=((W + 2 * MARGIN) * mm, (PANEL_H + 2 * MARGIN) * mm))
     c.setTitle(f"Dima foratura pannello {side} - scala 1:1")
     P = lambda x, y: ((x - x0 + MARGIN) * mm, (y - PANEL_BOT + MARGIN) * mm)
     mine = [cb for cb in cubes if side_of(cb[2], cb[3]) == side]
     allh = [h for cb in mine for h in cb[4]]
 
-    # contorno = linea di taglio della carta (e del legno lungo la giunzione)
     c.setLineWidth(0.6)
-    path = c.beginPath(); path.moveTo(*P(*poly[0]))
-    for q in poly[1:]: path.lineTo(*P(*q))
-    path.close(); c.drawPath(path)
-    # bordi di riferimento: ALTO + tratto lungo della giunzione
+    c.rect(MARGIN * mm, MARGIN * mm, W * mm, PANEL_H * mm)
     c.setLineWidth(2.5)
     c.line(*P(x0, PANEL_TOP), *P(x1, PANEL_TOP))
-    c.line(*P(SEAM_X, PANEL_TOP), *P(SEAM_X, STEP_Y))
+    c.line(*P(SEAM_X, PANEL_BOT), *P(SEAM_X, PANEL_TOP))
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(*P((x0 + x1) / 2, PANEL_TOP - 14), "^ BORDO ALTO - riferimento ^")
-    sx, sy = P(SEAM_X + (-14 if side == "A" else 14), (PANEL_TOP + STEP_Y) / 2)
+    sx, sy = P(SEAM_X + (-14 if side == "A" else 14), PANEL_BOT + PANEL_H / 2)
     c.saveState(); c.translate(sx, sy); c.rotate(90 if side == "A" else -90)
-    c.drawCentredString(0, -2 * mm, "GIUNZIONE - riferimento (accostare all'altro pannello)")
+    c.drawCentredString(0, -2 * mm, "BORDO DI GIUNZIONE - riferimento (accostare all'altro pannello)")
     c.restoreState()
-    c.setFont("Helvetica-Bold", 13)
-    gx = SEAM_LOW_X + (-12 if side == "A" else 12)
-    c.saveState(); c.translate(*P(gx, (STEP_Y + PANEL_BOT) / 2)); c.rotate(90 if side == "A" else -90)
-    c.drawCentredString(0, -2 * mm, "giunzione (tratto basso)")
-    c.restoreState()
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(*P((SEAM_X + SEAM_LOW_X) / 2, STEP_Y + (6 if side == "A" else -12)),
-                        "gradino 60 mm")
 
     # ingombro presunto dei cubi (tratteggio leggero) + fori
     for Z, ri, xc, yc, hs in mine:
         c.setLineWidth(0.3); c.setDash(3, 3); c.setStrokeGray(0.55)
-        top = yc + CUBE_TOP_OFF - 2.5
+        top = yc + CUBE / 2
         c.rect(*P(xc - CUBE / 2, top - CUBE), CUBE * mm, CUBE * mm)
         c.setDash(); c.setStrokeGray(0)
         for hx, hy, r in hs:
@@ -159,11 +132,11 @@ def make(name, side):
         (f"DIMA PANNELLO {side} - {'SINISTRO' if side=='A' else 'DESTRO'}", 26, True),
         ("vista frontale (lato su cui vanno i cubi)", 16, False),
         ("STAMPA IN SCALA 1:1 - 100% - NON 'adatta alla pagina'", 18, True),
-        (f"Fori Ø4.5 mm: {len(allh)}  ({len(mine)} cubi)", 16, False),
+        (f"Pannello 1250 x 1250 mm. Fori Ø4.5 mm: {len(allh)}  ({len(mine)} cubi)", 16, False),
         ("Rifilare la carta sulla linea del contorno.", 16, False),
         ("Allineare sui 2 bordi spessi: ALTO + GIUNZIONE.", 16, False),
         (f"La giunzione va accostata al pannello {other}.", 16, False),
-        ("Giunzione a gradino: nessun cubo viene diviso.", 16, False),
+        ("Taglio dritto tra gruppo 9 e 10: nessun cubo diviso.", 16, False),
         ("Tratteggio grigio = ingombro cubo (indicativo).", 16, False),
     ]
     yy = ty
@@ -202,7 +175,7 @@ for nm, sd in (("dima_pannello_A_sinistro.pdf", "A"), ("dima_pannello_B_destro.p
 
 # riepilogo quote (coordinate dal bordo ALTO e dal bordo di GIUNZIONE)
 with open("quote_fori.csv", "w") as f:
-    f.write("pannello,Z,simbolo,x_da_giunzione_alta_mm(+ verso destra),dist_da_alto_mm\n")
+    f.write("pannello,Z,simbolo,x_da_giunzione_mm(+ verso destra),dist_da_alto_mm\n")
     for Z, ri, xc, yc, hs in sorted(cubes):
         for hx, hy, r in hs:
             sd = side_of(hx, hy)
