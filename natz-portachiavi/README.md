@@ -11,9 +11,9 @@ incastra nella strettoia, come un nut vero in una fessura di roccia.
 | File | Cosa |
 |---|---|
 | `portachiavi.scad` | modello parametrico OpenSCAD (tutte le misure nel Customizer) |
-| `stl/base.stl` | la montagna, 220 × 185 × 17 mm |
+| `stl/base.stl` | la montagna, 160 × 135 × 15 mm, 3 fessure |
 | `stl/nut.stl` | un nut |
-| `stl/nut_x4.stl` | 4 nut sul piatto (se li fai dello stesso colore) |
+| `stl/nut_x3.stl` | 3 nut sul piatto (se li fai dello stesso colore) |
 
 Rigenerare gli STL dopo una modifica:
 
@@ -27,15 +27,16 @@ openscad -D 'parte="nut"' -o stl/nut.stl portachiavi.scad
 
 ## Stampa
 
-**Piatto minimo 225 × 190 mm** (va bene su Ender 3, Prusa MK3/MK4, Bambu P1/X1/A1;
-**non** sull'A1 mini o altri piatti da 180 mm).
+Serve un piatto di almeno **165 × 140 mm**: ci sta su qualsiasi stampante,
+anche sull'A1 mini.
 
 - **Base**: PLA effetto legno (o PLA marrone), stampata **col retro sul piatto**
   così com'è nello STL. Nessun supporto: le fessure sono aperte verso l'alto e le
   tasche delle viti sono ponti da 14 mm. Layer 0.2 mm, 3 perimetri, infill 15 %.
-  Bello anche con cambio filamento a ~3 mm (fondo delle fessure più scuro, come
-  nell'originale) e di nuovo a 16.2 mm per la scritta NATZ.
-- **Nut**: 4 colori (giallo, rosso, verde, azzurro), stampati in piedi con il lato
+  Bello anche con cambio filamento a 3 mm: il fondo delle fessure viene più
+  scuro, come nell'originale. Il raccordo del bordo frontale è fatto a gradini
+  da 0.3 mm: con layer da 0.2-0.3 mm non si vedono.
+- **Nut**: 3 colori (giallo, rosso, azzurro), stampati in piedi con il lato
   stretto (con i fori) sul piatto. Nessun supporto. 100 % infill o 4 perimetri:
   sono piccoli e lavorano a compressione.
 
@@ -43,7 +44,7 @@ openscad -D 'parte="nut"' -o stl/nut.stl portachiavi.scad
 
 Per ogni nut:
 
-1. Cavetto d'acciaio Ø 1.5 mm, ~22 cm (o cordino Ø 2 mm).
+1. Cavetto d'acciaio Ø 1.5 mm, ~20 cm (o cordino Ø 2 mm).
 2. Infilalo dal basso in un foro, passa nella canalina in cima, ridiscendi
    dall'altro foro.
 3. Infila l'anello portachiavi e chiudi il cappio con una ghiera da crimpare
@@ -52,7 +53,7 @@ Per ogni nut:
 
 ## Fissaggio a muro
 
-Due asole a buco di serratura sul retro, interasse 87 mm: due viti con testa
+Due asole a buco di serratura sul retro, interasse 77 mm: due viti con testa
 Ø ≤ 9 mm (es. 4 × 30 + tassello), lasciate sporgere ~4 mm. Appoggia, abbassa, fatto.
 
 ## Uso
@@ -62,4 +63,4 @@ si blocca da solo dove la fessura si stringe. Per toglierlo spingilo su di un
 millimetro e tiralo giù.
 
 Se il nut è troppo lasco o troppo duro (dipende dalla stampante), cambia
-`strettoia` nel Customizer (default 13 mm: più piccolo = si ferma più in basso).
+`strettoia` nel Customizer (default 11.5 mm: più piccolo = si ferma più in basso).
