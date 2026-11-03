@@ -64,36 +64,78 @@ for ri, ry in enumerate(row_ys, start=1):
         cubes.append((element_at(ri, col), ri, xc, ry, [a, b]))
 assert sorted(c[0] for c in cubes) == list(range(1, 119))
 
+# --- giunzione a gradino ------------------------------------------------------
+# Il blocco f e' sfalsato di mezzo cubo (62.5 mm) rispetto al corpo della tavola,
+# quindi nessun taglio dritto evita tutti i cubi. La giunzione fa un gradino:
+#   - periodi 1-7: tra gruppo 9 e 10            (x = -22.5)
+#   - lantanidi/attinidi: tra Eu|Gd e Am|Cm      (x = +37.5)
+#   - il gradino orizzontale passa nello spazio tra periodo 7 e lantanidi.
+SEAM_LOW_X = 37.5
+STEP_Y = -420.0   # libero sia con fori centrati nel cubo sia con fori a 30 mm dall'alto
+CUBE = 120.0
+CUBE_TOP_OFF = 32.5  # presunto: bordo alto cella 125 a 32.5 mm sopra i fori (da margini del plexi)
+
+def seam_x(y):
+    return SEAM_X if y > STEP_Y else SEAM_LOW_X
+
+def side_of(x, y):
+    return "A" if x < seam_x(y) else "B"
+
+POLY = {
+    "A": [(PLEXI_L, PANEL_TOP), (SEAM_X, PANEL_TOP), (SEAM_X, STEP_Y), (SEAM_LOW_X, STEP_Y),
+          (SEAM_LOW_X, PANEL_BOT), (PLEXI_L, PANEL_BOT)],
+    "B": [(SEAM_X, PANEL_TOP), (PLEXI_R, PANEL_TOP), (PLEXI_R, PANEL_BOT), (SEAM_LOW_X, PANEL_BOT),
+          (SEAM_LOW_X, STEP_Y), (SEAM_X, STEP_Y)],
+}
+
+# controllo: nessun cubo (120 mm) attraversa la giunzione
+for Z, ri, xc, yc, hs in cubes:
+    sx = seam_x(yc)
+    assert not (xc - CUBE / 2 < sx < xc + CUBE / 2), SYMS[Z - 1]
+    assert side_of(*hs[0][:2]) == side_of(*hs[1][:2])
+
 # --- disegno ----------------------------------------------------------------
-def make(name, x0, side):
-    x1 = x0 + PANEL_W
-    page = PANEL_W + 2 * MARGIN
-    c = canvas.Canvas(name, pagesize=(page * mm, page * mm))
+def make(name, side):
+    poly = POLY[side]
+    x0 = min(p[0] for p in poly); x1 = max(p[0] for p in poly)
+    W = x1 - x0
+    c = canvas.Canvas(name, pagesize=((W + 2 * MARGIN) * mm, (PANEL_H + 2 * MARGIN) * mm))
     c.setTitle(f"Dima foratura pannello {side} - scala 1:1")
     P = lambda x, y: ((x - x0 + MARGIN) * mm, (y - PANEL_BOT + MARGIN) * mm)
+    mine = [cb for cb in cubes if side_of(cb[2], cb[3]) == side]
+    allh = [h for cb in mine for h in cb[4]]
 
-    # contorno pannello = linea di taglio della carta
-    c.setLineWidth(0.5); c.setDash()
-    c.rect(MARGIN * mm, MARGIN * mm, PANEL_W * mm, PANEL_H * mm)
-    # bordi di riferimento (alto + giunzione) piu' marcati
-    seam_u = (SEAM_X - x0)
-    c.setLineWidth(2.0)
+    # contorno = linea di taglio della carta (e del legno lungo la giunzione)
+    c.setLineWidth(0.6)
+    path = c.beginPath(); path.moveTo(*P(*poly[0]))
+    for q in poly[1:]: path.lineTo(*P(*q))
+    path.close(); c.drawPath(path)
+    # bordi di riferimento: ALTO + tratto lungo della giunzione
+    c.setLineWidth(2.5)
     c.line(*P(x0, PANEL_TOP), *P(x1, PANEL_TOP))
-    c.line(*P(SEAM_X, PANEL_BOT), *P(SEAM_X, PANEL_TOP))
-    # etichette dei bordi di riferimento
+    c.line(*P(SEAM_X, PANEL_TOP), *P(SEAM_X, STEP_Y))
     c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(*P(x0 + PANEL_W / 2, PANEL_TOP - 14), "▲ BORDO ALTO - riferimento ▲".replace("▲", "^"))
-    sx, sy = P(SEAM_X + (-14 if side == "A" else 14), PANEL_BOT + PANEL_H / 2)
+    c.drawCentredString(*P((x0 + x1) / 2, PANEL_TOP - 14), "^ BORDO ALTO - riferimento ^")
+    sx, sy = P(SEAM_X + (-14 if side == "A" else 14), (PANEL_TOP + STEP_Y) / 2)
     c.saveState(); c.translate(sx, sy); c.rotate(90 if side == "A" else -90)
-    c.drawCentredString(0, -2 * mm, "BORDO DI GIUNZIONE - riferimento (accostare all'altro pannello)")
+    c.drawCentredString(0, -2 * mm, "GIUNZIONE - riferimento (accostare all'altro pannello)")
     c.restoreState()
+    c.setFont("Helvetica-Bold", 13)
+    gx = SEAM_LOW_X + (-12 if side == "A" else 12)
+    c.saveState(); c.translate(*P(gx, (STEP_Y + PANEL_BOT) / 2)); c.rotate(90 if side == "A" else -90)
+    c.drawCentredString(0, -2 * mm, "giunzione (tratto basso)")
+    c.restoreState()
+    c.setFont("Helvetica", 12)
+    c.drawCentredString(*P((SEAM_X + SEAM_LOW_X) / 2, STEP_Y + (6 if side == "A" else -12)),
+                        "gradino 60 mm")
 
-    # fori
-    for Z, ri, xc, yc, hs in cubes:
-        inside = [h for h in hs if x0 < h[0] < x1]
-        if not inside:
-            continue
-        for hx, hy, r in inside:
+    # ingombro presunto dei cubi (tratteggio leggero) + fori
+    for Z, ri, xc, yc, hs in mine:
+        c.setLineWidth(0.3); c.setDash(3, 3); c.setStrokeGray(0.55)
+        top = yc + CUBE_TOP_OFF - 2.5
+        c.rect(*P(xc - CUBE / 2, top - CUBE), CUBE * mm, CUBE * mm)
+        c.setDash(); c.setStrokeGray(0)
+        for hx, hy, r in hs:
             px, py = P(hx, hy)
             c.setLineWidth(0.25)
             c.line(px - 8 * mm, py, px + 8 * mm, py)
@@ -103,46 +145,36 @@ def make(name, x0, side):
             c.circle(px, py, 0.5 * mm, fill=1)
         lx, ly = P(xc, yc)
         c.setFont("Helvetica-Bold", 22)
-        label = SYMS[Z - 1]
-        if len(inside) == 1:   # cubo a cavallo della giunzione
-            lx = P(inside[0][0], yc)[0]
-            label += " (1 foro)"
-            c.setFont("Helvetica-Bold", 16)
-        c.drawCentredString(lx, ly - 14 * mm, label)
+        c.drawCentredString(lx, ly - 14 * mm, SYMS[Z - 1])
         c.setFont("Helvetica", 11)
         c.drawCentredString(lx, ly + 10 * mm, str(Z))
 
-    # testi
     def txt(x, y, s, size=18, bold=False):
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
         c.drawString(*P(x, y), s)
 
-    if side == "A":
-        tx, ty = -880, 470          # zona vuota (gruppi 3-9, periodi 1-3)
-    else:
-        tx, ty = 20, 320            # zona vuota (gruppi 10-12, periodi 2-3)
+    tx, ty = (-880, 470) if side == "A" else (20, 320)
     other = "B (destro)" if side == "A" else "A (sinistro)"
     lines = [
         (f"DIMA PANNELLO {side} - {'SINISTRO' if side=='A' else 'DESTRO'}", 26, True),
         ("vista frontale (lato su cui vanno i cubi)", 16, False),
         ("STAMPA IN SCALA 1:1 - 100% - NON 'adatta alla pagina'", 18, True),
-        (f"Pannello 1250 x 1250 mm. Fori Ø4.5 mm: {sum(1 for cb in cubes for h in cb[4] if x0 < h[0] < x1)}", 16, False),
+        (f"Fori Ø4.5 mm: {len(allh)}  ({len(mine)} cubi)", 16, False),
         ("Rifilare la carta sulla linea del contorno.", 16, False),
-        ("Allineare la dima sui 2 bordi spessi: ALTO + GIUNZIONE.", 16, False),
-        (f"Il bordo di giunzione va accostato al pannello {other}.", 16, False),
-        ("Eu e Am stanno a cavallo: 1 foro su ogni pannello.", 16, False),
+        ("Allineare sui 2 bordi spessi: ALTO + GIUNZIONE.", 16, False),
+        (f"La giunzione va accostata al pannello {other}.", 16, False),
+        ("Giunzione a gradino: nessun cubo viene diviso.", 16, False),
+        ("Tratteggio grigio = ingombro cubo (indicativo).", 16, False),
     ]
     yy = ty
-    for s, sz, b in lines:
-        txt(tx, yy, s, sz, b); yy -= sz * 0.353 * 1.7 + 4
+    for s_, sz, b in lines:
+        txt(tx, yy, s_, sz, b); yy -= sz * 0.353 * 1.7 + 4
     if side == "A":
-        # quadrato di controllo 100 x 100 mm
         qx, qy = -880, yy - 115
         c.setLineWidth(0.5)
         c.rect(*P(qx, qy), 100 * mm, 100 * mm)
         txt(qx + 110, qy + 45, "Controllo: questo quadrato deve misurare 100 x 100 mm", 14)
     else:
-        # barra di controllo 500 mm (zona vuota periodo 1, gruppi 10-17)
         bx, by = 60, 420
         c.setLineWidth(1.0)
         c.line(*P(bx, by), *P(bx + 500, by))
@@ -150,36 +182,29 @@ def make(name, x0, side):
             c.line(*P(bx + k, by - 6), *P(bx + k, by + 6))
         txt(bx, by + 12, "Controllo: barra = 500 mm (tacche ogni 100 mm)", 14)
 
-    # quote di verifica tra fori estremi del pannello
-    ins = [h for cb in cubes for h in cb[4] if x0 < h[0] < x1 and abs(h[1] - 65) < 1e-6]
-    xmin, xmax = min(h[0] for h in ins), max(h[0] for h in ins)
-    ymin, ymax = min(h[1] for h in ins), max(h[1] for h in ins)
-    # orizzontale, lungo la riga del periodo 4 (y=65) leggermente sotto
+    row4 = [h for h in allh if abs(h[1] - 65) < 1e-6]
+    xmin, xmax = min(h[0] for h in row4), max(h[0] for h in row4)
     c.setLineWidth(0.3); c.setDash(4, 3)
-    hy = 65 - 35
-    c.line(*P(xmin, hy), *P(xmax, hy))
-    c.setDash()
+    c.line(*P(xmin, 30), *P(xmax, 30)); c.setDash()
     c.setFont("Helvetica", 12)
-    mx, my = P((xmin + xmax) / 2, hy + 3)
-    c.drawCentredString(mx, my, f"VERIFICA dopo la stampa: {xmax - xmin:.1f} mm tra il primo e l'ultimo foro di questa riga")
-    # distanze dai bordi di riferimento
-    c.setFont("Helvetica", 12)
-    seam_hole = max(ins, key=lambda h: h[0]) if side == "A" else min(ins, key=lambda h: h[0])
-    allh = [h for cb in cubes for h in cb[4] if x0 < h[0] < x1]
-    oy = [h for h in allh if abs(h[0] - (min if side == 'A' else max)(q[0] for q in allh)) < 1e-6]
+    c.drawCentredString(*P((xmin + xmax) / 2, 33),
+                        f"VERIFICA dopo la stampa: {xmax - xmin:.1f} mm tra il primo e l'ultimo foro di questa riga")
+    ox = (min if side == "A" else max)(h[0] for h in allh)
+    oy = [h[1] for h in allh if abs(h[0] - ox) < 1e-6]
     c.drawString(*P(x0 + 40 if side == "A" else x1 - 420, PANEL_BOT + 15),
                  f"VERIFICA: 1a riga fori a {PANEL_TOP - 440:.1f} mm dal bordo alto; colonna esterna: "
-                 f"{max(h[1] for h in oy) - min(h[1] for h in oy):.1f} mm tra primo e ultimo foro")
+                 f"{max(oy) - min(oy):.1f} mm tra primo e ultimo foro")
     c.save()
+    return len(allh), len(mine), W
 
-make("dima_pannello_A_sinistro.pdf", SEAM_X - PANEL_W, "A")
-make("dima_pannello_B_destro.pdf", SEAM_X, "B")
+for nm, sd in (("dima_pannello_A_sinistro.pdf", "A"), ("dima_pannello_B_destro.pdf", "B")):
+    print(sd, make(nm, sd))
 
 # riepilogo quote (coordinate dal bordo ALTO e dal bordo di GIUNZIONE)
 with open("quote_fori.csv", "w") as f:
-    f.write("pannello,Z,simbolo,dist_da_giunzione_mm,dist_da_alto_mm\n")
+    f.write("pannello,Z,simbolo,x_da_giunzione_alta_mm(+ verso destra),dist_da_alto_mm\n")
     for Z, ri, xc, yc, hs in sorted(cubes):
         for hx, hy, r in hs:
-            side = "A" if hx < SEAM_X else "B"
-            f.write(f"{side},{Z},{SYMS[Z-1]},{abs(hx - SEAM_X):.1f},{PANEL_TOP - hy:.1f}\n")
+            sd = side_of(hx, hy)
+            f.write(f"{sd},{Z},{SYMS[Z-1]},{hx - SEAM_X:.1f},{PANEL_TOP - hy:.1f}\n")
 print("ok")
