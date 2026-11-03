@@ -15,6 +15,7 @@ parte = "tutto"; // [tutto, base, nut, nut_x3, prova]
 spessore_retro = 3;       // fondo pieno dietro le canalature (mm)
 profondita = 10;          // profondità delle canalature (mm)
 raggio_pianta = 1.2;      // arrotonda gli spigoli in pianta (vette, angoli delle canalature)
+raggio_bordo = 1.5;       // arrotondamento dei bordi sul davanti (contorno e canalature)
 
 /* [Nut] */
 nut_altezza = 13.4;       // il profilo della foto viene scalato a questa altezza
@@ -43,8 +44,8 @@ nut_profilo = [[-15,0],[15,0],[17,4],[22,20],[21,25],[24,30],[24,36],[28,44],
                [-27,60],[-21,36],[-19,8],[-17,2]];
 
 // ricalcate dalla foto: sagoma e canalature (tolta quella del nut blu) (mm, y=0 alla base)
-// lato destro: fianco dritto dalla vetta alla base, vicino alla canalatura centrale
-sagoma = [[96,0],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[2.5,9.3],[0.0,0.2]];
+// versanti spezzati: spalle e un piccolo gobbo sotto la vetta, come nella foto
+sagoma = [[96,0],[91.5,28],[85.5,46],[79.5,84],[78,89.5],[75.5,88.2],[74.2,89.5],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[15,44],[9.5,24],[0,0]];
 
 canalature = [
   [[24.4,35.3],[22.3,34.4],[23.4,24.8],[14.3,8.9],[15.1,-3.0],[22.4,-3.0],[23.5,6.2],[31.9,21.5],[31.4,24.3]],
@@ -62,12 +63,26 @@ module corpo2d()
     difference() { sagoma2d(); canalature2d(); }
 
 // ------------------------------------------------------------------ 3D
+// arrotondamento vero (minkowski con una sfera): tutto il bordo davanti,
+// contorno e labbri delle canalature, raggio raggio_bordo
+module corpo3d() {
+  r = raggio_bordo;
+  intersection() {
+    translate([0,0,-r]) minkowski() {
+      linear_extrude(H) offset(delta=-r) corpo2d();
+      sphere(r=r, $fn=24);
+    }
+    translate([-50,-50,0]) cube([300,300,H]);
+  }
+}
+
 module base() {
   difference() {
     union() {
-      linear_extrude(spessore_retro + 0.01) sagoma2d();
-      // corpo con le canalature: fianchi dritti come il legno tagliato
-      translate([0,0,spessore_retro]) linear_extrude(profondita) corpo2d();
+      // fondo (lato del piatto: spigolo vivo, appoggia meglio)
+      linear_extrude(spessore_retro + 0.01) offset(r=raggio_bordo) offset(delta=-raggio_bordo) sagoma2d();
+      // corpo con le canalature, con i bordi del davanti arrotondati
+      corpo3d();
     }
     // asole a buco di serratura nel retro + tasca per la testa della vite:
     // la testa entra nel foro grande, poi il portachiavi scende e la vite resta nell'asola
