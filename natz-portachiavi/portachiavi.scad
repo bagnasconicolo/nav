@@ -1,5 +1,5 @@
 // Portachiavi "montagna" per Natz — versione stampa 3D (FDM)
-// Sagoma e 3 canalature ricalcate dalla foto di riferimento, 4 nut colorati.
+// Sagoma e canalature ricalcate dalla foto di riferimento, 3 nut colorati.
 // Il nut si appoggia nella parte larga della canalatura e si tira giù:
 // si incastra dove la canalatura si stringe, come un nut vero in fessura.
 //
@@ -9,50 +9,49 @@
 // oppure apri il file in OpenSCAD, scegli "parte" nel Customizer, F6, F7.
 
 /* [Cosa generare] */
-parte = "tutto"; // [tutto, base, nut, nut_x4, prova]
+parte = "tutto"; // [tutto, base, nut, nut_x3, prova]
 
 /* [Base] */
 spessore_retro = 3;       // fondo pieno dietro le canalature (mm)
-profondita = 12;          // profondità delle canalature (mm)
-raggio_pianta = 1.5;      // arrotonda gli spigoli in pianta (vette, angoli delle canalature)
-raccordo_bordo = 2.5;     // raccordo dello spigolo frontale esterno
-raccordo_canalature = 1;  // raccordo del labbro delle canalature
+profondita = 10;          // profondità delle canalature (mm)
+raggio_pianta = 1.2;      // arrotonda gli spigoli in pianta (vette, angoli delle canalature)
+raccordo_bordo = 2;       // raccordo dello spigolo frontale esterno
+raccordo_canalature = 0.8;  // raccordo del labbro delle canalature
 smusso_retro = 0.6;       // piccolo smusso sul retro (evita il "piede d'elefante")
 passo_raccordo = 0.3;     // altezza dei gradini del raccordo (≈ altezza layer)
 
 /* [Nut] */
-nut_largh_alto = 12;
-nut_largh_basso = 7.2;
-nut_altezza = 17.5;
-nut_spess_alto = 8.5;     // deve stare < profondita
-nut_spess_basso = 6.5;
-nut_raggio = 1;           // arrotondamento spigoli
-cavo_foro = 2.4;          // cavetto acciaio Ø1.5 o cordino Ø2
-sede_nodo = 5;            // Ø della sede in cima per il nodo / la ghiera
-sede_prof = 3;
+nut_largh_alto = 9.2;
+nut_largh_basso = 5.5;
+nut_altezza = 13.4;
+nut_spess_alto = 7;       // deve stare < profondita
+nut_spess_basso = 5.5;
+nut_raggio = 0.8;          // arrotondamento spigoli
+cavo_foro = 2.1;          // cavetto acciaio Ø1.5 o cordino Ø2
+sede_nodo = 4;            // Ø della sede in cima per il nodo / la ghiera
+sede_prof = 2.5;
 
 /* [Fissaggio a muro] */
-asola_foro = 8;     // Ø testa vite
-asola_gambo = 4;    // Ø gambo vite
-asola_corsa = 6;
-tasca_vite = 12;    // spazio per la testa dentro il corpo
-tasca_prof = 3.5;
+asola_foro = 7;     // Ø testa vite
+asola_gambo = 3.5;   // Ø gambo vite
+asola_corsa = 5;
+tasca_vite = 10;    // spazio per la testa dentro il corpo
+tasca_prof = 3;
 
 /* [Hidden] */
 $fn = 32;
 H = spessore_retro + profondita;
-asole = [[31.6,54.4],[104.4,54.4]];
+asole = [[24.1,41.6],[79.9,41.6]];
 // posizione dei nut nell'anteprima: [x, y in cima, rotazione, colore]
-nut_foto = [[26.7,13.6,0,"Gold"],[62.6,41.3,0,"Crimson"],
-            [100.2,21.4,0,"SeaGreen"],[122.9,39.9,18,"DeepSkyBlue"]];
+nut_foto = [[20.4,10.4,0,"Gold"],[47.9,31.6,0,"Crimson"],
+            [76.6,16.4,0,"SeaGreen"]];
 
-// ricalcate dalla foto: sagoma e 3 canalature (mm, y=0 alla base)
-sagoma = [[170.0,2.4],[160.6,26.1],[158.8,35.2],[139.3,89.8],[136.4,92.6],[133.1,92.8],[126.6,84.3],[121.7,84.3],[107.7,119.3],[105.7,119.3],[102.8,116.0],[97.9,116.0],[96.9,117.1],[92.0,137.8],[90.2,140.3],[88.0,140.3],[66.0,92.6],[59.2,81.0],[54.4,81.0],[40.7,104.6],[39.9,105.5],[36.9,104.6],[3.3,12.2],[0.0,0.2],[170.0,0.2]];
+// ricalcate dalla foto: sagoma e canalature (tolta quella del nut blu) (mm, y=0 alla base)
+sagoma = [[130.0,1.9],[122.8,19.9],[121.4,26.9],[106.5,68.7],[104.3,70.8],[101.8,71.0],[96.8,64.5],[93.1,64.5],[82.4,91.2],[80.8,91.2],[78.6,88.7],[74.9,88.7],[74.1,89.5],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[2.5,9.3],[0.0,0.2],[130.0,0.2]];
 
 canalature = [
-  [[32.0,46.2],[29.1,45.0],[30.5,32.4],[18.7,11.6],[19.7,-3.9],[29.3,-3.9],[30.7,8.1],[41.7,28.1],[41.1,31.8]],
-  [[84.7,105.7],[82.0,104.9],[74.3,88.6],[77.6,70.4],[66.0,54.0],[65.8,51.1],[62.5,51.5],[62.3,53.1],[47.0,68.6],[42.1,78.4],[40.1,78.6],[38.9,77.0],[39.3,65.8],[54.6,39.7],[56.6,39.3],[56.6,35.8],[59.0,32.2],[59.7,15.1],[51.3,2.2],[51.3,-3.9],[78.0,-3.9],[78.0,2.2],[70.2,23.6],[68.4,34.8],[70.2,35.6],[79.4,46.6],[82.3,45.6],[90.8,29.3],[90.8,20.2],[95.3,11.2],[95.1,7.9],[92.0,2.0],[92.0,-3.9],[106.3,-3.9],[105.3,9.6],[107.3,18.9],[106.7,30.3],[94.9,44.0],[93.2,50.1],[92.2,50.7],[91.6,56.6],[84.3,84.3],[86.1,104.2]],
-  [[131.3,72.3],[117.5,54.4],[112.2,38.1],[126.6,17.3],[126.6,14.5],[122.0,2.2],[122.0,-3.9],[143.3,-3.9],[143.3,2.6],[141.1,11.8],[131.7,20.4],[130.9,33.8],[125.6,46.8],[126.4,51.3],[129.3,51.5],[136.8,45.4],[147.4,21.8],[150.9,21.4],[150.9,27.7],[152.3,28.3],[152.5,30.9],[156.0,31.4],[156.0,33.2],[149.0,37.9],[135.2,65.4],[134.4,71.5]]
+  [[24.4,35.3],[22.3,34.4],[23.4,24.8],[14.3,8.9],[15.1,-3.0],[22.4,-3.0],[23.5,6.2],[31.9,21.5],[31.4,24.3]],
+  [[64.8,80.8],[62.7,80.2],[56.8,67.7],[59.3,53.9],[50.4,41.3],[50.3,39.1],[47.8,39.4],[47.6,40.6],[36.0,52.5],[32.2,59.9],[30.7,60.1],[29.7,58.9],[30.0,50.3],[41.7,30.4],[43.3,30.0],[43.3,27.4],[45.1,24.6],[45.6,11.5],[39.2,1.7],[39.2,-3.0],[59.6,-3.0],[59.6,1.7],[53.7,18.1],[52.3,26.6],[53.7,27.2],[60.7,35.7],[62.9,34.9],[69.4,22.4],[69.4,15.4],[72.9,8.6],[72.7,6.1],[70.4,1.6],[70.4,-3.0],[81.3,-3.0],[80.5,7.3],[82.0,14.5],[81.6,23.2],[72.6,33.6],[71.3,38.3],[70.5,38.8],[70.1,43.3],[64.5,64.5],[65.9,79.7]]
 ];
 
 // ------------------------------------------------------------------ 2D
@@ -117,13 +116,13 @@ module nut() {
   }
 }
 
-module nut_x4() for (i=[0:3]) translate([i*16,0,0]) nut();
+module nut_x3() for (i=[0:2]) translate([i*13,0,0]) nut();
 
 if (parte == "base") base();
 else if (parte == "nut") nut();
-else if (parte == "nut_x4") nut_x4();
+else if (parte == "nut_x3") nut_x3();
 // pezzetto di base attorno alla strettoia del nut rosso: per provare l'incastro
-else if (parte == "prova") intersection() { base(); translate([48,14,-1]) cube([30,36,H+2]); }
+else if (parte == "prova") intersection() { base(); translate([36.7,10.7,-1]) cube([23,28,H+2]); }
 else {
   color("BurlyWood") base();
   color("SaddleBrown") linear_extrude(spessore_retro + 0.05) offset(delta=-0.3) sagoma2d();  // fondo scuro come l'originale
