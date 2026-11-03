@@ -4,8 +4,8 @@ Portachiavi da muro a forma di montagna con 2 canalature "da arrampicata".
 Ogni chiave è appesa a un **nut** colorato che si incastra dove la canalatura si
 stringe, come un nut vero in una fessura di roccia. La sagoma e le canalature
 sono ricalcate dalla foto di riferimento, senza scritte né logo e senza la
-canalatura del nut blu: il lato destro scende dritto dalla vetta, vicino alla
-canalatura centrale.
+canalatura del nut blu: il lato destro scende a gradino seguendo il taglio
+della canalatura centrale.
 
 ![anteprima](anteprima.png)
 
@@ -59,8 +59,10 @@ Per ogni nut:
 
 ## Fissaggio a muro
 
-Due asole a buco di serratura sul retro, interasse 53 mm: due viti con testa
-Ø ≤ 7 mm (es. 3 × 25 + tassello), lasciate sporgere ~2.5 mm. Appoggia e abbassa.
+Due asole a buco di serratura sul retro, **a quote diverse**: guardando il
+portachiavi da davanti, la vite destra va 25 mm più a destra e 8.5 mm più in
+alto di quella sinistra. Viti con testa Ø ≤ 7 mm (es. 3 × 25 + tassello),
+lasciate sporgere ~2.5 mm. Appoggia e abbassa.
 
 ## Uso
 

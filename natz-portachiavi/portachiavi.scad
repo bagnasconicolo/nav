@@ -33,7 +33,7 @@ tasca_prof = 3;
 /* [Hidden] */
 $fn = 32;
 H = spessore_retro + profondita;
-asole = [[24.1,41.6],[77,41.6]];
+asole = [[23,41.5],[48,50]];   // a quote diverse: a destra il legno è stretto
 // posizione dei nut nell'anteprima: [x, y in cima, rotazione, colore]
 nut_foto = [[20.4,10.4,0,"Gold"],[47.9,31.6,0,"Crimson"],[76.6,16.4,0,"SeaGreen"]];
 
@@ -44,8 +44,8 @@ nut_profilo = [[-15,0],[15,0],[17,4],[22,20],[21,25],[24,30],[24,36],[28,44],
                [-27,60],[-21,36],[-19,8],[-17,2]];
 
 // ricalcate dalla foto: sagoma e canalature (tolta quella del nut blu) (mm, y=0 alla base)
-// versanti spezzati: spalle e un piccolo gobbo sotto la vetta, come nella foto
-sagoma = [[96,0],[91.5,28],[85.5,46],[82.5,64],[81,70],[78.5,68.8],[77.2,70.3],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[15,44],[9.5,24],[0,0]];
+// versanti spezzati; a destra il gradino segue il taglio della canalatura centrale
+sagoma = [[93,0],[92,26.5],[80,41.5],[74.2,67.1],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[15,44],[9.5,24],[0,0]];
 
 canalature = [
   [[24.4,35.3],[22.3,34.4],[23.4,24.8],[14.3,8.9],[15.1,-3.0],[22.4,-3.0],[23.5,6.2],[31.9,21.5],[31.4,24.3]],
