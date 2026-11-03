@@ -12,6 +12,6 @@ Fonte: `pt_panel.dxf` (pannello plexi 2500 × 2000 mm, 236 fori Ø4.5 mm = 2 for
 - Prima riga di fori a 80 mm dal bordo alto. Riferimenti: **bordo ALTO + bordo di GIUNZIONE**.
 
 ## File
-- `dima_pannello_A_sinistro.pdf`, `dima_pannello_B_destro.pdf` – pagina 1270 × 1270 mm, stampa al 100 % (rotolo ≥ 1270 mm / 50")
+- `dima_pannello_A_sinistro.pdf`, `dima_pannello_B_destro.pdf` – pagina 1270 × 1270 mm, scala 1:1 (rotolo ≥ 1270 mm / 50")
 - `quote_fori.csv` – coordinate di ogni foro (x dalla giunzione, y dal bordo alto)
 - `genera_dime.py` – rigenera tutto: `python3 genera_dime.py pt_panel.dxf`

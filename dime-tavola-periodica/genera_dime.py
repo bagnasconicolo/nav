@@ -43,8 +43,21 @@ def element_at(row, col):
 # verifica rapida della formula per periodi 6/7: col4 -> Hf(72)/Rf(104)
 assert element_at(6, 4) == 72 and element_at(7, 18) == 118 and element_at(6, 2) == 56
 
+# --- logo del museo (scritte vettoriali nel DXF, sopra la tavola) ----------
+def load_logo(msp):
+    paths = []
+    for e in msp:
+        t = e.dxftype()
+        if t == "LINE":
+            paths.append([(e.dxf.start.x, e.dxf.start.y), (e.dxf.end.x, e.dxf.end.y)])
+        elif t == "SPLINE":
+            paths.append([(v.x, v.y) for v in e.flattening(0.05)])
+    xs = [x for pth in paths for x, _ in pth]; ys = [y for pth in paths for _, y in pth]
+    return paths, (min(xs), min(ys), max(xs), max(ys))
+
 # --- lettura fori dal DXF ---------------------------------------------------
 doc = ezdxf.readfile(DXF)
+LOGO, LOGO_BB = load_logo(doc.modelspace())
 holes = [(c.dxf.center.x, c.dxf.center.y, c.dxf.radius) for c in doc.modelspace().query("CIRCLE")]
 assert len(holes) == 236, len(holes)
 row_ys = sorted({round(y, 3) for _, y, _ in holes}, reverse=True)
@@ -126,12 +139,29 @@ def make(name, side):
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
         c.drawString(*P(x, y), s)
 
-    tx, ty = (-880, 470) if side == "A" else (20, 320)
+    def logo(x, ytop, width):
+        lx0, ly0, lx1, ly1 = LOGO_BB
+        k = width / (lx1 - lx0)
+        c.setLineWidth(0.6); c.setStrokeGray(0)
+        for pth in LOGO:
+            pp = c.beginPath()
+            pp.moveTo(*P(x + (pth[0][0] - lx0) * k, ytop - (ly1 - pth[0][1]) * k))
+            for qx_, qy_ in pth[1:]:
+                pp.lineTo(*P(x + (qx_ - lx0) * k, ytop - (ly1 - qy_) * k))
+            c.drawPath(pp, stroke=1, fill=0)
+        return (ly1 - ly0) * k
+
+    if side == "A":
+        h = logo(-880, 495, 560)
+        tx, ty = -880, 495 - h - 30
+    else:
+        h = logo(20, 370, 300)
+        tx, ty = 20, 370 - h - 25
     other = "B (destro)" if side == "A" else "A (sinistro)"
     lines = [
         (f"DIMA PANNELLO {side} - {'SINISTRO' if side=='A' else 'DESTRO'}", 26, True),
         ("vista frontale (lato su cui vanno i cubi)", 16, False),
-        ("STAMPA IN SCALA 1:1 - 100% - NON 'adatta alla pagina'", 18, True),
+        ("Scala 1:1", 18, True),
         (f"Pannello 1250 x 1250 mm. Fori Ø4.5 mm: {len(allh)}  ({len(mine)} cubi)", 16, False),
         ("Rifilare la carta sulla linea del contorno.", 16, False),
         ("Allineare sui 2 bordi spessi: ALTO + GIUNZIONE.", 16, False),
@@ -143,10 +173,10 @@ def make(name, side):
     for s_, sz, b in lines:
         txt(tx, yy, s_, sz, b); yy -= sz * 0.353 * 1.7 + 4
     if side == "A":
-        qx, qy = -880, yy - 115
+        qx, qy = -300, 495 - 100 - 175
         c.setLineWidth(0.5)
         c.rect(*P(qx, qy), 100 * mm, 100 * mm)
-        txt(qx + 110, qy + 45, "Controllo: questo quadrato deve misurare 100 x 100 mm", 14)
+        txt(qx, qy - 18, "Controllo: quadrato 100 x 100 mm", 14)
     else:
         bx, by = 60, 420
         c.setLineWidth(1.0)
