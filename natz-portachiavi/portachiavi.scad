@@ -26,13 +26,13 @@ cavo_foro = 2;            // cavetto acciaio Ø1.5 (o cordino Ø1.5)
 asola_foro = 7;     // Ø testa vite
 asola_gambo = 3.5;  // Ø gambo vite
 asola_corsa = 5;
-tasca_vite = 10;    // spazio per la testa dentro il corpo
+tasca_vite = 9;     // spazio per la testa dentro il corpo
 tasca_prof = 3;
 
 /* [Hidden] */
 $fn = 32;
 H = spessore_retro + profondita;
-asole = [[24.1,41.6],[79.9,41.6]];
+asole = [[24.1,41.6],[77,41.6]];
 // posizione dei nut nell'anteprima: [x, y in cima, rotazione, colore]
 nut_foto = [[20.4,10.4,0,"Gold"],[47.9,31.6,0,"Crimson"],[76.6,16.4,0,"SeaGreen"]];
 
@@ -43,8 +43,8 @@ nut_profilo = [[-15,0],[15,0],[17,4],[22,20],[21,25],[24,30],[24,36],[28,44],
                [-27,60],[-21,36],[-19,8],[-17,2]];
 
 // ricalcate dalla foto: sagoma e canalature (tolta quella del nut blu) (mm, y=0 alla base)
-// tolto il picco di destra insieme alla canalatura del nut blu
-sagoma = [[114.0,0.0],[96.8,64.5],[93.1,64.5],[82.4,91.2],[80.8,91.2],[78.6,88.7],[74.9,88.7],[74.1,89.5],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[2.5,9.3],[0.0,0.2]];
+// lato destro ridisegnato: parete di roccia a gradoni che segue la canalatura centrale
+sagoma = [[93,0],[91,22],[85,42],[81,58],[86,76],[82.4,91.2],[80.8,91.2],[78.6,88.7],[74.9,88.7],[74.1,89.5],[70.4,105.4],[69.0,107.3],[67.3,107.3],[50.4,70.8],[45.3,62.0],[41.6,62.0],[31.1,80.0],[30.5,80.6],[28.2,80.0],[2.5,9.3],[0.0,0.2]];
 
 canalature = [
   [[24.4,35.3],[22.3,34.4],[23.4,24.8],[14.3,8.9],[15.1,-3.0],[22.4,-3.0],[23.5,6.2],[31.9,21.5],[31.4,24.3]],

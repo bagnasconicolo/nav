@@ -4,7 +4,8 @@ Portachiavi da muro a forma di montagna con 2 canalature "da arrampicata".
 Ogni chiave è appesa a un **nut** colorato che si incastra dove la canalatura si
 stringe, come un nut vero in una fessura di roccia. La sagoma e le canalature
 sono ricalcate dalla foto di riferimento, senza scritte né logo e senza la
-canalatura del nut blu e il picco di destra.
+canalatura del nut blu: il lato destro scende a gradoni attaccato alla
+canalatura centrale.
 
 ![anteprima](anteprima.png)
 
@@ -13,7 +14,7 @@ canalatura del nut blu e il picco di destra.
 | File | Cosa |
 |---|---|
 | `portachiavi.scad` | modello parametrico OpenSCAD (misure nel Customizer) |
-| `stl/base.stl` | la montagna, 114 × 107 × 13 mm |
+| `stl/base.stl` | la montagna, 93 × 107 × 13 mm |
 | `stl/nut.stl` | un nut |
 | `stl/nut_x3.stl` | 3 nut sul piatto (se li fai dello stesso colore) |
 | `stl/prova.stl` | pezzetto di base per provare l'incastro di un nut |
@@ -30,11 +31,11 @@ openscad -D 'parte="nut"' -o stl/nut.stl portachiavi.scad
 
 ## Stampa
 
-Ingombro 114 × 107 mm: ci sta su qualsiasi stampante.
+Ingombro 93 × 107 mm: ci sta su qualsiasi stampante.
 
 - **Base**: PLA effetto legno (o PLA marrone chiaro), stampata **col retro sul
   piatto** così com'è nello STL. Nessun supporto: le canalature sono aperte verso
-  l'alto e le tasche delle viti sono ponti da 10 mm. Layer 0.2 mm, 3 perimetri,
+  l'alto e le tasche delle viti sono ponti da 9 mm. Layer 0.2 mm, 3 perimetri,
   infill 15 %.
   Per avere il fondo scuro come l'originale: filamento marrone scuro per i primi
   3 mm, poi cambio filamento (pausa al layer a 3 mm) e il resto in legno chiaro.
@@ -57,7 +58,7 @@ Per ogni nut:
 
 ## Fissaggio a muro
 
-Due asole a buco di serratura sul retro, interasse 56 mm: due viti con testa
+Due asole a buco di serratura sul retro, interasse 53 mm: due viti con testa
 Ø ≤ 7 mm (es. 3 × 25 + tassello), lasciate sporgere ~2.5 mm. Appoggia e abbassa.
 
 ## Uso
