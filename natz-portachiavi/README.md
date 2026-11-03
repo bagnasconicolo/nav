@@ -4,7 +4,7 @@ Portachiavi da muro a forma di montagna con 2 canalature "da arrampicata".
 Ogni chiave è appesa a un **nut** colorato che si incastra dove la canalatura si
 stringe, come un nut vero in una fessura di roccia. La sagoma e le canalature
 sono ricalcate dalla foto di riferimento, senza scritte né logo e senza la
-canalatura del nut blu: il lato destro scende a gradoni attaccato alla
+canalatura del nut blu: il lato destro scende dritto dalla vetta, vicino alla
 canalatura centrale.
 
 ![anteprima](anteprima.png)
@@ -14,7 +14,7 @@ canalatura centrale.
 | File | Cosa |
 |---|---|
 | `portachiavi.scad` | modello parametrico OpenSCAD (misure nel Customizer) |
-| `stl/base.stl` | la montagna, 93 × 107 × 13 mm |
+| `stl/base.stl` | la montagna, 96 × 107 × 13 mm |
 | `stl/nut.stl` | un nut |
 | `stl/nut_x3.stl` | 3 nut sul piatto (se li fai dello stesso colore) |
 | `stl/prova.stl` | pezzetto di base per provare l'incastro di un nut |
@@ -31,7 +31,7 @@ openscad -D 'parte="nut"' -o stl/nut.stl portachiavi.scad
 
 ## Stampa
 
-Ingombro 93 × 107 mm: ci sta su qualsiasi stampante.
+Ingombro 96 × 107 mm: ci sta su qualsiasi stampante.
 
 - **Base**: PLA effetto legno (o PLA marrone chiaro), stampata **col retro sul
   piatto** così com'è nello STL. Nessun supporto: le canalature sono aperte verso
