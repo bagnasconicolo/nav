@@ -1,0 +1,60 @@
+=== TRINITITE: relative efficiency from Eu-152 (rate/Igamma, mcps per %)
+    121.78  r=15.518±0.628 mcps  r/I=0.5439
+    244.70  r= 3.032±0.499 mcps  r/I=0.4016
+    344.28  r= 6.919±0.558 mcps  r/I=0.2602
+    778.90  r= 2.045±0.214 mcps  r/I=0.1581
+    964.07  r= 1.685±0.270 mcps  r/I=0.1161
+   1085.84  r= 0.994±0.162 mcps  r/I=0.0983
+   1408.01  r= 1.684±0.179 mcps  r/I=0.0807
+  deg1: chi2r=0.91
+  deg2: chi2r=0.60
+   resid   121.8: 1.000
+   resid   244.7: 1.138
+   resid   344.3: 0.939
+   resid   778.9: 1.107
+   resid   964.1: 1.213
+   resid  1085.8: 0.933
+   resid  1408.0: 0.983
+  A(Cs-137)/A(Eu-152) = 56.1 ± 3.2  (at measurement date)
+  decay factors since 16-Jul-1945: Cs137 0.1537 Eu152 0.0155 Ba133 0.00480 Eu154 0.00143 Co60 2.29e-05 Eu155 7.1e-06
+  -> A(Cs-137)/A(Eu-152) at t0 = 5.65 ± 0.32
+  A(Ba-133)/A(Eu-152) = 0.124 ± 0.026; at t0 = 0.40 ± 0.08
+  Eu-154 1274 LD rate=0.545 mcps -> A(Eu-154)/A(Eu-152) < 0.173 (now); < 1.87 at t0
+  Co-60 1173.228: LD 0.811 mcps -> A/A(Eu152) < 0.0829
+  Co-60 1332.492: LD 0.492 mcps -> A/A(Eu152) < 0.0568
+  [A(Pu239)/A(Am241)]*eps(51.6)/eps(59.5) = 23.7 ± 4.3; for eps ratio 0.7-1.0 -> 24-34
+  Pu-239 129.3: 1.66±0.54  ; consistency: expected 129.3 if eps(129)/eps(51.6)=1-2:  0.82-1.65 mcps
+
+=== La VIAL
+  Th-227   235.96 r= 22.28±0.56  r/I=1.727±0.043
+  Th-227   256.23 r= 12.79±0.46  r/I=1.827±0.065
+  Th-227   329.85 r=  3.38±0.28  r/I=1.164±0.098
+  Ra-223   269.46 r= 22.61±0.60  r/I=1.626±0.043
+  Ra-223   154.21 r=  9.64±0.49  r/I=1.691±0.086
+  Ra-223   323.87 r=  5.42±0.34  r/I=1.359±0.085
+  Ra-223   445.03 r=  1.36±0.21  r/I=1.062±0.161
+  Rn-219   401.81 r=  8.82±0.36  r/I=1.336±0.054
+  Pb-211   404.85 r=  4.41±0.29  r/I=1.167±0.078
+  Pb-211   427.09 r=  1.57±0.24  r/I=0.894±0.136
+  Pb-211   831.96 r=  2.46±0.21  r/I=0.703±0.059
+  Bi-211   351.06 r= 19.23±1.24  r/I=1.479±0.096
+  chain eff fit deg1 chi2r=5.52 [-0.537  3.466]
+  chain eff fit deg2 chi2r=3.29 [-0.373  3.77  -8.938]
+   resid Th-227 236.0: 1.016
+   resid Th-227 256.2: 1.123
+   resid Th-227 329.9: 0.820
+   resid Ra-223 269.5: 1.028
+   resid Ra-223 154.2: 0.792
+   resid Ra-223 323.9: 0.948
+   resid Ra-223 445.0: 0.879
+   resid Rn-219 401.8: 1.047
+   resid Pb-211 404.9: 0.918
+   resid Pb-211 427.1: 0.724
+   resid Pb-211 832.0: 0.814
+   resid Bi-211 351.1: 1.077
+  I(789)=34.5%:  A(Ac-227 chain member)/A(La-138) = 1.690 ± 0.194
+  I(789)=34.8%:  A(Ac-227 chain member)/A(La-138) = 1.705 ± 0.195
+  direct 832/789: 1.38 ± 0.12 (eps slope -0.54)
+  138La 1436/789 check: eps(1436)/eps(789) = 0.558 (power-law from chain slope predicts 0.725)
+  138La specific activity in natural La: 0.821 Bq/g La
+  => A(Ac-227) ≈ 1.40 ± 0.16 Bq per g La ; Ac/La atom ratio ≈ 3.20e-13
