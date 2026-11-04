@@ -3,25 +3,25 @@
     244.70  r= 3.032±0.499 mcps  r/I=0.4016
     344.28  r= 6.919±0.558 mcps  r/I=0.2602
     778.90  r= 2.045±0.214 mcps  r/I=0.1581
-    964.07  r= 1.685±0.270 mcps  r/I=0.1161
+    964.07  r= 1.738±0.221 mcps  r/I=0.1198
    1085.84  r= 0.994±0.162 mcps  r/I=0.0983
    1408.01  r= 1.684±0.179 mcps  r/I=0.0807
-  deg1: chi2r=0.91
+  deg1: chi2r=0.90
   deg2: chi2r=0.60
-   resid   121.8: 1.000
-   resid   244.7: 1.138
-   resid   344.3: 0.939
-   resid   778.9: 1.107
-   resid   964.1: 1.213
-   resid  1085.8: 0.933
-   resid  1408.0: 0.983
-  A(Cs-137)/A(Eu-152) = 56.1 ± 3.2  (at measurement date)
+   resid   121.8: 1.001
+   resid   244.7: 1.136
+   resid   344.3: 0.937
+   resid   778.9: 1.103
+   resid   964.1: 1.208
+   resid  1085.8: 0.928
+   resid  1408.0: 0.977
+  A(Cs-137)/A(Eu-152) = 56.1 ± 3.1  (at measurement date)
   decay factors since 16-Jul-1945: Cs137 0.1537 Eu152 0.0155 Ba133 0.00480 Eu154 0.00143 Co60 2.29e-05 Eu155 7.1e-06
-  -> A(Cs-137)/A(Eu-152) at t0 = 5.65 ± 0.32
+  -> A(Cs-137)/A(Eu-152) at t0 = 5.66 ± 0.32
   A(Ba-133)/A(Eu-152) = 0.124 ± 0.026; at t0 = 0.40 ± 0.08
-  Eu-154 1274 LD rate=0.545 mcps -> A(Eu-154)/A(Eu-152) < 0.173 (now); < 1.87 at t0
-  Co-60 1173.228: LD 0.811 mcps -> A/A(Eu152) < 0.0829
-  Co-60 1332.492: LD 0.492 mcps -> A/A(Eu152) < 0.0568
+  Eu-154 1274 LD rate=0.545 mcps -> A(Eu-154)/A(Eu-152) < 0.172 (now); < 1.86 at t0
+  Co-60 1173.228: LD 0.811 mcps -> A/A(Eu152) < 0.0825
+  Co-60 1332.492: LD 0.492 mcps -> A/A(Eu152) < 0.0565
   [A(Pu239)/A(Am241)]*eps(51.6)/eps(59.5) = 23.7 ± 4.3; for eps ratio 0.7-1.0 -> 24-34
   Pu-239 129.3: 1.66±0.54  ; consistency: expected 129.3 if eps(129)/eps(51.6)=1-2:  0.82-1.65 mcps
 

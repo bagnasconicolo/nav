@@ -16,7 +16,8 @@ eu=[(121.7817,28.53),(244.6974,7.55),(344.2785,26.59),(778.9045,12.93),(964.072,
 X=[];Y=[];DY=[]
 for e,I in eu:
     r,d=get('TR',e)
-    if abs(e-964.072)<0.1: r-=0.389; d=np.hypot(d,0.165)   # Ac-228 964.77 background (from La run)
+    if abs(e-964.072)<0.1:  # Ac-228 964.77 (unresolved) estimated from Ac-228 968.97 in the SAME spectrum: I(964.77)/I(968.97)=4.99/15.8
+        a,da=get('TR',968.971); r-=a*4.99/15.8; d=np.hypot(d,da*4.99/15.8)
     X.append(np.log(e));Y.append(np.log(r/I));DY.append(d/r)
     print(f"  {e:8.2f}  r={r:6.3f}±{d:5.3f} mcps  r/I={r/I:.4f}")
 X,Y,DY=map(np.array,(X,Y,DY))
@@ -28,7 +29,7 @@ for e,I in eu: print(f"   resid {e:7.1f}: {np.exp(np.log(get('TR',e)[0]/I)-np.lo
 # activity relative to Eu-152 (A_x/A_Eu152): A ∝ r/(I*eps); Eu-152 normalisation: eps curve is r/I for Eu itself => A_Eu = 1 in these units
 def ratio(E,I,r,dr):
     ef,def_=eps(E); A=r/I/ef; return A, A*np.hypot(dr/r,def_)
-cs_r,cs_d=get('TR',661.657); cs_r-=4.013; cs_d=np.hypot(cs_d,0.254)  # subtract Cs-137 seen in La run (lab bkg)
+cs_r,cs_d=get('TR',661.657)
 A,dA=ratio(661.657,85.10,cs_r,cs_d); print(f"  A(Cs-137)/A(Eu-152) = {A:.1f} ± {dA:.1f}  (at measurement date)")
 f_cs=2**(-81.27/30.08); f_eu=2**(-81.27/13.517); f_ba=2**(-81.27/10.551); f_154=2**(-81.27/8.601)
 print(f"  decay factors since 16-Jul-1945: Cs137 {f_cs:.4f} Eu152 {f_eu:.4f} Ba133 {f_ba:.5f} Eu154 {f_154:.5f} Co60 {2**(-81.27/5.2714):.2e} Eu155 {2**(-81.27/4.753):.1e}")
@@ -56,7 +57,6 @@ for E,I,n in chain:
     if n=='Bi-211':
         # Bi-211 351.06 and Pb-214 351.93 unresolved: take total and subtract Pb-214 351.9 estimated from Pb-214 295.2 (ratio from TR run)
         tot=get('La',351.06)[0]+get('La',351.932)[0]; dt=np.hypot(get('La',351.06)[1],get('La',351.932)[1])
-        k=get('TR',351.932)[0]/get('TR',295.224)[0]
         pb=get('La',295.224)[0]*1.70  # Igamma ratio 35.6/18.4 x eff ratio ~0.88
         r=tot-pb; d=np.hypot(dt,0.3*pb)
     pts.append((E,I,n,r,d)); print(f"  {n:7s} {E:7.2f} r={r:6.2f}±{d:4.2f}  r/I={r/I:.3f}±{d/I:.3f}")
