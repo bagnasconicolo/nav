@@ -102,6 +102,8 @@ Lo spettro contiene le linee di ⁴⁰K (1460,8 keV), della serie dell'U (²¹�
 
 Misura del 28/10/2026, ore 11:04:28. Live time 113 768 s (31,6 h); tempo morto ≈ 0,01 %.
 
+**Campione**: un pezzo di **lantanio metallico** conservato in fiala, con composizione isotopica **naturale** (non arricchito): ¹³⁹La 99,9119 %, ¹³⁸La 0,0881 %. Trattandosi di metallo, la massa del campione coincide in pratica con la massa di La, salvo impurezze e un eventuale strato di ossido superficiale.
+
 ![Spettro lantanio](figure/fig1_spettro_lantanio.png)
 
 ## B.1 Contenuto: ¹³⁸La + catena dell'²²⁷Ac
@@ -127,20 +129,22 @@ Che l'²²⁷Ac accompagni il lantanio è ben documentato. Ac e La sono chimicam
 
 ## B.2 Equilibrio della catena
 
-Con le linee della catena ho costruito una curva di efficienza relativa (ln ε lineare in ln E). Le linee del ²²⁷Th e del ²²³Ra stanno sulla stessa curva entro il 10–20 %, senza uno scarto sistematico fra le due famiglie. Anche il ²¹⁹Rn (401,8 keV) è in linea, quindi non c'è una perdita apprezzabile di Rn dalla fiala. Il quadro è compatibile con l'**equilibrio secolare** ²²⁷Ac–²²⁷Th–²²³Ra–figli. Il materiale è quindi stato separato chimicamente da almeno alcuni mesi (circa 5–10 volte i 18,7 d del ²²⁷Th).
+Con le linee della catena ho costruito una curva di efficienza relativa (ln ε lineare in ln E). Le linee del ²²⁷Th e del ²²³Ra stanno sulla stessa curva entro il 10–20 %, senza uno scarto sistematico fra le due famiglie. Anche il ²¹⁹Rn (401,8 keV) è in linea, quindi non c'è una perdita apprezzabile di Rn dalla fiala. In un pezzo di metallo il ²¹⁹Rn (T½ = 3,96 s) non ha il tempo di diffondere fuori dal reticolo, quindi questo risultato è atteso. Il quadro è compatibile con l'**equilibrio secolare** ²²⁷Ac–²²⁷Th–²²³Ra–figli. Il metallo è quindi stato prodotto (riduzione e purificazione) da almeno alcuni mesi (circa 5–10 volte i 18,7 d del ²²⁷Th).
+
+Autoassorbimento: il La metallico ha densità 6,15 g/cm³ e Z = 57, quindi attenua molto i fotoni di bassa energia. Questo contribuisce alla forte pendenza della curva di efficienza relativa (ε ∝ E^−0,54 tra 150 e 830 keV). La curva è però costruita con le linee dello stesso campione. Se ²²⁷Ac e La sono distribuiti uniformemente nel metallo, come è ragionevole per un'impurezza chimicamente omologa, l'autoassorbimento è già incluso nella calibrazione e non introduce errori nei rapporti.
 
 ## B.3 Livello di contaminazione da ²²⁷Ac
 
-Assumo che il lantanio abbia composizione isotopica naturale. Il ¹³⁸La fa allora da **riferimento interno**: abbondanza 0,08881 %, T½ = 1,03·10¹¹ a, cioè **0,82 Bq per grammo di La**. Le efficienze a 789 keV (¹³⁸La) e a 832 keV (²¹¹Pb) differiscono solo di circa il 5 %:
+Il lantanio ha composizione isotopica naturale, quindi il ¹³⁸La fa da **riferimento interno**: abbondanza 0,08881 %, T½ = 1,03·10¹¹ a, cioè **0,82 Bq per grammo di La**. Le efficienze a 789 keV (¹³⁸La) e a 832 keV (²¹¹Pb) differiscono solo di circa il 5 %:
 
 - A(²²⁷Ac)/A(¹³⁸La) = **1,38 ± 0,12** (²¹¹Pb 832 keV contro ¹³⁸La 789 keV);
 - usando l'intera catena con la curva di efficienza relativa: 1,69 ± 0,19. La differenza fornisce una stima dell'incertezza sistematica.
 
 Quindi:
-- **²²⁷Ac ≈ 1,1–1,4 Bq per grammo di La**;
+- **²²⁷Ac ≈ 1,1–1,4 Bq per grammo di La**, cioè per grammo di metallo;
 - rapporto atomico **Ac/La ≈ (2,6–3,2)·10⁻¹³**.
 
-In letteratura sono riportati 1,3·10⁻¹³ atomi della catena ²²⁷Ac per atomo di La in uno dei primi cristalli LaCl₃(Ce) e 5,8·10⁻¹⁵ in un LaBr₃(Ce) moderno [9]. Il lantanio della fiala ha quindi un livello di ²²⁷Ac tipico di un materiale non specificamente purificato dall'attinio.
+In letteratura sono riportati 1,3·10⁻¹³ atomi della catena ²²⁷Ac per atomo di La in uno dei primi cristalli LaCl₃(Ce) e 5,8·10⁻¹⁵ in un LaBr₃(Ce) moderno [9]. Il lantanio metallico ha quindi un livello di ²²⁷Ac tipico di un materiale commerciale non specificamente purificato dall'attinio.
 
 Verifica di coerenza: corretto per le intensità, il rapporto fra le due linee del ¹³⁸La dà ε(1436)/ε(789) = 0,56, meno dell'estrapolazione della curva della catena (0,73). La differenza si spiega con la curvatura della curva di efficienza sopra 850 keV e con la perdita per somma del 1436 keV con i raggi X K del Ba che seguono la cattura elettronica. Per il rapporto Ac/La uso quindi solo la linea a 789 keV.
 
@@ -160,14 +164,14 @@ Verifica di coerenza: corretto per le intensità, il rapporto fra le due linee d
 - Lo spettro è compatibile con la trinitite del test Trinity descritta in letteratura.
 
 **Fiala di lantanio.**
-- Contiene lantanio naturale (¹³⁸La: 788,7 e 1435,8 keV) contaminato da **²²⁷Ac in equilibrio con i figli** (²²⁷Th, ²²³Ra, ²¹⁹Rn, ²¹¹Pb, ²¹¹Bi).
+- È un pezzo di lantanio metallico di composizione isotopica naturale (¹³⁸La: 788,7 e 1435,8 keV), contaminato da **²²⁷Ac in equilibrio con i figli** (²²⁷Th, ²²³Ra, ²¹⁹Rn, ²¹¹Pb, ²¹¹Bi).
 - A(²²⁷Ac)/A(¹³⁸La) ≈ 1,4–1,7, cioè circa 1,1–1,4 Bq di ²²⁷Ac per g di La, ovvero Ac/La ≈ 3·10⁻¹³ in atomi.
 - Nello spettro c'è anche ¹³⁷Cs, di origine non determinabile.
 
 # Limiti e misure consigliate
 
 - **Fondo**: per ciascuna configurazione di misura serve uno spettro a vuoto della stessa durata (≥ 1 giorno). Permette di sottrarre ⁴⁰K, U/Th ed eventuale ¹³⁷Cs ambientale, e di quantificare i radionuclidi naturali della trinitite.
-- **Efficienza assoluta**: con una sorgente multi-γ certificata nella stessa geometria, oppure con calcolo Monte Carlo/LabSOCS, e con la massa del campione, i rapporti diventano Bq/g. Se si conosce la **massa di La nella fiala**, il ¹³⁸La fornisce da solo una calibrazione assoluta dell'efficienza a 789 e 1436 keV.
+- **Efficienza assoluta**: con una sorgente multi-γ certificata nella stessa geometria, oppure con calcolo Monte Carlo/LabSOCS, e con la massa del campione, i rapporti diventano Bq/g. **Pesando il pezzo di La metallico** si ottiene subito l'attività assoluta del ¹³⁸La: A = 0,821 Bq/g × m, con la massa in g. Il ¹³⁸La fornisce così una calibrazione assoluta dell'efficienza a 789 keV, e con essa l'attività assoluta dell'²²⁷Ac in Bq.
 - **Canali**: 2048 canali su 2,8 MeV sotto-campionano i picchi. Conviene acquisire con 8192 o 16384 canali.
 - **Pu**: per quantificare ²³⁹⁺²⁴⁰Pu in modo affidabile serve la spettrometria α dopo separazione radiochimica [1, 4].
 
