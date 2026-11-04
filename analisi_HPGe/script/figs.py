@@ -9,13 +9,33 @@ def ann(ax,items,c,ymax):
     for E,t in items:
         ax.axvline(E,color=c,lw=.5,ls=':',alpha=.7)
         ax.text(E,ymax,t,rotation=90,va='top',ha='right',fontsize=7.5,color=c)
-# Fig1 overview
-for a,c,lt,col,name,items in [(None,cT,lT,C1,'Trinitite (LT = %.0f s)'%lT,[(59.54,'Am-241'),(121.78,'Eu-152'),(344.28,'Eu-152'),(661.66,'Cs-137'),(778.9,'Eu-152'),(964.1,'Eu-152'),(1408.0,'Eu-152'),(1460.8,'K-40 (fondo)'),(2614.5,'Tl-208 (fondo)'),(1764.5,'Bi-214 (fondo)'),(511,'annich.')]),
-                              (None,cL,lL,C2,'Fiala di La (LT = %.0f s)'%lL,[(235.96,'Th-227'),(269.5,'Ra-223/Rn-219'),(351.06,'Bi-211'),(401.8,'Rn-219'),(788.74,'La-138'),(831.96,'Pb-211'),(1435.8,'La-138'),(1460.8,'K-40 (fondo)'),(2614.5,'Tl-208 (fondo)'),(84,'raggi X'),(154.2,'Ra-223')])]:
-    fig,a=plt.subplots(figsize=(13,4.6))
-    a.step(e,c/lt,where='mid',color=col,lw=.7); a.set_yscale('log'); a.set_ylim(5e-6,1); a.set_title(name,loc='left'); a.set_ylabel('conteggi/s/canale'); a.grid(alpha=.25)
-    ann(a,items,'k',0.9); a.set_xlabel('Energia (keV)'); a.set_xlim(15,2800)
-    plt.tight_layout(); plt.savefig(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','figure','fig1_spettro_'+('trinitite' if c is cT else 'lantanio')+'.png'),dpi=130); plt.close()
+# Fig1 overview: ogni picco > 4 sigma etichettato, colore per categoria
+CS,CB,CA='#b0182a','#555555','#1b7f3b'   # campione / fondo naturale / raggi X, annichilazione, artefatti
+TR_ITEMS=[(59.54,'Am-241',CS),(51.6,'Pu-239',CS),(75.0,'Pb Kα',CA),(84.9,'Pb Kβ',CA),(92.6,'Th-234',CB),(121.78,'Eu-152',CS),(129.3,'Pu-239',CS),
+ (185.7,'U-235/Ra-226',CB),(238.6,'Pb-212',CB),(244.7,'Eu-152',CS),(295.2,'Pb-214',CB),(344.28,'Eu-152',CS),(351.9,'Pb-214',CB),(356.0,'Ba-133',CS),
+ (477.3,'spalla Compton Cs-137',CA),(511,'annichilazione',CA),(583.2,'Tl-208',CB),(609.3,'Bi-214',CB),(661.66,'Cs-137',CS),(778.9,'Eu-152',CS),
+ (911.2,'Ac-228',CB),(964.1,'Eu-152 964 (+Ac-228 969)',CS),(1085.8,'Eu-152',CS),(1120.3,'Bi-214',CB),(1238.1,'Bi-214',CB),(1408.0,'Eu-152',CS),
+ (1460.8,'K-40',CB),(1590,'Ac-228 1588 + DE 2614',CB),(1764.5,'Bi-214',CB),(2103.5,'SE 2614',CA),(2204.2,'Bi-214',CB),(2614.5,'Tl-208',CB)]
+LA_ITEMS=[(46.5,'Pb-210',CB),(63.3,'Th-234',CB),(75.0,'Pb Kα',CA),(84.9,'Pb Kβ / Rn,Ra Kα',CA),(93.0,'X K / Th-234',CA),(144.2,'Ra-223',CS),(154.2,'Ra-223',CS),(185.7,'U-235/Ra-226',CB),(210.6,'Th-227',CS),
+ (235.96,'Th-227',CS),(256.23,'Th-227',CS),(270.3,'Ra-223+Rn-219',CS),(286.1,'Th-227',CS),(295.2,'Pb-214',CB),(300.0,'Th-227',CS),(323.9,'Ra-223',CS),(329.9,'Th-227',CS),
+ (338.3,'Ra-223',CS),(351.06,'Bi-211',CS),(401.8,'Rn-219',CS),(404.9,'Pb-211',CS),(427.1,'Pb-211',CS),(445.0,'Ra-223',CS),(511,'annichilazione',CA),(583.2,'Tl-208',CB),
+ (609.3,'Bi-214',CB),(661.66,'Cs-137',CB),(788.74,'La-138',CS),(831.96,'Pb-211',CS),(911.2,'Ac-228',CB),(1120.3,'Bi-214',CB),(1377.7,'Bi-214',CB),(1435.8,'La-138',CS),
+ (1460.8,'K-40',CB),(1764.5,'Bi-214',CB),(2103.5,'SE 2614',CA),(2204.2,'Bi-214',CB),(2614.5,'Tl-208',CB)]
+from matplotlib.lines import Line2D
+for c,lt,col,name,items,fn in [(cT,lT,C1,'Trinitite (LT = %.0f s)'%lT,TR_ITEMS,'trinitite'),(cL,lL,C2,'Lantanio metallico (LT = %.0f s)'%lL,LA_ITEMS,'lantanio')]:
+    fig,axs=plt.subplots(2,1,figsize=(13,9))
+    for a,(lo,hi) in zip(axs,[(15,700),(700,2800)]):
+        m=(e>=lo)&(e<=hi)
+        a.step(e[m],c[m]/lt,where='mid',color=col,lw=.7); a.set_yscale('log'); a.set_xlim(lo,hi); a.grid(alpha=.25); a.set_ylabel('conteggi/s/canale')
+        lo_y,hi_y=a.get_ylim(); a.set_ylim(lo_y,hi_y*30)
+        for E,t,cc in items:
+            if lo<=E<=hi:
+                a.axvline(E,color=cc,lw=.5,ls=':',alpha=.8)
+                a.text(E,hi_y*25,t,rotation=90,va='top',ha='right',fontsize=7,color=cc)
+    axs[0].set_title(name,loc='left'); axs[1].set_xlabel('Energia (keV)')
+    axs[0].legend(handles=[Line2D([],[],color=CS,ls=':',label='campione'),Line2D([],[],color=CB,ls=':',label='serie naturali / K-40 (fondo e/o campione)' if fn=='trinitite' else 'fondo / non attribuito al campione'),
+        Line2D([],[],color=CA,ls=':',label='raggi X, annichilazione, fuga, Compton')],loc='lower left',fontsize=8)
+    plt.tight_layout(); plt.savefig(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','figure','fig1_spettro_'+fn+'.png'),dpi=130); plt.close()
 # zoom helper
 def zoom(ax,lo,hi,items,log=False,title='',sample='TR'):
     m=(e>=lo)&(e<=hi)

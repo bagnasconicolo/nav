@@ -11,6 +11,7 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{float}
+\usepackage{longtable}
 \usepackage{caption}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
@@ -142,7 +143,7 @@ Nuclide & $T_{1/2}$ & Linea [keV] ($I_\gamma$\,\%) & Tasso netto [mcps] & Sign. 
 \end{itemize}
 In conclusione l'identificazione è solida, mentre la quantificazione resta indicativa.
 \item \textbf{\nuc{133}{Ba}.} Il picco a 356\,keV è fittato insieme al \nuc{214}{Pb} a 351,9\,keV. Le linee secondarie (81, 303, 384\,keV) sono compatibili ma non significative. L'identificazione è quindi probabile, con significatività moderata.
-\item La scansione trova solo due eccessi non previsti: a 93\,keV (\nuc{234}{Th} 92,4/92,8\,keV e raggi~X K) e a 474\,keV (spalla Compton del \nuc{137}{Cs}, attesa a 477\,keV).
+\item Tutti i picchi dello spettro, compresi quelli non dovuti al campione, sono elencati e assegnati nella Tabella~\ref{tab:tuttiTR} (\S\ref{sec:tuttiTR}).
 \end{itemize}
 
 \begin{figure}[H]
@@ -208,6 +209,68 @@ Le incertezze riportate sono solo statistiche e di fit. Restano fuori tre effett
 \item Il rapporto \nuc{137}{Cs}/\nuc{152}{Eu} varia molto da campione a campione. Tra prodotti di attivazione del suolo e radionuclidi del dispositivo non si osservano correlazioni~\cite{jrnc2013}, e il valore dipende tra l'altro dalla posizione rispetto al ground zero~\cite{belloni2011}. Il valore trovato caratterizza questo frammento e non va usato come prova di autenticità.
 \end{itemize}
 
+\subsection{Elenco completo dei picchi}\label{sec:tuttiTR}
+
+La Tabella~\ref{tab:tuttiTR} riporta \emph{tutti} i picchi dello spettro della trinitite. Comprende i picchi trovati dalla scansione automatica con significatività $>4\sigma$ e le linee più deboli che risultano significative nel fit multiplo. Ogni picco è assegnato a una di quattro categorie:
+\begin{itemize}
+\item \textbf{C}: campione (radionuclidi del test Trinity);
+\item \textbf{N}: radionuclidi naturali (serie di U e Th, \nuc{40}{K}). Senza uno spettro di fondo non si può distinguere quanto provenga dal frammento e quanto dall'ambiente;
+\item \textbf{X}: raggi~X di fluorescenza dello schermo e picco di annichilazione;
+\item \textbf{S}: strutture strumentali (picchi di fuga singola e doppia, spalla Compton).
+\end{itemize}
+Non restano picchi senza assegnazione. La Figura~1 riporta le stesse etichette.
+
+{\small
+\begin{longtable}{>{\raggedleft\arraybackslash}p{1.7cm}p{4.3cm}p{4.6cm}>{\raggedleft\arraybackslash}p{2.9cm}c}
+\caption{Trinitite: elenco completo dei picchi e loro assegnazione. Tassi netti dal fit multiplo.}\label{tab:tuttiTR}\\
+\toprule
+$E$ [keV] & Assegnazione & Note & Tasso [mcps] & Cat.\\
+\midrule\endfirsthead
+\toprule
+$E$ [keV] & Assegnazione & Note & Tasso [mcps] & Cat.\\
+\midrule\endhead
+\bottomrule\endfoot
+$<30$ & soglia del discriminatore & 15,4\,keV: picco sul primo canale utile; nessun picco risolvibile & --- & S\\
+51,6 & \nuc{239}{Pu} & & $3{,}6\pm0{,}7$ & C\\
+59,5 & \nuc{241}{Am} & & $197{,}9\pm1{,}6$ & C\\
+72,8 / 75,0 & Pb K$\alpha_2$ / K$\alpha_1$ & fluorescenza dello schermo & $6{,}6\pm0{,}7$ / $12{,}9\pm0{,}6$ & X\\
+84,9 / 87,3 & Pb K$\beta_1$ / K$\beta_2$ & fluorescenza dello schermo & $6{,}8\pm0{,}7$ / $2{,}3\pm0{,}7$ & X\\
+92,6 & \nuc{234}{Th} (92,4 + 92,8) & serie \nuc{238}{U} & $\approx5{,}5$ & N\\
+121,8 & \nuc{152}{Eu} & & $15{,}5\pm0{,}6$ & C\\
+129,3 & \nuc{239}{Pu} & & $1{,}7\pm0{,}5$ & C\\
+185,7 & \nuc{235}{U} + \nuc{226}{Ra} (186,2) & & $6{,}3\pm0{,}6$ & N\\
+238,6 & \nuc{212}{Pb} & serie \nuc{232}{Th} & $6{,}1\pm0{,}6$ & N\\
+244,7 & \nuc{152}{Eu} & & $3{,}0\pm0{,}5$ & C\\
+295,2 & \nuc{214}{Pb} & serie \nuc{238}{U} & $1{,}9\pm0{,}4$ & N\\
+344,3 & \nuc{152}{Eu} & & $6{,}9\pm0{,}6$ & C\\
+351,9 & \nuc{214}{Pb} & serie \nuc{238}{U} & $2{,}2\pm0{,}4$ & N\\
+356,0 & \nuc{133}{Ba} & & $2{,}1\pm0{,}4$ & C\\
+411,1 & \nuc{152}{Eu} & interferenza non risolta & $1{,}9\pm0{,}5$ & C\\
+$\sim$477 & spalla Compton del \nuc{137}{Cs} & $E_C=477{,}3$\,keV; non è un picco & --- & S\\
+511,0 & annichilazione + \nuc{208}{Tl} 510,8 & & $10{,}5\pm0{,}6$ & X/N\\
+583,2 & \nuc{208}{Tl} & serie \nuc{232}{Th} & $2{,}2\pm0{,}3$ & N\\
+609,3 & \nuc{214}{Bi} & serie \nuc{238}{U} & $3{,}1\pm0{,}3$ & N\\
+661,7 & \nuc{137}{Cs} & & $789{,}1\pm3{,}0$ & C\\
+778,9 & \nuc{152}{Eu} & & $2{,}05\pm0{,}21$ & C\\
+911,2 & \nuc{228}{Ac} & serie \nuc{232}{Th} & $1{,}55\pm0{,}19$ & N\\
+964,1 & \nuc{152}{Eu} (+ \nuc{228}{Ac} 964,8) & & $1{,}74\pm0{,}22$ & C\\
+969,0 & \nuc{228}{Ac} & & $1{,}06\pm0{,}18$ & N\\
+1085,8 & \nuc{152}{Eu} & & $0{,}99\pm0{,}16$ & C\\
+1112,1 & \nuc{152}{Eu} & doppietto con 1120,3 & $0{,}77\pm0{,}16$ & C\\
+1120,3 & \nuc{214}{Bi} & & $0{,}79\pm0{,}16$ & N\\
+1238,1 & \nuc{214}{Bi} & & $0{,}49\pm0{,}13$ & N\\
+1377,7 & \nuc{214}{Bi} & & $0{,}45\pm0{,}12$ & N\\
+1408,0 & \nuc{152}{Eu} & & $1{,}68\pm0{,}18$ & C\\
+1460,8 & \nuc{40}{K} & & $11{,}4\pm0{,}4$ & N\\
+1588,2 & \nuc{228}{Ac} & & $0{,}32\pm0{,}09$ & N\\
+1592,5 & doppia fuga del 2614,5 & & $0{,}51\pm0{,}10$ & S\\
+1764,5 & \nuc{214}{Bi} & & $1{,}44\pm0{,}15$ & N\\
+2103,5 & fuga singola del 2614,5 & & $0{,}52\pm0{,}10$ & S\\
+2204,2 & \nuc{214}{Bi} & & $0{,}56\pm0{,}10$ & N\\
+2614,5 & \nuc{208}{Tl} & serie \nuc{232}{Th} & $3{,}34\pm0{,}20$ & N\\
+\end{longtable}
+}
+
 \subsection{Radionuclidi naturali}
 
 Sono presenti le linee del \nuc{40}{K}, della serie dell'U (\nuc{214}{Pb}, \nuc{214}{Bi}, 185,7\,keV di \nuc{235}{U}/\nuc{226}{Ra}) e della serie del Th (\nuc{228}{Ac}, \nuc{212}{Pb}, \nuc{208}{Tl}), oltre ai raggi~X del Pb dello schermo. Senza uno spettro di fondo dello stesso rivelatore non si può separare il contributo del frammento da quello ambientale, per cui queste linee non sono quantificate.
@@ -242,6 +305,7 @@ raggi X K & --- & $\sim$81--94 (Rn/Ra); Pb K$\alpha$/K$\beta$ (schermo) & qualit
 \bottomrule
 \end{tabularx}
 \caption{Nuclidi identificati nel lantanio metallico. Tutte le linee elencate hanno significatività $>5\sigma$. ${}^{*}$Il \nuc{211}{Bi} a 351,06\,keV non è risolto dal \nuc{214}{Pb} a 351,93\,keV. Il contributo del \nuc{214}{Pb} è stimato dalla sua linea a 295,2\,keV nello stesso spettro.}
+\label{tab:catenaLa}
 \end{table}
 
 La presenza di \nuc{227}{Ac} nel lantanio è ben documentata. Ac e La sono chimicamente quasi indistinguibili, e l'\nuc{227}{Ac}, che appartiene alla serie del \nuc{235}{U}, segue il La nei minerali e nella purificazione. L'esempio classico è il fondo intrinseco degli scintillatori LaCl$_3$(Ce) e LaBr$_3$(Ce)~\cite{hartwell2005,milbrath2005,pnnl15453,labr2020}.
@@ -300,9 +364,41 @@ Per questo il rapporto Ac/La è calcolato solo con la linea a 789\,keV.
 
 \subsection{Altre linee}
 
+Oltre alle linee del \nuc{138}{La} e della catena dell'\nuc{227}{Ac} (Tabella~\ref{tab:catenaLa}), nello spettro compaiono i picchi elencati nella Tabella~\ref{tab:altriLa}. Anche qui non restano picchi senza assegnazione.
+
+{\small
+\begin{longtable}{>{\raggedleft\arraybackslash}p{2.6cm}p{3.9cm}p{3.6cm}>{\raggedleft\arraybackslash}p{4.3cm}}
+\caption{Lantanio metallico: picchi non appartenenti a \nuc{138}{La} o alla catena dell'\nuc{227}{Ac}.}\label{tab:altriLa}\\
+\toprule
+$E$ [keV] & Assegnazione & Note & Tasso [mcps]\\
+\midrule\endfirsthead
+\toprule
+$E$ [keV] & Assegnazione & Note & Tasso [mcps]\\
+\midrule\endhead
+\bottomrule\endfoot
+$<30$ & soglia del discriminatore & & ---\\
+46,5 & \nuc{210}{Pb} & serie \nuc{238}{U} & $2{,}2\pm0{,}4$\\
+63,3 & \nuc{234}{Th} & serie \nuc{238}{U} & $2{,}9\pm0{,}4$\\
+72,8 / 75,0 & Pb K$\alpha_2$ / K$\alpha_1$ & fluorescenza dello schermo & $6{,}0\pm0{,}5$ / $13{,}9\pm0{,}5$\\
+81--94 & raggi~X K di Rn e Ra + Pb K$\beta$ & conversione interna nella catena dell'\nuc{227}{Ac} & qualitativo\\
+185,7 & \nuc{235}{U} + \nuc{226}{Ra} & & $3{,}6\pm0{,}3$\\
+238,6 & \nuc{212}{Pb} & & $2{,}9\pm0{,}3$\\
+242,0 / 295,2 / 351,9 & \nuc{214}{Pb} & & $1{,}4$ / $2{,}05\pm0{,}27$ / ---\\
+511,0 & annichilazione + \nuc{208}{Tl} 510,8 & & $11{,}2\pm0{,}4$\\
+583,2 / 2614,5 & \nuc{208}{Tl} & & $1{,}19\pm0{,}20$ / $3{,}27\pm0{,}18$\\
+609,3 / 1120,3 / 1238,1 & \nuc{214}{Bi} & & $3{,}72\pm0{,}26$ / $1{,}03\pm0{,}16$ / $0{,}56\pm0{,}15$\\
+1377,7 / 1764,5 / 2204,2 & \nuc{214}{Bi} & & $0{,}49\pm0{,}11$ / $1{,}69\pm0{,}14$ / $0{,}49\pm0{,}09$\\
+661,7 & \nuc{137}{Cs} & origine non determinabile & $4{,}0\pm0{,}3$\\
+911,2 / 969,0 / 1588,2 & \nuc{228}{Ac} & & $1{,}54\pm0{,}18$ / $0{,}79\pm0{,}18$ / $0{,}29\pm0{,}08$\\
+$\sim$1219 & spalla Compton del 1435,8 (\nuc{138}{La}) & non è un picco & ---\\
+1460,8 & \nuc{40}{K} & & $14{,}0\pm0{,}4$\\
+1592,5 / 2103,5 & doppia / singola fuga del 2614,5 & & $0{,}40\pm0{,}09$ / $0{,}38\pm0{,}08$\\
+\end{longtable}
+}
+
 \begin{itemize}
-\item \nuc{137}{Cs} a 661,7\,keV: $4{,}0\pm0{,}3$\,mcps ($13\sigma$). Non appartiene né al \nuc{138}{La} né alla catena dell'\nuc{227}{Ac}. Senza uno spettro di fondo non si può stabilire se provenga dal campione o dall'ambiente di misura.
-\item \nuc{40}{K}, serie U e Th e raggi~X del Pb sono presenti come in un normale fondo di laboratorio e non sono quantificati.
+\item Il \nuc{137}{Cs} non appartiene né al \nuc{138}{La} né alla catena dell'\nuc{227}{Ac}. Senza uno spettro di fondo non si può stabilire se provenga dal campione o dall'ambiente di misura.
+\item Le linee delle serie U e Th, il \nuc{40}{K} e i raggi~X del Pb sono quelle di un normale fondo di laboratorio e non sono quantificate.
 \end{itemize}
 
 %=====================================================================

@@ -56,7 +56,7 @@ Note:
   - In letteratura il ²³⁹Pu nella trinitite è osservabile in γ ma "difficile da quantificare" per la debolezza del segnale [3].
   - Giudizio: identificazione **solida**, quantificazione **indicativa**.
 - **¹³³Ba.** Il 356 keV è fittato insieme al ²¹⁴Pb a 351,9 keV. Le linee secondarie (81, 303, 384 keV) sono compatibili ma non significative. Identificazione **probabile**, con significatività moderata.
-- **Eccessi non previsti dalla scansione.** Solo 93 keV, cioè ²³⁴Th 92,4/92,8 keV e raggi X K, e 474 keV, cioè la spalla Compton del ¹³⁷Cs a 477 keV.
+- Tutti i picchi dello spettro, compresi quelli non dovuti al campione, sono elencati e assegnati in §A.6.
 
 ![Zoom trinitite](figure/fig2_zoom_trinitite.png)
 
@@ -95,6 +95,57 @@ Le incertezze sono solo statistiche e di fit. Restano fuori tre effetti sistemat
 ## A.5 Radionuclidi naturali
 
 Lo spettro contiene le linee di ⁴⁰K (1460,8 keV), della serie dell'U (²¹⁴Pb, ²¹⁴Bi, 185,7 keV ²³⁵U/²²⁶Ra) e della serie del Th (²²⁸Ac, ²¹²Pb, ²⁰⁸Tl), più i raggi X del Pb dello schermo. Senza uno spettro di fondo dello stesso rivelatore non è possibile separare il contributo del frammento da quello ambientale. Per questo **non le quantifico**.
+
+## A.6 Elenco completo dei picchi
+
+La tabella elenca **tutti** i picchi dello spettro: quelli trovati dalla scansione con significatività > 4σ e le linee più deboli che risultano significative nel fit multiplo. Le categorie sono:
+- **C**: campione;
+- **N**: radionuclidi naturali, serie di U e Th e ⁴⁰K. Senza uno spettro di fondo non si può distinguere quanto provenga dal frammento e quanto dall'ambiente;
+- **X**: raggi X di fluorescenza dello schermo e annichilazione;
+- **S**: strutture strumentali, cioè picchi di fuga e spalla Compton.
+
+Non restano picchi senza assegnazione.
+
+| E (keV) | Assegnazione | Note | Tasso (mcps) | Cat. |
+|---|---|---|---|---|
+| < 30 | soglia del discriminatore | 15,4 keV: picco sul primo canale utile; nessun picco risolvibile | — | S |
+| 51,6 | ²³⁹Pu | | 3,6 ± 0,7 | C |
+| 59,5 | ²⁴¹Am | | 197,9 ± 1,6 | C |
+| 72,8 / 75,0 | Pb Kα₂ / Kα₁ | fluorescenza dello schermo | 6,6 ± 0,7 / 12,9 ± 0,6 | X |
+| 84,9 / 87,3 | Pb Kβ₁ / Kβ₂ | fluorescenza dello schermo | 6,8 ± 0,7 / 2,3 ± 0,7 | X |
+| 92,6 | ²³⁴Th (92,4 + 92,8) | serie ²³⁸U | ≈ 5,5 | N |
+| 121,8 | ¹⁵²Eu | | 15,5 ± 0,6 | C |
+| 129,3 | ²³⁹Pu | | 1,7 ± 0,5 | C |
+| 185,7 | ²³⁵U + ²²⁶Ra (186,2) | | 6,3 ± 0,6 | N |
+| 238,6 | ²¹²Pb | serie ²³²Th | 6,1 ± 0,6 | N |
+| 244,7 | ¹⁵²Eu | | 3,0 ± 0,5 | C |
+| 295,2 | ²¹⁴Pb | | 1,9 ± 0,4 | N |
+| 344,3 | ¹⁵²Eu | | 6,9 ± 0,6 | C |
+| 351,9 | ²¹⁴Pb | | 2,2 ± 0,4 | N |
+| 356,0 | ¹³³Ba | | 2,1 ± 0,4 | C |
+| 411,1 | ¹⁵²Eu | interferenza non risolta | 1,9 ± 0,5 | C |
+| ~477 | spalla Compton del ¹³⁷Cs | E_C = 477,3 keV; non è un picco | — | S |
+| 511,0 | annichilazione + ²⁰⁸Tl 510,8 | | 10,5 ± 0,6 | X/N |
+| 583,2 | ²⁰⁸Tl | | 2,2 ± 0,3 | N |
+| 609,3 | ²¹⁴Bi | | 3,1 ± 0,3 | N |
+| 661,7 | ¹³⁷Cs | | 789,1 ± 3,0 | C |
+| 778,9 | ¹⁵²Eu | | 2,05 ± 0,21 | C |
+| 911,2 | ²²⁸Ac | | 1,55 ± 0,19 | N |
+| 964,1 | ¹⁵²Eu (+ ²²⁸Ac 964,8) | | 1,74 ± 0,22 | C |
+| 969,0 | ²²⁸Ac | | 1,06 ± 0,18 | N |
+| 1085,8 | ¹⁵²Eu | | 0,99 ± 0,16 | C |
+| 1112,1 | ¹⁵²Eu | doppietto con 1120,3 | 0,77 ± 0,16 | C |
+| 1120,3 | ²¹⁴Bi | | 0,79 ± 0,16 | N |
+| 1238,1 | ²¹⁴Bi | | 0,49 ± 0,13 | N |
+| 1377,7 | ²¹⁴Bi | | 0,45 ± 0,12 | N |
+| 1408,0 | ¹⁵²Eu | | 1,68 ± 0,18 | C |
+| 1460,8 | ⁴⁰K | | 11,4 ± 0,4 | N |
+| 1588,2 | ²²⁸Ac | | 0,32 ± 0,09 | N |
+| 1592,5 | doppia fuga del 2614,5 | | 0,51 ± 0,10 | S |
+| 1764,5 | ²¹⁴Bi | | 1,44 ± 0,15 | N |
+| 2103,5 | fuga singola del 2614,5 | | 0,52 ± 0,10 | S |
+| 2204,2 | ²¹⁴Bi | | 0,56 ± 0,10 | N |
+| 2614,5 | ²⁰⁸Tl | | 3,34 ± 0,20 | N |
 
 ---
 
@@ -150,8 +201,29 @@ Verifica di coerenza: corretto per le intensità, il rapporto fra le due linee d
 
 ## B.4 Altre linee
 
-- **¹³⁷Cs** (661,7 keV): 4,0 ± 0,3 mcps (13σ). Non appartiene né al ¹³⁸La né alla catena dell'²²⁷Ac. Senza uno spettro di fondo non si può stabilire se provenga dalla fiala o dall'ambiente di misura.
-- **⁴⁰K, serie U e Th, raggi X del Pb**: presenti come in un normale fondo di laboratorio. Non sono quantificati, per lo stesso motivo.
+Oltre a ¹³⁸La e alla catena dell'²²⁷Ac, nello spettro compaiono i picchi seguenti. Anche qui non restano picchi senza assegnazione.
+
+| E (keV) | Assegnazione | Tasso (mcps) |
+|---|---|---|
+| < 30 | soglia del discriminatore | — |
+| 46,5 | ²¹⁰Pb | 2,2 ± 0,4 |
+| 63,3 | ²³⁴Th | 2,9 ± 0,4 |
+| 72,8 / 75,0 | Pb Kα₂ / Kα₁ (schermo) | 6,0 ± 0,5 / 13,9 ± 0,5 |
+| 81–94 | raggi X K di Rn/Ra (conversione interna nella catena dell'²²⁷Ac) + Pb Kβ | qualitativo |
+| 185,7 | ²³⁵U + ²²⁶Ra | 3,6 ± 0,3 |
+| 238,6 | ²¹²Pb | 2,9 ± 0,3 |
+| 242,0 / 295,2 / 351,9 | ²¹⁴Pb | 1,4 / 2,05 ± 0,27 / — |
+| 511,0 | annichilazione + ²⁰⁸Tl | 11,2 ± 0,4 |
+| 583,2 / 2614,5 | ²⁰⁸Tl | 1,19 ± 0,20 / 3,27 ± 0,18 |
+| 609,3 / 1120,3 / 1238,1 / 1377,7 / 1764,5 / 2204,2 | ²¹⁴Bi | 3,72 / 1,03 / 0,56 / 0,49 / 1,69 / 0,49 |
+| 661,7 | ¹³⁷Cs (origine non determinabile) | 4,0 ± 0,3 |
+| 911,2 / 969,0 / 1588,2 | ²²⁸Ac | 1,54 / 0,79 / 0,29 |
+| ~1219 | spalla Compton del 1435,8 keV (non è un picco) | — |
+| 1460,8 | ⁴⁰K | 14,0 ± 0,4 |
+| 1592,5 / 2103,5 | doppia / singola fuga del 2614,5 | 0,40 / 0,38 |
+
+- Il **¹³⁷Cs** non appartiene né al ¹³⁸La né alla catena dell'²²⁷Ac. Senza uno spettro di fondo non si può stabilire se provenga dalla fiala o dall'ambiente di misura.
+- Le linee di ⁴⁰K, delle serie di U e Th e i raggi X del Pb sono quelle di un normale fondo di laboratorio e non sono quantificate.
 
 ---
 
