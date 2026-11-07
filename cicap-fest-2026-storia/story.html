@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{--navy:#0f1d36;--ink:#16243f;--muted:#4a5672;--orange:#ef5a1f;--orange2:#ff7a3a;--cream:#fbf7f0}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;background:transparent}
+body{font-family:Inter,sans-serif;color:var(--ink);position:relative;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* ---- background (only in "bg" mode) ---- */
+.bg{position:absolute;inset:0;display:none;
+  background:
+   radial-gradient(900px 700px at 85% 8%, rgba(255,122,58,.55), transparent 60%),
+   radial-gradient(800px 800px at 0% 100%, rgba(239,90,31,.35), transparent 60%),
+   radial-gradient(1200px 900px at 50% 50%, #1c2f57, #0b1529 75%);}
+.bg svg{position:absolute;inset:0;opacity:.13}
+body.withbg .bg{display:block}
+
+.wrap{position:absolute;left:64px;right:64px;top:230px;bottom:260px;display:flex;flex-direction:column;gap:30px}
+
+.card{background:rgba(251,247,240,.96);border-radius:44px;
+  box-shadow:0 18px 50px rgba(8,14,30,.28),0 2px 6px rgba(8,14,30,.15)}
+
+/* header */
+.head{padding:42px 48px 40px;text-align:center}
+.kicker{font-weight:700;font-size:25px;letter-spacing:.32em;color:var(--muted);text-transform:uppercase}
+.title{font-family:Fraunces,serif;font-weight:800;font-size:96px;line-height:.98;letter-spacing:-.01em;color:var(--navy);margin-top:14px;font-variation-settings:"opsz" 144}
+.title em{font-style:normal;color:var(--orange)}
+.date{display:inline-flex;align-items:center;gap:18px;margin-top:22px;font-weight:800;font-size:30px;letter-spacing:.14em;color:var(--navy)}
+.date .dot{width:10px;height:10px;border-radius:50%;background:var(--orange)}
+
+/* events */
+.events{flex:1;display:flex;flex-direction:column;justify-content:center;gap:30px}
+.ev{display:flex;gap:30px;padding:40px 44px 40px 40px;align-items:center;}
+.time{flex:none;width:200px;text-align:center;background:var(--navy);color:#fff;border-radius:30px;padding:22px 0 20px}
+.time .from{font-family:Fraunces,serif;font-weight:800;font-size:58px;line-height:1;font-variation-settings:"opsz" 144}
+.time .to{font-weight:700;font-size:26px;letter-spacing:.06em;color:#ffb48f;margin-top:10px}
+.time .to::before{content:"";display:block;width:36px;height:3px;background:var(--orange);border-radius:2px;margin:0 auto 10px}
+.body{flex:1;padding-top:4px}
+.ev h2{font-family:Fraunces,serif;font-weight:800;font-size:46px;line-height:1.06;color:var(--navy);font-variation-settings:"opsz" 72}
+.ev h2 .hl{color:var(--orange)}
+.ev .sub{font-family:Fraunces,serif;font-weight:700;font-size:40px;line-height:1.1;color:var(--orange);margin-top:6px}
+.ev .with{font-size:27px;line-height:1.35;color:var(--muted);font-weight:500;margin-top:16px}
+.ev .with b{color:var(--ink);font-weight:700}
+
+/* footer */
+.foot{padding:30px 40px;text-align:center;display:flex;align-items:center;justify-content:center;gap:22px}
+.pin{width:46px;height:46px;flex:none}
+.place{font-weight:800;font-size:28px;letter-spacing:.14em;color:var(--navy);text-align:left;line-height:1.25}
+.place span{display:block;color:var(--orange);font-size:34px;letter-spacing:.2em}
+</style></head>
+<body class="">
+<div class="bg">
+ <svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <defs><pattern id="hex" width="120" height="208" patternUnits="userSpaceOnUse">
+   <path d="M60 0 L120 34.6 L120 103.9 L60 138.6 L0 103.9 L0 34.6 Z M60 138.6 L60 208" fill="none" stroke="#fff" stroke-width="2"/>
+  </pattern></defs>
+  <rect width="1080" height="1920" fill="url(#hex)"/>
+ </svg>
+</div>
+
+<div class="wrap">
+ <div class="card head">
+  <div class="kicker">Oggi al</div>
+  <div class="title"><em>CICAP</em> Fest</div>
+  <div class="date">SABATO <i class="dot"></i> 7 NOVEMBRE 2026</div>
+ </div>
+
+ <div class="events">
+  <div class="card ev">
+   <div class="time"><div class="from">11:30</div><div class="to">12:15</div></div>
+   <div class="body">
+    <h2>Inaugurazione della mostra</h2>
+    <div class="sub">Piccolo Museo della Tavola Periodica</div>
+    <div class="with">con <b>Nicolò Bagnasco</b>,<br>Teo Caggia e Gabriele Pastori</div>
+   </div>
+  </div>
+
+  <div class="card ev">
+   <div class="time"><div class="from">16:00</div><div class="to">16:30</div></div>
+   <div class="body">
+    <h2>La chimica <span class="hl">“intelligente”</span> delle piante</h2>
+    <div class="with">con <b>Nicolò Bagnasco</b> e Marco Ferrari</div>
+   </div>
+  </div>
+
+  <div class="card ev">
+   <div class="time"><div class="from">18:00</div><div class="to">18:30</div></div>
+   <div class="body">
+    <h2><span class="hl">Chimica al Cubo!</span></h2>
+    <div class="sub" style="color:var(--navy);font-style:normal;font-weight:600;font-size:38px">Esperimenti spettacolari</div>
+    <div class="with">con <b>Nicolò Bagnasco</b>,<br>Teo Caggia e Gabriele Pastori</div>
+   </div>
+  </div>
+ </div>
+
+ <div class="card foot">
+  <svg class="pin" viewBox="0 0 24 24"><path fill="#ef5a1f" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+  <div class="place">ACQUARIO · CENTRO ALTINATE<span>PADOVA</span></div>
+ </div>
+</div>
+<script>if(location.hash==='#bg')document.body.classList.add('withbg')</script>
+</body></html>
