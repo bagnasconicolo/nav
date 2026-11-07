@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{--void:#03030A;--ink:#E8E8F0;--muted:#A9A9BE;--ivory:#E8E4D8;--cool:#A8CEFF;--orange:#FF6B35;--amber:#FFA94D;--stroke:rgba(168,206,255,.22)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;background:transparent}
+body{font-family:Syne,sans-serif;color:var(--ink);position:relative;overflow:hidden;-webkit-font-smoothing:antialiased}
+.photo{position:absolute;inset:0;background:url(foto.jpg) center/cover no-repeat;display:none}
+.shade{position:absolute;inset:0;display:none;background:
+  linear-gradient(180deg,rgba(3,3,10,.78) 0%,rgba(3,3,10,.35) 22%,rgba(3,3,10,0) 30%,rgba(3,3,10,0) 54%,rgba(3,3,10,.55) 63%,rgba(3,3,10,.85) 80%,rgba(3,3,10,.9) 100%)}
+body.withbg .photo,body.withbg .shade{display:block}
+
+.head{position:absolute;left:72px;right:72px;top:215px}
+.kicker{font-family:"Fira Code",monospace;font-weight:500;font-size:26px;letter-spacing:.18em;color:var(--cool);text-transform:uppercase}
+.title{font-weight:800;font-size:92px;line-height:1;letter-spacing:-.02em;margin-top:12px;white-space:nowrap;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.title em{font-style:normal;color:var(--orange)}
+.meta{margin-top:24px;font-family:"Fira Code",monospace;font-size:27px;font-weight:500;color:var(--ivory);display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.meta .sep{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+
+.panel{position:absolute;left:48px;right:48px;top:1120px;
+  background:rgba(4,4,12,.62);backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);
+  border:1.5px solid var(--stroke);border-radius:36px;padding:10px 40px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.ev{display:grid;grid-template-columns:186px 1fr;gap:26px;padding:32px 0;align-items:start}
+.ev+.ev{border-top:1.5px solid rgba(232,232,240,.12)}
+.time{font-family:"Fira Code",monospace;line-height:1}
+.time .from{font-weight:600;font-size:50px;color:var(--cool);letter-spacing:-.02em;text-shadow:0 0 22px rgba(74,158,255,.55)}
+.time .to{font-weight:500;font-size:24px;color:var(--muted);margin-top:10px}
+.time .to::before{content:"→ "}
+.ev h2{font-weight:700;font-size:38px;line-height:1.08;letter-spacing:-.01em}
+.ev .tag{font-family:"Fira Code",monospace;font-size:19px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--cool);margin-bottom:10px}
+.ev .acc{color:var(--orange)}
+.ev .sub{font-weight:700;font-size:38px;line-height:1.08;letter-spacing:-.01em}
+.ev .with{font-family:"Fira Code",monospace;font-size:20px;line-height:1.45;color:var(--muted);margin-top:10px;white-space:nowrap}
+.ev .with b{color:var(--ivory);font-weight:600}
+</style></head>
+<body>
+<div class="photo"></div><div class="shade"></div>
+
+<div class="head">
+ <div class="kicker">// Oggi al</div>
+ <div class="title"><em>CICAP</em> Fest</div>
+ <div class="meta"><span>Dom 8.11.2026</span><i class="sep"></i><span>Acquario · Centro Altinate, Padova</span></div>
+</div>
+
+<div class="panel">
+ <div class="ev">
+  <div class="time"><div class="from">11:00</div><div class="to">11:15</div></div>
+  <div>
+   <div class="tag">Piccolo Museo della Tavola Periodica</div>
+   <h2>La chimica segreta della natura. <span class="acc">L’arte di sopravvivere</span></h2>
+   <div class="with">con <b>Nicolò Bagnasco</b> e <b>Giorgio Volpi</b></div>
+  </div>
+ </div>
+ <div class="ev">
+  <div class="time"><div class="from">15:00</div><div class="to">15:30</div></div>
+  <div>
+   <div class="tag">Piccolo Museo della Tavola Periodica</div>
+   <h2><span class="acc">Veleni</span> e come usarli</h2>
+   <div class="with">con <b>Nicolò Bagnasco</b> e <b>Kathryn Harkup</b></div>
+  </div>
+ </div>
+</div>
+<script>if(location.hash.includes('bg'))document.body.classList.add('withbg');if(location.hash.includes('domani'))document.querySelector('.kicker').textContent='// Domani al'</script>
+</body></html>
