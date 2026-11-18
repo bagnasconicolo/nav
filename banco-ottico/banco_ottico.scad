@@ -8,7 +8,7 @@
 //           openscad -D 'part="piedino"'   -o piedino.stl   banco_ottico.scad
 //
 //  Hardware:
-//   - inserti M4 (es. Ruthex M4 x 8.1, foro consigliato Ø5.6)
+//   - inserti a caldo M4 x 8, Ø esterno 5.5 (foro Ø5.2, regolare ins_d)
 //   - viti M4 (meglio a galletto/pomello) per il bloccaggio laterale
 //   - piedino: vite M6 + dado a T cava 8 per fissarlo al profilo dal basso
 // =====================================================================
@@ -22,8 +22,8 @@ clr       = 0.35;    // gioco per lato (scorrevole). Aumentare se troppo stretto
 lip_mid   = 5.5;     // centro della "labbra" piana tra spigolo e cava ((30-8)/2/2)
 
 /* ---------------- Inserto M4 ---------------- */
-ins_d     = 5.6;     // diametro foro per inserto M4 (verificare scheda inserto)
-ins_len   = 8.1;     // lunghezza inserto
+ins_d     = 5.2;     // foro per inserto M4x8 Ø est. 5.5 (ca. Ø est. - 0.3). Provare!
+ins_len   = 8;       // lunghezza inserto
 ins_depth = ins_len + 1.0;  // profondità foro cieco
 ins_cham  = 0.6;     // smusso d'imbocco
 
@@ -40,7 +40,7 @@ key_h      = 1.5;
    MISURARE LA CAVA col calibro: le quote interne variano tra serie.       */
 ct_len     = 34;     // lunghezza lungo il profilo
 ct_w       = 30;     // larghezza (= profilo, a filo)
-ct_h       = 11;     // altezza del corpo sopra al profilo
+ct_h       = ins_len; // spessore placchetta = lunghezza inserto (fori passanti)
 lip_t      = 2.2;    // spessore labbro della cava (superficie -> sottosquadro)
 neck_w     = slot_w - 0.5;   // collo che passa nell'apertura della cava
 wing_w     = 13.5;   // larghezza ali della T (larghezza interna cava ~16)
@@ -164,10 +164,11 @@ module cavaliere_t() {
             }
         }
         // inserto M4 per la colonnina, al centro
-        translate([0, ct_len/2, ct_h]) insert_hole();
+        // (passante: una vite troppo lunga finisce nella cava, nessun danno)
+        translate([0, ct_len/2, ct_h]) insert_hole(ct_h + 1);
         // inserti M4 + foro passante per i grani di bloccaggio
         for (y = [lock_off, ct_len - lock_off]) translate([0, y, 0]) {
-            translate([0, 0, ct_h]) insert_hole();
+            translate([0, 0, ct_h]) insert_hole(ct_h + 1);
             translate([0, 0, -20]) cylinder(d = lock_d, h = ct_h + 20);
         }
     }
