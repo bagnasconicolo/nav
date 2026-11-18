@@ -26,7 +26,7 @@ from scipy.ndimage import gaussian_filter1d, shift as nd_shift
 
 # Righe di riferimento (nm, aria). Hg I da NIST ASD; fosfori CFL: Tb3+ e Eu3+ (Y2O3:Eu).
 RIGHE_CFL = {
-    404.656: "Hg", 435.833: "Hg", 487.7: "Tb", 542.4: "Tb", 546.074: "Hg",
+    404.656: "Hg", 435.833: "Hg", 487.7: "Tb", 546.074: "Hg",
     576.960: "Hg", 579.066: "Hg", 611.6: "Eu",
 }
 RIGHE_PRINCIPALI = [435.833, 546.074, 611.6]   # sempre presenti e intense nelle CFL
@@ -78,8 +78,10 @@ def banda_righe(lum, frazione=0.5):
     return r0 + m, r1 - m
 
 
-def stima_inclinazione(lum, r0, r1, n=8):
-    """Pendenza (px/riga) delle righe spettrali: fenditura non perfettamente parallela."""
+def stima_inclinazione(lum, r0, r1, n=12):
+    """Spostamento delle righe in funzione della riga del sensore: polinomio di 2° grado
+    in (riga - centro). Il termine lineare è la rotazione della fenditura, quello
+    quadratico è la curvatura ("smile") dovuta alla diffrazione conica del reticolo."""
     edges = np.linspace(r0, r1, n + 1).astype(int)
     rif = gaussian_filter1d(lum[r0:r1].mean(axis=0), 1.5)
     rif = rif - rif.mean()
@@ -92,15 +94,17 @@ def stima_inclinazione(lum, r0, r1, n=8):
             y0, y1, y2 = cc[k - 1], cc[k], cc[k + 1]
             k = k + 0.5 * (y0 - y2) / (y0 - 2 * y1 + y2)
         cs.append(k - (len(rif) - 1)); ys.append((a + b) / 2)
-    return float(np.polyfit(ys, cs, 1)[0])
+    rc = (r0 + r1) / 2
+    return np.polyfit(np.array(ys) - rc, cs, 2 if n >= 6 else 1).tolist()
 
 
 def profilo(img, r0, r1, pend, rc=None):
-    """Somma le righe r0..r1 dopo aver raddrizzato l'inclinazione. Ritorna (N,3)."""
+    """Somma le righe r0..r1 dopo aver raddrizzato inclinazione e curvatura. Ritorna (N,3)."""
     rc = (r0 + r1) / 2 if rc is None else rc
+    coeff = [pend, 0.0] if np.isscalar(pend) else list(pend)   # compatibile con file vecchi
     out = np.zeros((img.shape[1], 3))
     for r in range(r0, r1 + 1):
-        s = -pend * (r - rc)
+        s = -(np.polyval(coeff, r - rc) - np.polyval(coeff, 0))
         out += nd_shift(img[r], (s, 0), order=1, mode="nearest")
     return out / (r1 - r0 + 1)
 
@@ -175,20 +179,25 @@ def calibra(args):
     rms = float(np.sqrt((res ** 2).sum() / dof))
     disp = float(abs(np.polyval(np.polyder(coeff), np.mean(xs))))
     # risoluzione: FWHM della riga Hg 546.07 (o della più intensa)
-    k546 = int(np.argmin(abs(ls - 546.074)))
-    fwhm_nm = fwhm(prof, xs[k546]) * disp
+    # risoluzione: FWHM delle righe Hg isolate (404.7 e 435.8 non hanno fosfori sotto)
+    fw = {float(l): fwhm(prof, x) * abs(np.polyval(np.polyder(coeff), x))
+          for x, l in zip(xs, ls) if righe.get(l, "").startswith("Hg") or righe.get(l, "") == "Ne"}
+    isolate = [v for l, v in fw.items() if l in (404.656, 435.833)] or list(fw.values())
+    fwhm_nm = float(np.median(isolate)) if isolate else float("nan")
     cal = dict(asse=asse, righe=[r0, r1], pendenza_px_per_riga=pend, polinomio=coeff.tolist(),
-               grado=grado, rms_nm=rms, nm_per_px=disp, fwhm_nm=fwhm_nm, raw=raw,
+               grado=grado, rms_nm=rms, nm_per_px=disp, fwhm_nm=fwhm_nm, fwhm_righe=fw, raw=raw,
                coppie=[[float(x), float(l)] for x, l in coppie],
                modello=dict(K_px=float(K), x0_px=float(x0), passo_nm=args.passo, lambda_c=args.lambda_c))
     with open(args.out, "w") as f:
         json.dump(cal, f, indent=2)
-    print(f"Asse dispersione: {asse}   righe {r0}-{r1}   inclinazione {pend*1000:.2f} mpx/riga")
+    print(f"Asse dispersione: {asse}   righe {r0}-{r1}   inclinazione {pend[-2]*1000:.2f} mpx/riga"
+          f"   curvatura {pend[0]*1e6:.2f} µpx/riga²")
     print(f"Righe riconosciute ({len(xs)}):")
     for x, l, r in zip(xs, ls, res):
         print(f"   x = {x:8.2f} px   λ = {l:8.3f} nm   residuo {r:+.3f} nm   [{righe[l]}]")
     print(f"Polinomio grado {grado}: RMS = {rms:.3f} nm,  dispersione = {disp:.4f} nm/px")
-    print(f"FWHM riga 546 nm ≈ {fwhm_nm:.2f} nm   ->  calibrazione salvata in {args.out}")
+    print("FWHM: " + ", ".join(f"{l:.1f} nm → {v:.2f} nm" for l, v in sorted(fw.items())))
+    print(f"Risoluzione (righe isolate) ≈ {fwhm_nm:.2f} nm   ->  calibrazione salvata in {args.out}")
     if args.grafico:
         grafico(np.polyval(coeff, np.arange(len(prof))), prof / prof.max(), args.grafico,
                 titolo=f"Calibrazione — RMS {rms:.3f} nm, FWHM {fwhm_nm:.2f} nm", marcatori=ls)
@@ -196,7 +205,7 @@ def calibra(args):
 
 
 def fwhm(y, x):
-    y = gaussian_filter1d(y, 0.7); i = int(round(x))
+    y = np.asarray(y, float); i = int(round(x))
     lo, hi = max(0, i - 40), min(len(y), i + 40)
     seg = y[lo:hi]; base = np.percentile(seg, 10); top = y[i] - base
     half = base + top / 2

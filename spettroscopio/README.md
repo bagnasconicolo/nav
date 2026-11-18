@@ -295,6 +295,25 @@ Sull'immagine sintetica (fenditura 50 µm, rotazione 0,8°) il software riconosc
 **RMS 0,004 nm**, **FWHM 0,62 nm** e inclinazione stimata 13,93 mpx/riga contro 13,96
 attesi.
 
+### 7.1 Simulazione: cosa vede un iPhone 11
+
+![simulazione iPhone 11](render/simulazione_iphone11.png)
+
+[`software/simula_iphone11.py`](software/simula_iphone11.py) simula l'intera catena fisica:
+sorgente → fenditura con bordi imperfetti e polvere → collimatore in borosilicato con la sua
+cromatica → reticolo DVD con tracciamento vettoriale esatto (da cui la curvatura "smile"
+delle righe) ed efficienza J₁² / J₂² → camera principale dell'iPhone 11 (f 4,25 mm, f/1,8,
+pixel 1,4 µm) → Bayer, rumore e ISP → JPEG. Le foto simulate sono in `render/iphone11_*.jpg`.
+
+Cosa si vede:
+- Lo spettro occupa una striscia di circa 1600 × 400 px al centro di una foto quasi tutta
+  nera: rosso a sinistra, violetto a destra, 0,24 nm/px.
+- Più a sinistra compare il debole 2° ordine (Hg 405 e 436 a circa 900 e 550 px).
+- Con lo stesso `spettro.py` usato per le foto vere, la calibrazione automatica sulla CFL
+  trova 7 righe con RMS 0,05 nm. La FWHM è circa 1,0 nm nel verde-giallo e circa 1,25 nm
+  nel violetto, più sfocato per la cromatica: le Hg 577/579 risultano ben separate.
+- Nel cielo si vedono Na D, Mg b, Hβ, Hγ e la banda G.
+
 Test di risoluzione consigliati:
 - **Doppietto del sodio** (589,0 / 589,6 nm, da una lampada al sodio o una fiamma con sale
   da cucina).
