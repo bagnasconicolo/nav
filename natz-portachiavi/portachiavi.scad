@@ -21,7 +21,7 @@ raggio_bordo = 1.5;       // arrotondamento dei bordi sul davanti (contorno e ca
 
 /* [Nut] */
 nut_altezza = 13.4;       // il profilo della foto viene scalato a questa altezza
-nut_spessore = 5;         // piastrina: deve stare < profondita
+nut_spessore = 10;        // piastrina: al massimo quanto profondita (a 10 arriva a filo)
 nut_raggio = 0.6;         // arrotondamento degli spigoli
 cavo_foro = 2;            // cavetto acciaio Ø1.5 (o cordino Ø1.5)
 

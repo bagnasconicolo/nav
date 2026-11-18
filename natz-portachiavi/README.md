@@ -43,7 +43,7 @@ Ingombro 93 × 101 mm: ci sta su qualsiasi stampante.
   3 mm, poi cambio filamento (pausa al layer a 3 mm) e il resto in legno chiaro.
   I bordi sul davanti (contorno e canalature) sono arrotondati con raggio
   1.5 mm (`raggio_bordo`); il lato sul piatto resta a spigolo vivo.
-- **Nut**: piastrine spesse 5 mm, trapezio simmetrico con i fianchi
+- **Nut**: piastrine spesse 10 mm (a filo col davanti della base), trapezio simmetrico con i fianchi
   leggermente concavi. 3 colori (giallo, rosso, verde), stampati in
   piedi con il lato stretto sul piatto. Nessun supporto, 100 % infill. Se
   tendono a staccarsi dal piatto, usa un brim.
