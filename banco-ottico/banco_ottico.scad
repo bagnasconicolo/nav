@@ -3,7 +3,8 @@
 //  Parti: PIEDINO e CAVALIERE, entrambi con fori per inserti filettati
 //  M4 a caldo (heat-set). Tutte le misure in mm.
 //
-//  Render:  openscad -D 'part="cavaliere"' -o cavaliere.stl banco_ottico.scad
+//  Render:  openscad -D 'part="cavaliere_t"' -o cavaliere_t.stl banco_ottico.scad
+//           openscad -D 'part="cavaliere"' -o cavaliere.stl banco_ottico.scad
 //           openscad -D 'part="piedino"'   -o piedino.stl   banco_ottico.scad
 //
 //  Hardware:
@@ -12,7 +13,7 @@
 //   - piedino: vite M6 + dado a T cava 8 per fissarlo al profilo dal basso
 // =====================================================================
 
-part = "assembly";   // "cavaliere" | "piedino" | "assembly"
+part = "assembly";   // "cavaliere_t" | "cavaliere" | "piedino" | "assembly"
 
 /* ---------------- Profilo ---------------- */
 prof      = 30;      // lato profilo
@@ -34,6 +35,19 @@ cav_skirt  = 14;     // quanto i fianchi scendono lungo il profilo (dall'alto)
 cav_key    = true;   // linguetta di guida nella cava superiore
 key_w      = slot_w - 0.5;
 key_h      = 1.5;
+
+/* ---------------- Cavaliere a T (piccolo, scorre nella cava) ----------
+   MISURARE LA CAVA col calibro: le quote interne variano tra serie.       */
+ct_len     = 34;     // lunghezza lungo il profilo
+ct_w       = 30;     // larghezza (= profilo, a filo)
+ct_h       = 11;     // altezza del corpo sopra al profilo
+lip_t      = 2.2;    // spessore labbro della cava (superficie -> sottosquadro)
+neck_w     = slot_w - 0.5;   // collo che passa nell'apertura della cava
+wing_w     = 13.5;   // larghezza ali della T (larghezza interna cava ~16)
+wing_t     = 2.5;    // spessore ali
+wing_cham  = 1.2;    // smusso spigoli inferiori ali (fondo cava inclinato)
+lock_d     = 4.5;    // foro passante per grano M4 di bloccaggio
+lock_off   = 5.5;    // distanza dei grani dalle estremità
 
 /* ---------------- Piedino ---------------- */
 pie_len    = 40;     // lunghezza lungo il profilo
@@ -130,6 +144,35 @@ module piedino() {
     }
 }
 
+/* ---------------- CAVALIERE A T ----------------
+   Corpo appoggiato sulla faccia superiore del profilo + chiavetta a T che
+   scorre nella cava. Inserto M4 al centro per la colonnina; due inserti
+   M4 alle estremità per grani che spingono sul fondo cava: la T viene
+   tirata contro i labbri e il cavaliere si blocca.
+   z=0 = faccia superiore del profilo. Si infila dall'estremità del profilo. */
+module cavaliere_t() {
+    neck_h = lip_t + 0.3;
+    difference() {
+        union() {
+            translate([-ct_w/2, 0, 0]) chamfer_box([ct_w, ct_len, ct_h], 1.5);
+            // collo
+            translate([-neck_w/2, 0, -neck_h]) cube([neck_w, ct_len, neck_h + eps]);
+            // ali della T (sezione trapezia)
+            hull() {
+                translate([-wing_w/2, 0, -neck_h - wing_t + wing_cham]) cube([wing_w, ct_len, wing_t - wing_cham]);
+                translate([-wing_w/2 + wing_cham, 0, -neck_h - wing_t]) cube([wing_w - 2*wing_cham, ct_len, wing_t]);
+            }
+        }
+        // inserto M4 per la colonnina, al centro
+        translate([0, ct_len/2, ct_h]) insert_hole();
+        // inserti M4 + foro passante per i grani di bloccaggio
+        for (y = [lock_off, ct_len - lock_off]) translate([0, y, 0]) {
+            translate([0, 0, ct_h]) insert_hole();
+            translate([0, 0, -20]) cylinder(d = lock_d, h = ct_h + 20);
+        }
+    }
+}
+
 /* ---------------- profilo (solo visualizzazione) ---------------- */
 module profilo(len = 300) {
     color("silver") difference() {
@@ -142,7 +185,11 @@ module profilo(len = 300) {
 }
 
 /* ---------------- Selezione / orientamento di stampa ---------------- */
-if (part == "cavaliere") {
+if (part == "cavaliere_t") {
+    // stampa in piedi (asse del profilo verticale): la sezione a T sta nel
+    // piano dei layer -> nessun supporto e ali robuste
+    rotate([-90, 0, 0]) translate([0, -ct_len, 0]) cavaliere_t();
+} else if (part == "cavaliere") {
     // stampa capovolto: faccia superiore sul piatto, nessun supporto
     rotate([180, 0, 0]) translate([0, -cav_len/2, -(clr + cav_top)]) cavaliere();
 } else if (part == "piedino") {
@@ -150,5 +197,6 @@ if (part == "cavaliere") {
 } else {
     profilo();
     for (y = [10, 250]) translate([0, y, 0]) piedino();
-    for (y = [90, 160]) translate([0, y, prof]) cavaliere();
+    translate([0, 90, prof]) cavaliere();
+    for (y = [150, 200]) translate([0, y, prof]) cavaliere_t();
 }
