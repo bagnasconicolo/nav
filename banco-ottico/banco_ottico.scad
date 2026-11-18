@@ -13,7 +13,7 @@
 //   - piedino: vite M6 + dado a T cava 8 per fissarlo al profilo dal basso
 // =====================================================================
 
-part = "assembly";   // "cavaliere_t" | "cavaliere" | "piedino" | "assembly"
+part = "assembly";   // "cavaliere_t" | "cavaliere" | "piedino" | "piedino_culla" | "assembly"
 
 /* ---------------- Profilo ---------------- */
 prof      = 30;      // lato profilo
@@ -51,7 +51,18 @@ wing_t     = 2.5;    // spessore ali
 wing_cham  = 1.2;    // smusso spigoli inferiori ali (fondo cava inclinato)
 lock_off   = 5;      // distanza dei grani dalle estremità
 
-/* ---------------- Piedino ---------------- */
+/* ---------------- Piedino ad arco (design) ----------------
+   Sezione trapezoidale cava, raccordata; chiavetta a T nella cava
+   inferiore del profilo; grano M4 dal basso per il bloccaggio.            */
+pa_len   = 25;       // spessore lungo il profilo
+pa_h     = 20;       // altezza (tavolo -> faccia inferiore profilo)
+pa_base  = 72;       // larghezza all'appoggio
+pa_top   = 30;       // larghezza in alto (= profilo)
+pa_t     = 5;        // spessore pareti
+pa_r     = 5;        // raggio raccordi esterni
+pa_ri    = 8;        // raggio raccordo interno (volta)
+
+/* ---------------- Piedino (versione a culla) ---------------- */
 pie_len    = 40;     // lunghezza lungo il profilo
 pie_width  = 100;    // larghezza totale (trasversale)
 pie_base   = 8;      // spessore base sotto al profilo
@@ -181,6 +192,52 @@ module cavaliere_t() {
     }
 }
 
+/* ---------------- PIEDINO AD ARCO ----------------
+   z=0 = piano del tavolo; il profilo appoggia a z=pa_h.                  */
+module arco2d() {
+    k  = (pa_base - pa_top) / 2 / pa_h;          // pendenza delle gambe
+    ext = 2 * pa_r;                              // prolungo sotto al piano
+    tr = [[-pa_base/2 - k*ext, -ext], [pa_base/2 + k*ext, -ext],
+          [pa_top/2, pa_h], [-pa_top/2, pa_h]];
+    intersection() {
+        difference() {
+            offset(r = pa_r) offset(delta = -pa_r) polygon(tr);
+            // volta interna, aperta in basso
+            hull() for (dz = [0, -2*pa_h])
+                translate([0, dz])
+                    offset(r = pa_ri) offset(delta = -pa_ri - pa_t) polygon(tr);
+        }
+        // taglio a z=0 (piedi piatti, appoggio pieno) e punte spuntate
+        // (niente spigoli a lama: robuste, non si scheggiano)
+        translate([-pa_base/2 + 2.5, 0]) square([pa_base - 5, pa_h + 1]);
+    }
+}
+
+module t_key_up(len) {
+    // collo + ali della T rivolti verso +Z a partire da z=0
+    neck_h = lip_t + 0.3;
+    translate([-neck_w/2, 0, -eps]) cube([neck_w, len, neck_h + 2*eps]);
+    hull() {
+        translate([-wing_w/2, 0, neck_h]) cube([wing_w, len, wing_t - wing_cham]);
+        translate([-wing_w/2 + wing_cham, 0, neck_h]) cube([wing_w - 2*wing_cham, len, wing_t]);
+    }
+}
+
+module piedino_arco() {
+    neck_h = lip_t + 0.3;
+    difference() {
+        union() {
+            translate([0, pa_len, 0]) rotate([90, 0, 0])
+                linear_extrude(pa_len) arco2d();
+            translate([0, 0, pa_h]) t_key_up(pa_len);
+        }
+        // inserto M4 dal basso: attraversa traversa e T, il grano spinge
+        // sul fondo della cava e blocca il piedino
+        translate([0, pa_len/2, pa_h - pa_t])
+            rotate([180, 0, 0]) insert_hole(pa_t + neck_h + wing_t + 1);
+    }
+}
+
 /* ---------------- profilo (solo visualizzazione) ---------------- */
 module profilo(len = 300) {
     color("silver") difference() {
@@ -202,10 +259,14 @@ if (part == "cavaliere_t") {
     // stampa capovolto: faccia superiore sul piatto, nessun supporto
     rotate([180, 0, 0]) translate([0, -cav_len/2, -(clr + cav_top)]) cavaliere();
 } else if (part == "piedino") {
+    // stampa in piedi sulla faccia frontale: sezione nel piano dei layer,
+    // nessun supporto
+    rotate([90, 0, 0]) translate([0, 0, 0]) piedino_arco();
+} else if (part == "piedino_culla") {
     translate([0, -pie_len/2, pie_base]) piedino();
 } else {
     profilo();
-    for (y = [10, 250]) translate([0, y, 0]) piedino();
+    for (y = [0, 300 - pa_len]) translate([0, y, -pa_h]) piedino_arco();
     translate([0, 90, prof]) cavaliere();
     for (y = [150, 200]) translate([0, y, prof]) cavaliere_t();
 }
