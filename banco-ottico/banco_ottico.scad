@@ -8,7 +8,7 @@
 //           openscad -D 'part="piedino"'   -o piedino.stl   banco_ottico.scad
 //
 //  Hardware:
-//   - inserti a caldo M4 x 8, Ø esterno 5.5 (foro Ø5.2, regolare ins_d)
+//   - inserti a caldo M4 x 8, Ø esterno 5.5 (foro Ø5.0, regolare ins_d)
 //   - viti M4 (meglio a galletto/pomello) per il bloccaggio laterale
 //   - piedino: vite M6 + dado a T cava 8 per fissarlo al profilo dal basso
 // =====================================================================
@@ -22,7 +22,7 @@ clr       = 0.35;    // gioco per lato (scorrevole). Aumentare se troppo stretto
 lip_mid   = 5.5;     // centro della "labbra" piana tra spigolo e cava ((30-8)/2/2)
 
 /* ---------------- Inserto M4 ---------------- */
-ins_d     = 5.2;     // foro per inserto M4x8 Ø est. 5.5 (ca. Ø est. - 0.3). Provare!
+ins_d     = 5.0;     // foro per inserto M4x8 Ø est. 5.5
 ins_len   = 8;       // lunghezza inserto
 ins_depth = ins_len + 1.0;  // profondità foro cieco
 ins_cham  = 0.6;     // smusso d'imbocco
