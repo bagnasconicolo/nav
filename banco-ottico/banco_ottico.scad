@@ -38,17 +38,18 @@ key_h      = 1.5;
 
 /* ---------------- Cavaliere a T (piccolo, scorre nella cava) ----------
    MISURARE LA CAVA col calibro: le quote interne variano tra serie.       */
-ct_len     = 34;     // lunghezza lungo il profilo
+ct_len     = 44;     // lunghezza lungo il profilo
 ct_w       = 30;     // larghezza (= profilo, a filo)
 ct_h       = 4;      // spessore placchetta
-tur_d      = 10;     // diametro torretta centrale (inserto colonnina)
+tur_s      = 14;     // lato torretta quadrata centrale (inserto colonnina)
+tur_slope  = true;   // lato verso il piatto inclinato a 45° (stampa senza supporti)
 tur_h      = ins_len - ct_h;  // altezza torretta sopra la placchetta
 lip_t      = 2.2;    // spessore labbro della cava (superficie -> sottosquadro)
 neck_w     = slot_w - 0.5;   // collo che passa nell'apertura della cava
 wing_w     = 13.5;   // larghezza ali della T (larghezza interna cava ~16)
 wing_t     = 2.5;    // spessore ali
 wing_cham  = 1.2;    // smusso spigoli inferiori ali (fondo cava inclinato)
-lock_off   = 5.5;    // distanza dei grani dalle estremità
+lock_off   = 5;      // distanza dei grani dalle estremità
 
 /* ---------------- Piedino ---------------- */
 pie_len    = 40;     // lunghezza lungo il profilo
@@ -157,11 +158,12 @@ module cavaliere_t() {
     difference() {
         union() {
             translate([-ct_w/2, 0, 0]) chamfer_box([ct_w, ct_len, ct_h], 1.5);
-            // torretta centrale; profilo a goccia verso +Y così stampa in
-            // piedi senza supporti (punta a 45° verso il piatto)
+            // torretta centrale quadrata; il lato +Y (verso il piatto in
+            // stampa) è inclinato a 45° per non avere sbalzi
             translate([0, ct_len/2, ct_h - eps]) hull() {
-                cylinder(d = tur_d, h = tur_h + eps);
-                rotate([0, 0, 45]) cube([tur_d/2, tur_d/2, tur_h + eps]);
+                translate([-tur_s/2, -tur_s/2, 0]) cube([tur_s, tur_s, tur_h + eps]);
+                if (tur_slope)
+                    translate([-tur_s/2, -tur_s/2, 0]) cube([tur_s, tur_s + tur_h, eps]);
             }
             // collo
             translate([-neck_w/2, 0, -neck_h]) cube([neck_w, ct_len, neck_h + eps]);
