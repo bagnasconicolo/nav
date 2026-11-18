@@ -53,7 +53,7 @@ lock_off   = 5;      // distanza dei grani dalle estremità
 
 /* ---------------- Piedino ad arco (design) ----------------
    Sezione trapezoidale cava, raccordata; chiavetta a T nella cava
-   inferiore del profilo; grano M4 dal basso per il bloccaggio.            */
+   inferiore del profilo; vite M4 autofilettante dal basso per il bloccaggio.            */
 pa_len   = 25;       // spessore lungo il profilo
 pa_h     = 20;       // altezza (tavolo -> faccia inferiore profilo)
 pa_base  = 72;       // larghezza all'appoggio
@@ -61,6 +61,7 @@ pa_top   = 30;       // larghezza in alto (= profilo)
 pa_t     = 5;        // spessore pareti
 pa_r     = 5;        // raggio raccordi esterni
 pa_ri    = 8;        // raggio raccordo interno (volta)
+pa_tap_d = 3.4;      // foro per autofilettare la vite M4 (PLA/PETG: 3.3-3.5)
 
 /* ---------------- Piedino (versione a culla) ---------------- */
 pie_len    = 40;     // lunghezza lungo il profilo
@@ -231,10 +232,13 @@ module piedino_arco() {
                 linear_extrude(pa_len) arco2d();
             translate([0, 0, pa_h]) t_key_up(pa_len);
         }
-        // inserto M4 dal basso: attraversa traversa e T, il grano spinge
-        // sul fondo della cava e blocca il piedino
-        translate([0, pa_len/2, pa_h - pa_t])
-            rotate([180, 0, 0]) insert_hole(pa_t + neck_h + wing_t + 1);
+        // foro M4 da filettare con la vite stessa (niente inserto): dal basso
+        // attraversa traversa e T; la vite spinge sul fondo della cava e
+        // blocca il piedino
+        translate([0, pa_len/2, pa_h - pa_t - eps]) {
+            cylinder(d = pa_tap_d, h = pa_t + neck_h + wing_t + 1);
+            cylinder(d1 = pa_tap_d + 1.2, d2 = pa_tap_d, h = 0.6);   // invito
+        }
     }
 }
 
