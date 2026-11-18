@@ -8,6 +8,8 @@ dall'equazione del reticolo, quindi lo stesso file genera la versione DVD e quel
 
 ![assieme](render/assieme.png)
 
+![schema ottico](render/schema_ottico.png)
+
 | | |
 |---|---|
 | ![sul telefono](render/sul_telefono.png) | ![esploso](render/esploso.png) |
