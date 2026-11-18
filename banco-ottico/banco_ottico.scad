@@ -40,13 +40,14 @@ key_h      = 1.5;
    MISURARE LA CAVA col calibro: le quote interne variano tra serie.       */
 ct_len     = 34;     // lunghezza lungo il profilo
 ct_w       = 30;     // larghezza (= profilo, a filo)
-ct_h       = ins_len; // spessore placchetta = lunghezza inserto (fori passanti)
+ct_h       = 4;      // spessore placchetta
+tur_d      = 10;     // diametro torretta centrale (inserto colonnina)
+tur_h      = ins_len - ct_h;  // altezza torretta sopra la placchetta
 lip_t      = 2.2;    // spessore labbro della cava (superficie -> sottosquadro)
 neck_w     = slot_w - 0.5;   // collo che passa nell'apertura della cava
 wing_w     = 13.5;   // larghezza ali della T (larghezza interna cava ~16)
 wing_t     = 2.5;    // spessore ali
 wing_cham  = 1.2;    // smusso spigoli inferiori ali (fondo cava inclinato)
-lock_d     = 4.5;    // foro passante per grano M4 di bloccaggio
 lock_off   = 5.5;    // distanza dei grani dalle estremità
 
 /* ---------------- Piedino ---------------- */
@@ -145,32 +146,36 @@ module piedino() {
 }
 
 /* ---------------- CAVALIERE A T ----------------
-   Corpo appoggiato sulla faccia superiore del profilo + chiavetta a T che
-   scorre nella cava. Inserto M4 al centro per la colonnina; due inserti
-   M4 alle estremità per grani che spingono sul fondo cava: la T viene
-   tirata contro i labbri e il cavaliere si blocca.
+   Placchetta sottile appoggiata sul profilo + chiavetta a T nella cava.
+   Torretta centrale con inserto M4 per la colonnina; due inserti M4 alle
+   estremità con foro fino al fondo della T: i grani spingono sul fondo
+   cava, la T viene tirata contro i labbri e il cavaliere si blocca.
    z=0 = faccia superiore del profilo. Si infila dall'estremità del profilo. */
 module cavaliere_t() {
     neck_h = lip_t + 0.3;
+    t_bot  = -neck_h - wing_t;          // fondo della T
     difference() {
         union() {
             translate([-ct_w/2, 0, 0]) chamfer_box([ct_w, ct_len, ct_h], 1.5);
+            // torretta centrale; profilo a goccia verso +Y così stampa in
+            // piedi senza supporti (punta a 45° verso il piatto)
+            translate([0, ct_len/2, ct_h - eps]) hull() {
+                cylinder(d = tur_d, h = tur_h + eps);
+                rotate([0, 0, 45]) cube([tur_d/2, tur_d/2, tur_h + eps]);
+            }
             // collo
             translate([-neck_w/2, 0, -neck_h]) cube([neck_w, ct_len, neck_h + eps]);
             // ali della T (sezione trapezia)
             hull() {
                 translate([-wing_w/2, 0, -neck_h - wing_t + wing_cham]) cube([wing_w, ct_len, wing_t - wing_cham]);
-                translate([-wing_w/2 + wing_cham, 0, -neck_h - wing_t]) cube([wing_w - 2*wing_cham, ct_len, wing_t]);
+                translate([-wing_w/2 + wing_cham, 0, t_bot]) cube([wing_w - 2*wing_cham, ct_len, wing_t]);
             }
         }
-        // inserto M4 per la colonnina, al centro
-        // (passante: una vite troppo lunga finisce nella cava, nessun danno)
-        translate([0, ct_len/2, ct_h]) insert_hole(ct_h + 1);
-        // inserti M4 + foro passante per i grani di bloccaggio
-        for (y = [lock_off, ct_len - lock_off]) translate([0, y, 0]) {
-            translate([0, 0, ct_h]) insert_hole(ct_h + 1);
-            translate([0, 0, -20]) cylinder(d = lock_d, h = ct_h + 20);
-        }
+        // inserto M4 per la colonnina, nella torretta (cieco, fino alla base placchetta)
+        translate([0, ct_len/2, ct_h + tur_h]) insert_hole(ct_h + tur_h);
+        // inserti M4 laterali per i grani: foro fino al fondo della T
+        for (y = [lock_off, ct_len - lock_off])
+            translate([0, y, ct_h]) insert_hole(ct_h - t_bot + 1);
     }
 }
 
