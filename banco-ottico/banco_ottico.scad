@@ -13,7 +13,7 @@
 //   - piedino: vite M6 + dado a T cava 8 per fissarlo al profilo dal basso
 // =====================================================================
 
-part = "assembly";   // "cavaliere_t" | "cavaliere" | "piedino" | "piedino_culla" | "assembly"
+part = "assembly";   // "cavaliere_t" | "cavaliere" | "piedino" | "piedino_culla" | "laser" | "assembly"
 
 /* ---------------- Profilo ---------------- */
 prof      = 30;      // lato profilo
@@ -50,6 +50,19 @@ wing_w     = 13.5;   // larghezza ali della T (larghezza interna cava ~16)
 wing_t     = 2.5;    // spessore ali
 wing_cham  = 1.2;    // smusso spigoli inferiori ali (fondo cava inclinato)
 lock_off   = 5;      // distanza dei grani dalle estremità
+
+/* ---------------- Supporto laser Ø12 (su torretta del cavaliere a T) ---- */
+las_d     = 12;      // diametro corpo laser (misurare col calibro!)
+las_clr   = 0.3;     // gioco radiale nel V
+las_len   = 22;      // lunghezza del supporto (laser 30 mm: sporge 8 mm)
+las_w     = 25;      // larghezza base
+las_wall  = 6;       // parete sopra al laser (filetto vite di serraggio)
+las_floor = 3;       // fondo sotto la testa della vite di fissaggio
+las_head_d= 8;       // lamatura testa vite M4 (TCEI Ø7)
+las_head_h= 4;
+las_pocket= 2;       // profondità sede che calza la torretta quadrata
+m4_clear  = 4.4;     // foro passante M4
+m4_tap    = 3.4;     // foro M4 autofilettante
 
 /* ---------------- Piedino ad arco (design) ----------------
    Sezione trapezoidale cava, raccordata; chiavetta a T nella cava
@@ -242,6 +255,47 @@ module piedino_arco() {
     }
 }
 
+/* ---------------- SUPPORTO LASER ----------------
+   Sede a V (2 linee di contatto) + vite M4 dall'alto che preme il laser:
+   il laser si centra da solo. Sotto, una sede quadrata calza la torretta
+   del cavaliere (niente rotazioni, asse allineato al profilo).
+   Fissaggio: vite M4 TCEI nell'inserto della torretta; si stringe con una
+   chiave a brugola da 3 passando dal foro della vite di serraggio.
+   z=0 = faccia superiore della torretta; Y = asse del laser.             */
+las_r  = las_d/2 + las_clr;
+las_cz = las_pocket + las_floor + las_head_h + 0.5 + las_r*sqrt(2);  // centro arco
+las_axis = las_cz - las_clr*sqrt(2);   // asse reale del laser appoggiato nel V
+echo(str("Asse laser sopra la torretta: ", las_axis, " mm; sopra il profilo: ",
+         las_axis + ct_h + tur_h, " mm"));
+
+module laser2d() {
+    difference() {
+        hull() {
+            offset(r = 3) offset(delta = -3) translate([-las_w/2, 0]) square([las_w, las_cz]);
+            translate([0, las_cz]) circle(r = las_r + las_wall);
+        }
+        hull() {
+            translate([0, las_cz]) circle(r = las_r);
+            translate([0, las_cz - las_r*sqrt(2)]) square(0.01, center = true);
+        }
+    }
+}
+
+module supporto_laser() {
+    difference() {
+        translate([0, las_len, 0]) rotate([90, 0, 0]) linear_extrude(las_len) laser2d();
+        // sede per la torretta
+        sp = tur_s + 0.3;
+        translate([-sp/2, las_len/2 - sp/2, -eps]) cube([sp, sp, las_pocket + eps]);
+        // fissaggio alla torretta
+        translate([0, las_len/2, -1]) cylinder(d = m4_clear, h = las_cz);
+        translate([0, las_len/2, las_pocket + las_floor]) cylinder(d = las_head_d, h = las_cz);
+        // vite di serraggio dall'alto (autofilettante), coassiale: ci passa
+        // la brugola per stringere la vite di fissaggio
+        translate([0, las_len/2, las_cz]) cylinder(d = m4_tap, h = las_r + las_wall + 1);
+    }
+}
+
 /* ---------------- profilo (solo visualizzazione) ---------------- */
 module profilo(len = 300) {
     color("silver") difference() {
@@ -266,6 +320,9 @@ if (part == "cavaliere_t") {
     // stampa in piedi sulla faccia frontale: sezione nel piano dei layer,
     // nessun supporto
     rotate([90, 0, 0]) translate([0, 0, 0]) piedino_arco();
+} else if (part == "laser") {
+    // stampa in piedi sulla faccia frontale: V e foro nel piano dei layer
+    rotate([90, 0, 0]) supporto_laser();
 } else if (part == "piedino_culla") {
     translate([0, -pie_len/2, pie_base]) piedino();
 } else {
@@ -273,4 +330,7 @@ if (part == "cavaliere_t") {
     for (y = [0, 300 - pa_len]) translate([0, y, -pa_h]) piedino_arco();
     translate([0, 90, prof]) cavaliere();
     for (y = [150, 200]) translate([0, y, prof]) cavaliere_t();
+    translate([0, 200 + ct_len/2 - las_len/2, prof + ct_h + tur_h]) supporto_laser();
+    color("silver") translate([0, 200 + ct_len/2 - 15, prof + ct_h + tur_h + las_axis])
+        rotate([-90, 0, 0]) cylinder(d = las_d, h = 30);
 }
