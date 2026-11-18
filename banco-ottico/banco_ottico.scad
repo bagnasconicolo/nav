@@ -42,7 +42,7 @@ ct_len     = 44;     // lunghezza lungo il profilo
 ct_w       = 30;     // larghezza (= profilo, a filo)
 ct_h       = 4;      // spessore placchetta
 tur_s      = 14;     // lato torretta quadrata centrale (inserto colonnina)
-tur_slope  = true;   // lato verso il piatto inclinato a 45° (stampa senza supporti)
+tur_slope  = false;  // true: un lato a 45° (solo per stampa in piedi)
 tur_h      = ins_len - ct_h;  // altezza torretta sopra la placchetta
 lip_t      = 2.2;    // spessore labbro della cava (superficie -> sottosquadro)
 neck_w     = slot_w - 0.5;   // collo che passa nell'apertura della cava
@@ -194,9 +194,10 @@ module profilo(len = 300) {
 
 /* ---------------- Selezione / orientamento di stampa ---------------- */
 if (part == "cavaliere_t") {
-    // stampa in piedi (asse del profilo verticale): la sezione a T sta nel
-    // piano dei layer -> nessun supporto e ali robuste
-    rotate([-90, 0, 0]) translate([0, -ct_len, 0]) cavaliere_t();
+    // stampa orizzontale capovolto: faccia della torretta sul piatto
+    // (piana per la colonnina), T verso l'alto, fori inserti verticali.
+    // Supporti (tree, solo dal piatto) sotto la placchetta attorno alla torretta.
+    rotate([180, 0, 0]) translate([0, -ct_len/2, -(ct_h + tur_h)]) cavaliere_t();
 } else if (part == "cavaliere") {
     // stampa capovolto: faccia superiore sul piatto, nessun supporto
     rotate([180, 0, 0]) translate([0, -cav_len/2, -(clr + cav_top)]) cavaliere();
