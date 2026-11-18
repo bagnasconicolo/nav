@@ -22,10 +22,14 @@ part = "assembly";
 grating_pitch = 740;    // nm  (DVD-R: 740, CD-R: 1600)
 lambda_c      = 550;    // nm  lunghezza d'onda al centro del sensore
 grating_t     = 0.6;    // mm  spessore del pezzo di reticolo (DVD 0.6, CD 1.2)
-lens_d        = 25.0;   // mm  diametro lente collimatrice (es. lente Cardboard)
-lens_edge_t   = 2.0;    // mm  spessore al bordo
-lens_ct       = 5.6;    // mm  spessore al centro
-lens_f        = 45.0;   // mm  focale efficace
+// Default: PATIKIL "Convex Lens 25 mm OD, 6.5 mm H, borosilicato, f 36 mm" (Amazon)
+//          -> piano-convessa, lato piatto verso la fenditura.
+// Lente Cardboard: lens_type="bcx", lens_n=1.49, lens_ct=5.6, lens_f=45
+lens_type     = "pcx";  // "pcx" piano-convessa | "bcx" biconvessa simmetrica
+lens_d        = 25.0;   // mm  diametro
+lens_ct       = 6.5;    // mm  spessore al centro (MISURARE)
+lens_f        = 36.0;   // mm  focale efficace (MISURARE)
+lens_n        = 1.474;  //     indice (borosilicato 1.474, PMMA 1.49, BK7/K9 1.517)
 stop_d        = 8.0;    // mm  diaframma d'apertura dopo la lente
 slit_len      = 6.0;    // mm  altezza utile della fenditura
 
@@ -78,12 +82,24 @@ boss_h = 6.0;
 mask_t = 1.2;  win_y = 9;  win_x = 7;             // finestra sopra la camera
 
 // --- tubo (coordinata t lungo l'asse, t=0 sulla faccia della base) ---
-t_lens_rim0 = boss_h;
-t_seat   = boss_h + lens_edge_t;
-t_lc     = boss_h + lens_edge_t/2;                // piano centrale lente
-bulge    = (lens_ct - lens_edge_t)/2;
-t_stop   = t_seat + bulge + 0.4;
-t_slit   = t_lc + lens_f;                         // fenditura nel fuoco
+// geometria della lente ricavata da f, n, spessore (lente sottile per R)
+lens_R   = (lens_type == "pcx" ? 1 : 2) * lens_f * (lens_n - 1);
+function sag(r) = lens_R - sqrt(lens_R*lens_R - r*r);
+bulge_b  = sag(lens_d/2);                          // sporgenza lato base (curvo)
+bulge_s  = lens_type == "pcx" ? 0 : sag(lens_d/2); // sporgenza lato fenditura
+lens_edge_t = lens_ct - bulge_b - bulge_s;
+r_k      = lens_d/2 - 0.8;                         // anello di contatto sul lato curvo
+function dpt(r) = bulge_b - sag(r);                // profondità superficie curva sotto il bordo
+t_r0     = boss_h + dpt(r_k);                      // piano del bordo lente lato base
+t_seat   = t_r0 + lens_edge_t - 0.1;               // battuta della faccia lato fenditura (0.1 di precarico)
+t_vs     = t_seat + bulge_s;                       // vertice lato fenditura
+// distanza focale anteriore (dal vertice lato fenditura), lente spessa
+ffd      = lens_f * (1 - (lens_n - 1) * lens_ct / (lens_n * lens_R));
+t_slit   = t_vs + ffd;                             // fenditura nel fuoco
+t_stop   = t_seat + bulge_s + 0.4;
+t_lc     = t_r0 + (lens_edge_t)/2;                 // (solo per la vista)
+echo(str("lente: R=", lens_R, " bordo=", lens_edge_t, " sporgenza=", bulge_b, " FFD=", ffd));
+assert(lens_edge_t > 0.3, "spessore lente incoerente con f e n: misura lens_ct/lens_f");
 // --- cappuccio (coordinata c, c=0 faccia esterna) ---
 clamp_t  = 2.0;
 c_slit   = clamp_t + blade_t/2;
@@ -100,6 +116,9 @@ neck_len = 15.0;
 t_neck   = t_top - neck_len;
 r_main   = tube_r - 1.6;
 r_neck_bore = 10.0;
+use_main = (t_neck - 4.3 - t_stop) > (r_main - stop_d/2);   // tubo lungo: camera larga
+r_after  = use_main ? r_main : r_neck_bore;
+t_baffle = max(t_neck + 5, t_stop + (r_after - stop_d/2) + 2);
 echo(str("lunghezza tubo = ", t_top, " mm; fenditura a t = ", t_slit));
 
 // envelope del fascio fenditura->stop (per i diaframmi)
@@ -130,6 +149,14 @@ module oring_groove(t0, r_out, chamfer_low=true) {
 }
 module insert_hole(depth = ins_l + 1) {   // foro dritto, cieco, senza smusso
     translate([0,0,-depth]) cylinder(d=ins_d, h=depth+0.01, $fn=40);
+}
+
+module lens_solid() {   // nel frame del tubo
+    intersection() {
+        translate([0,0,t_r0 - bulge_b]) cylinder(r=lens_d/2, h=lens_ct);
+        translate([0,0,t_r0 - bulge_b + lens_R]) sphere(r=lens_R, $fn=96);
+        if (lens_type == "bcx") translate([0,0,t_seat + bulge_s - lens_R]) sphere(r=lens_R, $fn=96);
+    }
 }
 
 // ==================================================================
@@ -166,7 +193,11 @@ module base() {
             translate([-50,-50, z_c + cas_t + 0.2 - 0.01]) cube(100);
         }
         // spazio per la convessità della lente in cima al perno
-        along_axis(s_f + boss_h - bulge - 0.3) cylinder(r=lens_cb_r - 1.4, h=5);
+        // cavità che segue la superficie curva: la lente tocca solo uno spigolo a r_k
+        along_axis(s_f + boss_h) rotate_extrude($fn=96) polygon(concat(
+            [[0, 0.5], [r_k, 0.5]],
+            [for (i=[0:40]) let(r = r_k*(1 - i/40))
+                [r, -min(boss_h - 0.6, dpt(r) - dpt(r_k) + min(0.4, r_k - r))]]));
         // tacca indice (allineamento baionetta) sulla spalla
         translate([0, sh_r - 0.6, sp_h + 0.8]) rotate([-90,0,0]) cylinder(d=1.0, h=3, $fn=16);
     }
@@ -205,11 +236,13 @@ module tube() {
         translate([0,0,-1]) cylinder(r=lens_cb_r, h=t_seat + 1);
         // spazio per la convessità lente
         cylinder(r=lens_cb_r - 1.1, h=t_stop + 0.01);
-        translate([0,0,t_stop]) cylinder(r1=lens_cb_r - 1.1, r2=r_main, h=r_main - lens_cb_r + 1.1);
-        // camera principale, raccordo a 45° e collo
-        translate([0,0,t_stop + 1.3]) cylinder(r=r_main, h=t_neck - 4.3 - t_stop);
-        translate([0,0,t_neck - 3 - 0.01]) cylinder(r1=r_main, r2=r_neck_bore, h=r_main - r_neck_bore + 0.2);
-        translate([0,0,t_neck - 0.01]) cylinder(r=r_neck_bore, h=neck_len + 1);
+        if (use_main) {
+            translate([0,0,t_stop]) cylinder(r1=lens_cb_r - 1.1, r2=r_main, h=r_main - lens_cb_r + 1.1);
+            // camera principale, raccordo a 45° e collo
+            translate([0,0,t_stop + 1.3]) cylinder(r=r_main, h=t_neck - 4.3 - t_stop);
+            translate([0,0,t_neck - 3 - 0.01]) cylinder(r1=r_main, r2=r_neck_bore, h=r_main - r_neck_bore + 0.2);
+        }
+        translate([0,0,use_main ? t_neck - 0.01 : t_stop]) cylinder(r=r_neck_bore, h=t_top);
         // gola O-ring del fuoco
         oring_groove(t_top - 5.5, neck_r);
         // tacca indice di rotazione
@@ -218,8 +251,8 @@ module tube() {
     // diaframma d'apertura (stop) a imbuto e diaframma anti-luce diffusa
     intersection() {
         union() {
-            funnel(t_stop, stop_d/2, r_main);
-            funnel(t_neck + 5, env(t_neck + 5), r_neck_bore);
+            funnel(t_stop, stop_d/2, r_after);
+            funnel(t_baffle, env(t_baffle), r_neck_bore);
         }
         cylinder(r=tube_r - 0.5, h=t_top);
     }
@@ -353,7 +386,7 @@ module assembly(ex = 0) {   // ex > 0: vista esplosa
         along_axis(s_f + ex) {
             color([0.92,0.92,0.90]) tube();
             // lente e O-ring (non stampati)
-            color([0.6,0.8,1.0,0.6]) translate([0,0,t_lc - ex/2]) scale([1,1,lens_ct/lens_d]) sphere(d=lens_d);
+            color([0.6,0.8,1.0,0.6]) translate([0,0,-ex/2]) lens_solid();
             color([0.1,0.1,0.1]) translate([0,0,t_top - 5.5 + groove_w/2]) rotate_extrude() translate([groove_root_r + or_cs/2,0]) circle(d=or_cs, $fn=16);
             translate([0,0,t_slit + c_slit + ex]) mirror([0,0,1]) {
                 color([0.92,0.92,0.90]) cap();

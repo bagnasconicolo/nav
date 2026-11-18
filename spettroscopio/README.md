@@ -15,11 +15,36 @@ dall'equazione del reticolo, quindi lo stesso file genera la versione DVD e quel
 
 **Prestazioni attese (DVD-R, fenditura 50 µm, camera principale da 12 MP):**
 380–750 nm in un'unica inquadratura, 0,13 nm/pixel e risoluzione limitata dalla fenditura
-di circa 0,55 nm. Nella pratica ci si aspettano 0,6–1,2 nm FWHM, perché si sommano la
+di circa 0,7 nm (lente da 36 mm). Nella pratica ci si aspettano 0,7–1,2 nm FWHM, perché si sommano la
 cromatica della lente singola e la messa a fuoco. Il doppietto del sodio (0,6 nm) è il test
 di riferimento.
-Plastica: circa 37 cm³ di pieno, cioè circa 30 g di PETG con riempimento al 15%. Ferramenta:
+Plastica: circa 35 cm³ di pieno, cioè circa 30 g di PETG con riempimento al 15%. Ferramenta:
 4 inserti M3, 4 viti, 2 O-ring.
+
+---
+
+## 0. Come funziona, in breve
+
+1. **Fenditura.** La luce entra da una fessura larga 50 µm fra due lame. Ogni riga dello
+   spettro finale sarà un'immagine di questa fessura: più è stretta, più le righe sono
+   sottili, cioè più risoluzione.
+2. **Collimatore.** La fessura sta esattamente nel fuoco della lente: i raggi che escono da
+   ogni punto della fessura diventano paralleli. Il telefono, messo a fuoco all'infinito, li
+   riporta a fuoco sul sensore. Un tubo senza lente non funziona bene perché il telefono non
+   mette a fuoco a pochi centimetri.
+3. **Reticolo.** Il DVD ha tracce a spirale distanti 0,74 µm. In trasmissione si comporta
+   come un reticolo di diffrazione: devia ogni colore di un angolo diverso
+   (sin β = λ/d − sin α). Il blu esce a −9°, il verde dritto, il rosso a +12°.
+4. **Camera.** L'obiettivo trasforma ogni angolo in una posizione sul sensore: lo spettro
+   diventa una striscia colorata lunga circa 3000 pixel, con righe verticali dove la sorgente
+   emette righe.
+5. **Calibrazione.** Una lampada fluorescente ha righe a lunghezze d'onda note (mercurio a
+   435,8 e 546,1 nm, europio a 611,6 nm). Il software le riconosce e ricava la relazione
+   pixel → nanometri; da lì misura qualsiasi altra sorgente o l'assorbimento di un campione.
+
+Il tubo è inclinato di 48° perché la luce deve arrivare obliqua sul reticolo: così il verde
+esce esattamente lungo l'asse della camera e lo spettro cade al centro dell'immagine,
+mentre la luce non deviata (ordine zero) finisce fuori campo, in una trappola nera.
 
 ---
 
@@ -40,7 +65,7 @@ Plastica: circa 37 cm³ di pieno, cioè circa 30 g di PETG con riempimento al 15
 1. **Fuoco.** Lo smartphone non mette a fuoco una fenditura a 5–8 cm (la distanza minima
    di messa a fuoco è 10–20 cm). Con una pupilla di 3,4 mm, una fenditura a 9 cm e il fuoco
    a 15 cm il defocus sfoca di circa 90 µm sul sensore, cioè più di 10 nm.
-   → Qui c'è un **collimatore**: la fenditura sta nel fuoco di una lente da 45 mm e il
+   → Qui c'è un **collimatore**: la fenditura sta nel fuoco di una lente da 36 mm e il
    telefono lavora a infinito, dove mette a fuoco perfettamente.
 2. **Fenditura.** Stampata o in carta è troppo larga e irregolare.
    → **Due lame da rasoio** serrate da un disco con due viti in inserti M3. La larghezza
@@ -86,7 +111,7 @@ DVD **restringe** l'immagine.
 | Fenditura | DVD: w' / limite fenditura | CD: w' / limite fenditura |
 |---|---|---|
 | 25 µm | 2,1 µm / **0,28 nm** | 3,0 µm / 0,83 nm |
-| 50 µm (consigliata) | 4,2 µm / **0,55 nm** | 5,9 µm / 1,67 nm |
+| 50 µm (consigliata) | 4,2 µm / **0,55 nm** (f_col 45) · 5,3 µm / **0,69 nm** (f_col 36) | 5,9 µm / 1,67 nm |
 | 100 µm | 8,5 µm / 1,10 nm | 11,9 µm / 3,3 nm |
 
 Altri contributi:
@@ -104,8 +129,15 @@ Gli angoli sono stati verificati con un ray-trace sulle mesh STL reali: fascio e
 finestra (|y| < 4,5 mm).
 
 ### 2.3 Componenti ottici
-- **Collimatore:** lente biconvessa Ø25 mm, f ≈ 45 mm (es. le lenti dei visori Google
-  Cardboard, circa 1–2 €). È seguita da un **diaframma Ø8** che usa solo il centro della
+- **Collimatore (default):** lente **piano-convessa in borosilicato Ø25 mm, f = 36 mm,
+  spessore 6,5 mm** (PATIKIL "Convex Lens 25 mm OD", Amazon.it, 8 pezzi ~16 €), montata con
+  il **lato piatto verso la fenditura**: è l'orientamento che minimizza l'aberrazione
+  sferica per una sorgente puntiforme nel fuoco. Dai dati (n = 1,474) il modello ricava
+  R = 17,1 mm, sporgenza 5,45 mm, bordo 1,05 mm e distanza focale anteriore 31,6 mm. La
+  faccia piana poggia su una battuta (riferimento assiale); il lato curvo tocca uno spigolo
+  circolare del perno della base (contatto tangente, come negli obiettivi). In alternativa
+  va bene una lente Cardboard biconvessa Ø25 f45 (`lens_type="bcx"`, `lens_n=1.49`,
+  `lens_ct=5.6`, `lens_f=45`). È seguita da un **diaframma Ø8** che usa solo il centro della
   lente: meno aberrazione sferica, meno luce diffusa.
 - **Baffle:** un imbuto nel collo del tubo e il cono interno del cappuccio, entrambi a 45°
   e quindi stampabili senza supporti.
@@ -119,8 +151,8 @@ finestra (|y| < 4,5 mm).
 
 | # | Parte (`part=`) | Orientamento di stampa | Pieno | Inserti / ferramenta |
 |---|---|---|---|---|
-| 1 | `base` — naso: baionetta, camera oscura, sede cassetta, perno lente con O-ring | faccia telefono sul piatto | 13,2 cm³ | O-ring 22×1,5 |
-| 2 | `tube` — collimatore: sede lente, stop Ø8, baffle, collo di fuoco | estremità fenditura in basso | 7,4 cm³ | O-ring 22×1,5 |
+| 1 | `base` — naso: baionetta, camera oscura, sede cassetta, perno lente con O-ring | faccia telefono sul piatto | 13,1 cm³ | O-ring 22×1,5 |
+| 2 | `tube` — collimatore: sede lente, stop Ø8, baffle, collo di fuoco | estremità fenditura in basso | 5,3 cm³ | O-ring 22×1,5 |
 | 3 | `cap` — cappuccio fenditura: fuoco ±3 mm e rotazione a frizione | manicotto in basso | 7,1 cm³ | **2× inserto M3×4** |
 | 4 | `slit_plate` — disco di serraggio lame | faccia esterna sul piatto | 0,8 cm³ | 2× M3×6 svasata ISO 10642 |
 | 5 | `cassette` — porta-reticolo estraibile | piatta | 0,8 cm³ | — |
@@ -149,11 +181,11 @@ degli obiettivi. Si usa un solo materiale e un solo colore.
 | Viti M3×8 ISO 4762 | 2 | per i pomelli | 0,10 |
 | Viti M3×6 svasate ISO 10642 | 2 | disco della fenditura | 0,10 |
 | O-ring NBR 22×1,5 mm | 2 | frizione del fuoco e trattenimento del tubo | 0,20 |
-| Lente biconvessa Ø25 f≈45 | 1 | Cardboard; misura lo spessore al bordo e al centro e aggiorna `lens_edge_t`/`lens_ct` | 1,50 |
+| Lente piano-convessa Ø25 f36, borosilicato | 1 | PATIKIL 8 pz (~16 €, ne avanzano 7); misura spessore e focale e aggiorna `lens_ct`/`lens_f` | 2,00 |
 | Lame da rasoio bilama (0,10 mm) | 1 | se ne ricavano 2 pezzi da 14×9 mm con un filo ciascuno | 0,20 |
 | DVD-R vergine | 1 | da un disco si ricavano decine di reticoli | 0,30 |
 | Feltro adesivo 1 mm | 5 cm² | sulla ganascia lato schermo | 0,10 |
-| **Totale** | | | **≈ 4 €** |
+| **Totale** | | | **≈ 5 €** |
 
 ---
 
@@ -187,7 +219,7 @@ degli obiettivi. Si usa un solo materiale e un solo colore.
    da 0,05 mm (oppure due strati di alluminio da cucina, circa 0,03 mm) fra i fili. Appoggia
    il disco, stringi le due M3×6 e sfila lo spessimetro. Controlla controluce con la
    modalità macro del telefono: i fili devono essere paralleli e senza tacche.
-3. **Lente.** Infila la lente nel tubo dal lato largo (si appoggia sul gradino) e inserisci
+3. **Lente.** Infila la lente nel tubo dal lato largo, **faccia piana per prima** (va in battuta sul gradino), poi inserisci
    il tubo sul perno della base con l'O-ring: il perno blocca la lente.
 4. **Cappuccio.** Monta l'O-ring sul collo e calza il cappuccio.
 5. **Morsetto.** Misura il telefono (spessore con la cover, distanza fra il centro
@@ -274,7 +306,7 @@ Test di risoluzione consigliati:
   sola con il tubo a 20,1° (verificata: chiusa, senza supporti). La dispersione è 2,2 volte
   minore.
 - **Acromatico:** un doppietto Ø25 f ≈ 40–50 mm (da 8 a 15 € circa nel surplus ottico)
-  elimina la cromatica. Aggiorna `lens_f`, `lens_edge_t` e `lens_ct`.
+  elimina la cromatica. Aggiorna `lens_type`, `lens_f`, `lens_n` e `lens_ct`.
 - **Fenditura più stretta (25 µm):** risoluzione dimezzata a scapito della luminosità.
   Va bene per sorgenti intense come lampade e LED.
 - **Diffusore:** un velo di nastro PTFE sopra la fenditura per sorgenti puntiformi.
@@ -298,7 +330,7 @@ Test di risoluzione consigliati:
 | Parametro | Default | Significato |
 |---|---|---|
 | `grating_pitch`, `lambda_c` | 740, 550 nm | passo del reticolo e lunghezza d'onda centrale → inclinazione α |
-| `lens_d`, `lens_f`, `lens_edge_t`, `lens_ct` | 25, 45, 2,0, 5,6 mm | lente collimatrice |
+| `lens_type`, `lens_d`, `lens_f`, `lens_ct`, `lens_n` | pcx, 25, 36, 6,5 mm, 1,474 | lente collimatrice (bordo, sporgenze e posizione della fenditura sono calcolati) |
 | `stop_d`, `slit_len` | 8, 6 mm | diaframma e altezza della fenditura |
 | `blade_w`, `blade_h`, `blade_t` | 14, 9, 0,10 mm | lame |
 | `phone_t`, `cam_dy`, `post_dx`, `felt_c` | 8,3, 12, 22, 0,6 mm | telefono e morsetto |
