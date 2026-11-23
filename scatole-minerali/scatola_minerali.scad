@@ -11,8 +11,8 @@ griglia   = 25;    // passo della griglia
 gioco     = 0.5;   // gioco totale tra scatole affiancate
 
 /* [Pareti] */
-parete    = 1.8;   // spessore parete (≈3 linee con ugello 0.6)
-fondo     = 1.6;   // spessore fondo
+parete    = 1.2;   // spessore parete (2 linee con ugello 0.6, 3 con 0.4)
+fondo     = 1.2;   // spessore fondo
 r_est     = 3;     // raggio angoli esterni (verticali)
 raccordo  = 2;     // smusso 45° interno fondo/parete (facilita la presa)
 smusso_base = 0.6; // smusso esterno sul bordo inferiore (anti elephant-foot)
@@ -20,7 +20,7 @@ smusso_base = 0.6; // smusso esterno sul bordo inferiore (anti elephant-foot)
 /* [Etichetta] */
 etichetta = true;  // incavo frontale per etichetta adesiva
 etich_h   = 8;     // altezza incavo
-etich_prof= 0.4;   // profondità incavo
+etich_prof= 0.3;   // profondità incavo
 
 $fn = 48;
 

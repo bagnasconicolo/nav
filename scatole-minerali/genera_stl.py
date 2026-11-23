@@ -2,8 +2,8 @@
 import os, numpy as np, manifold3d as m3d, trimesh
 
 GRID, GAP = 25.0, 0.5
-WALL, FLOOR, R, FIL, CH = 1.8, 1.6, 3.0, 2.0, 0.6
-LAB_H, LAB_D = 8.0, 0.4
+WALL, FLOOR, R, FIL, CH = 1.2, 1.2, 3.0, 2.0, 0.6
+LAB_H, LAB_D = 8.0, 0.3
 SEG = 48
 
 def rrect(l, w, r, h):
