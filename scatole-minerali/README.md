@@ -13,6 +13,11 @@ Scatole senza coperchio su griglia da 25 mm: formati diversi si affiancano senza
 | 4x2 small-cabinet-rett | 99,5 × 49,5 × 25 | pezzi allungati |
 | 4x4 small-cabinet | 99,5 × 99,5 × 32 | small cabinet |
 
+## Vassoio per 10 micromount
+`vassoio_5x2_per-10-micromount_127.4x52.4x13.stl`: contiene 10 scatoline 1x1 (5 × 2).
+Interno 125 × 50 mm (0,5 mm di gioco per scatolina), alto 13 mm: le scatoline (16 mm) sporgono di ~4 mm per prenderle con le dita.
+Altri vassoi: aggiungi una riga a `VASSOI` in `genera_stl.py`.
+
 Caratteristiche: parete 1,2 mm, fondo 1,2 mm, angoli raggiati, smusso interno 45° fondo/parete
 (il campione si prende meglio e non si sporcano gli angoli), smusso esterno sul fondo contro l'elephant foot,
 incavo frontale 0,3 mm per un'etichetta adesiva (alta 8 mm).

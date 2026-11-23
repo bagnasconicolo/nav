@@ -27,6 +27,22 @@ def box(cx, cy, H):
     mesh = s.to_mesh()
     return trimesh.Trimesh(mesh.vert_properties[:, :3], mesh.tri_verts)
 
+def vassoio(nx, ny, H, cella=GRID, fil=0.5):
+    """Contenitore per nx*ny scatoline 1x1: interno = nx*cella x ny*cella."""
+    li, wi = nx*cella, ny*cella
+    L, W = li+2*WALL, wi+2*WALL
+    ext = hull2(rrect(L-2*CH, W-2*CH, R-CH, 0.01),
+                rrect(L, W, R, H-CH).translate([0,0,CH]))
+    ri = R - WALL
+    cav = hull2(rrect(li-2*fil, wi-2*fil, max(ri-fil,0.5), 0.01).translate([0,0,FLOOR]),
+                rrect(li, wi, ri, H).translate([0,0,FLOOR+fil]))
+    mesh = (ext - cav).to_mesh()
+    return trimesh.Trimesh(mesh.vert_properties[:, :3], mesh.tri_verts)
+
+VASSOI = [  # (nx, ny, altezza, nome)
+    (5, 2, 13, "per-10-micromount"),
+]
+
 FORMATI = [  # (celle_x, celle_y, altezza, nome)
     (1, 1, 16, "micromount"),
     (2, 1, 18, "micro-doppia"),
@@ -43,5 +59,10 @@ if __name__ == "__main__":
     for cx, cy, h, nome in FORMATI:
         t = box(cx, cy, h)
         fn = f"scatola_{cx}x{cy}_{nome}_{cx*GRID-GAP:g}x{cy*GRID-GAP:g}x{h}.stl"
+        t.export(os.path.join(out, fn))
+        print(fn, "watertight" if t.is_watertight else "NON watertight", f"{t.volume/1000:.1f} cm3")
+    for nx, ny, h, nome in VASSOI:
+        t = vassoio(nx, ny, h)
+        fn = f"vassoio_{nx}x{ny}_{nome}_{nx*GRID+2*WALL:g}x{ny*GRID+2*WALL:g}x{h}.stl"
         t.export(os.path.join(out, fn))
         print(fn, "watertight" if t.is_watertight else "NON watertight", f"{t.volume/1000:.1f} cm3")
