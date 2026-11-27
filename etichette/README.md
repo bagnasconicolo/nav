@@ -20,6 +20,19 @@ In alternativa si può aprire `index.html` direttamente e incollare la chiave ne
 impostazioni (resta solo nel browser), ma Mindat potrebbe bloccare le richieste dal browser (CORS):
 in quel caso usa `server.py`.
 
+## Import in blocco (etichette già complete)
+
+Nel riquadro **Importa in blocco da Mindat**:
+
+- **ID utente**: `server.py` legge lo schema dell'API Mindat, cerca un endpoint per le
+  collezioni/esemplari e scarica tutti i tuoi esemplari. Se l'API non lo espone, mostra
+  l'elenco degli endpoint disponibili.
+- **Elenco incollato**, una riga per esemplare: `ID minerale (o nome) ; località (ID Mindat o testo) ; N. catalogo`.
+- **CSV** (anche solo con `mindat_id`).
+
+In tutti i casi nome, formula, località, paese e bandiera vengono completati da Mindat.
+Il pulsante **Completa da Mindat i selezionati** riempie i campi mancanti di esemplari già presenti.
+
 ## Uso
 
 - **Minerale → Cerca**: cerca per nome (o numero = Mindat ID) e compila nome, ID, formula.

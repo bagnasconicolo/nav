@@ -97,6 +97,25 @@
       <h2>Collezione <span id="count" class="muted"></span></h2>
       <input id="filter" placeholder="Filtra…">
     </div>
+    <details class="bulk" open>
+      <summary>Importa in blocco da Mindat</summary>
+      <label>La mia collezione Mindat (ID utente)
+        <div class="search">
+          <input id="b_user" inputmode="numeric" placeholder="es. 12345">
+          <button type="button" id="btnImportUser" class="primary">Importa collezione</button>
+        </div>
+      </label>
+      <label>Oppure incolla un elenco, una riga per esemplare:
+        <small>Mindat ID minerale (o nome) ; località (ID Mindat o testo) ; N. catalogo</small>
+        <textarea id="b_list" rows="4" placeholder="3337 ; 2520 ; 0001&#10;Fluorite ; Weardale, County Durham, England, UK ; 0002&#10;1576"></textarea>
+      </label>
+      <div class="actions">
+        <button type="button" id="btnBulkAdd" class="primary">Crea etichette dall'elenco</button>
+        <button type="button" id="btnComplete" title="Riempie formula, località, paese e bandiera mancanti">Completa da Mindat i selezionati</button>
+      </div>
+      <div id="bulkStatus" class="bulkstatus" hidden></div>
+    </details>
+
     <div class="listtools">
       <label class="inline"><input type="checkbox" id="selAll"> tutti</label>
       <button id="btnExportCsv">Esporta CSV</button>

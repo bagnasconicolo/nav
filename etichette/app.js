@@ -349,6 +349,123 @@
     if (n && confirm(`Eliminare ${n} esemplari selezionati?`)) { items = items.filter((x) => !x.sel); persist(); fillForm({}); }
   });
 
+  // ---------------------------------------------------------------- import in blocco
+  const bulkMsg = (msg, err) => { const el = $("bulkStatus"); el.hidden = false; el.textContent = msg; el.className = "bulkstatus" + (err ? " err" : ""); };
+  const minCache = new Map(), locCache = new Map();
+  const getMineral = (id) => { if (!minCache.has(id)) minCache.set(id, api(`geomaterials/${id}/?fields=${MIN_FIELDS}`).catch((e) => { minCache.delete(id); throw e; })); return minCache.get(id); };
+  const getLocality = (id) => { if (!locCache.has(id)) locCache.set(id, api(`localities/${id}/?fields=id,txt,country`).catch((e) => { locCache.delete(id); throw e; })); return locCache.get(id); };
+
+  // Riempie i campi mancanti di un esemplare interrogando Mindat
+  async function completeItem(it) {
+    if (!it.mid && it.name) {
+      const list = await searchMinerals(it.name);
+      const hit = list.find((m) => (m.name || "").toLowerCase() === it.name.toLowerCase()) || list[0];
+      if (hit) it.mid = String(hit.id);
+    }
+    if (it.mid && (!it.formula || !it.name)) {
+      const m = await getMineral(it.mid);
+      if (!it.name) it.name = m.name || "";
+      if (!it.formula) it.formula = htmlToMarkup(m.mindat_formula) || htmlToMarkup(m.ima_formula) || "";
+    }
+    if (it.locid && !it.loc) {
+      const l = await getLocality(it.locid);
+      it.loc = decodeEntities(l.txt || "");
+      if (!it.country && l.country) it.country = l.country;
+    }
+    if (!it.country && it.loc) it.country = countryFromLocality(it.loc);
+    if (!it.cc && it.country) it.cc = codeForCountry(it.country);
+    if (!it.qrmode) it.qrmode = "mineral";
+    return it;
+  }
+
+  async function completeMany(list, label) {
+    const errors = [];
+    let done = 0;
+    const queue = list.slice();
+    const worker = async () => {
+      while (queue.length) {
+        const it = queue.shift();
+        try { await completeItem(it); } catch (e) { errors.push(`${it.name || it.mid || "?"}: ${e.message}`); }
+        done++;
+        bulkMsg(`${label}: ${done}/${list.length}…`);
+      }
+    };
+    await Promise.all(Array.from({ length: 4 }, worker));
+    persist(); renderList();
+    bulkMsg(`${label}: completati ${list.length - errors.length}/${list.length}.` + (errors.length ? "\nErrori:\n" + errors.join("\n") : ""), errors.length === list.length && list.length > 0);
+  }
+
+  $("btnComplete").addEventListener("click", () => {
+    const sel = items.filter((x) => x.sel);
+    if (!sel.length) return bulkMsg("Nessun esemplare selezionato.", true);
+    completeMany(sel, "Completamento");
+  });
+
+  $("btnBulkAdd").addEventListener("click", async () => {
+    const lines = $("b_list").value.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) return bulkMsg("Incolla almeno una riga.", true);
+    const added = lines.map((line) => {
+      const [a = "", b = "", c = ""] = line.split(/\s*[;\t]\s*/);
+      const it = { uid: uid(), sel: true, qrmode: "mineral", num: c.trim() };
+      if (/^\d+$/.test(a)) it.mid = a; else it.name = a.trim();
+      if (/^\d+$/.test(b)) it.locid = b; else it.loc = b.trim();
+      return it;
+    });
+    items.push(...added);
+    await completeMany(added, "Import elenco");
+    $("b_list").value = "";
+  });
+
+  // Collezione dell'utente: cerca nello schema Mindat un endpoint adatto
+  const pick = (o, keys) => { for (const k of keys) { const v = o?.[k]; if (v !== undefined && v !== null && v !== "") return v; } return ""; };
+  const idOf = (v) => (v && typeof v === "object" ? v.id ?? "" : v);
+  function mapCollectionRow(r) {
+    const minObj = pick(r, ["geomaterial", "mineral", "species"]);
+    const locObj = pick(r, ["locality", "loc"]);
+    return {
+      uid: uid(), sel: true, qrmode: "mineral",
+      mid: String(idOf(pick(r, ["geomaterial_id", "mineral_id", "min_id"])) || (typeof minObj === "object" ? minObj.id ?? "" : /^\d+$/.test(minObj) ? minObj : "")),
+      name: String(pick(r, ["mineral_name", "geomaterial_name", "species_name"]) || (typeof minObj === "object" ? minObj.name || "" : /^\d+$/.test(minObj) ? "" : minObj) || ""),
+      locid: String(idOf(pick(r, ["locality_id", "loc_id"])) || (typeof locObj === "object" ? locObj.id ?? "" : /^\d+$/.test(locObj) ? locObj : "")),
+      loc: decodeEntities(String(pick(r, ["locality_text", "locality_name", "locality_txt", "txt"]) || (typeof locObj === "object" ? locObj.txt || "" : /^\d+$/.test(locObj) ? "" : locObj) || "")),
+      num: String(pick(r, ["catalogue_number", "catalog_number", "catalogue_no", "catno", "specimen_number", "number", "minid"]) || ""),
+      notes: "",
+    };
+  }
+  $("btnImportUser").addEventListener("click", async () => {
+    const user = $("b_user").value.trim();
+    if (!/^\d+$/.test(user)) return bulkMsg("Inserisci il tuo ID utente Mindat (numero).", true);
+    if (!apiMode) await detectApi();
+    if (apiMode !== "proxy") return bulkMsg("L'import della collezione funziona solo tramite server.py.", true);
+    bulkMsg("Cerco l'endpoint della collezione nello schema Mindat…");
+    let disc;
+    try { const r = await fetch("api/__discover"); disc = await r.json(); if (!r.ok) throw new Error(disc.detail); }
+    catch (e) { return bulkMsg("Impossibile leggere lo schema Mindat: " + e.message, true); }
+    const cands = Object.entries(disc.candidates || {}).filter(([p]) => /collect|specimen|minid/i.test(p) && !/\{/.test(p));
+    for (const [path, params] of cands) {
+      const userParam = (params || []).find((p) => /user|owner|member/i.test(p)) || "user";
+      let next = `${path.replace(/^\/?v1\//, "")}?${userParam}=${user}&page_size=200`;
+      const rows = [];
+      try {
+        while (next) {
+          const j = await api(next);
+          rows.push(...resultsOf(j));
+          bulkMsg(`Scarico la collezione da ${path}: ${rows.length} esemplari…`);
+          next = j.next ? j.next.replace(/^https?:\/\/[^/]+\/v1\//, "") : "";
+        }
+      } catch (e) { continue; }
+      if (!rows.length) continue;
+      const added = rows.map(mapCollectionRow).filter((it) => it.mid || it.name);
+      if (!added.length) { bulkMsg(`Trovati ${rows.length} record in ${path} ma non riconosco i campi. Esempio:\n` + JSON.stringify(rows[0], null, 1).slice(0, 1500), true); return; }
+      items.push(...added);
+      return completeMany(added, `Collezione utente ${user}`);
+    }
+    bulkMsg("L'API Mindat non sembra esporre le collezioni degli utenti.\n" +
+      "Endpoint candidati: " + (Object.keys(disc.candidates || {}).join(", ") || "nessuno") + "\n" +
+      "Tutti gli endpoint (" + (disc.all || []).length + "): " + (disc.all || []).join(", ") +
+      "\n\nUsa l'elenco qui sotto (ID minerale ; località ; numero) oppure importa un CSV.", true);
+  });
+
   // ---------------------------------------------------------------- CSV
   const CSV_COLS = [["num", "numero"], ["name", "minerale"], ["mid", "mindat_id"], ["formula", "formula"], ["loc", "localita"], ["locid", "mindat_loc_id"], ["country", "paese"], ["cc", "codice_paese"], ["notes", "note"], ["qrmode", "qr"], ["qrcustom", "qr_personalizzato"]];
   const csvCell = (v) => { v = String(v ?? ""); return /[",;\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
@@ -384,19 +501,18 @@
     if (rows.length < 2) return alert("CSV vuoto.");
     const head = rows[0].map((h) => h.trim().toLowerCase());
     const idx = Object.fromEntries(CSV_COLS.map(([k, h]) => [k, head.indexOf(h)]));
-    if (idx.name < 0) return alert("Il CSV deve avere almeno la colonna «minerale». Colonne: " + CSV_COLS.map((c) => c[1]).join(", "));
-    let n = 0;
+    if (idx.name < 0 && idx.mid < 0) return alert("Il CSV deve avere la colonna «minerale» o «mindat_id». Colonne: " + CSV_COLS.map((c) => c[1]).join(", "));
+    const added = [];
     for (const r of rows.slice(1)) {
       const it = { uid: uid(), sel: true };
       for (const [k] of CSV_COLS) it[k] = idx[k] >= 0 ? (r[idx[k]] || "").trim() : "";
-      if (!it.name) continue;
+      if (!it.name && !it.mid) continue;
       if (!it.qrmode) it.qrmode = "mineral";
       if (!it.country && it.loc) it.country = countryFromLocality(it.loc);
       if (!it.cc && it.country) it.cc = codeForCountry(it.country);
-      items.push(it); n++;
+      items.push(it); added.push(it);
     }
-    persist(); renderList();
-    alert(`Importati ${n} esemplari.`);
+    completeMany(added, "Import CSV");
   });
 
   // ---------------------------------------------------------------- impostazioni

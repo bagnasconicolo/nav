@@ -15,6 +15,7 @@ Uso:
 import http.server
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -36,6 +37,25 @@ def load_key():
 KEY = load_key()
 
 
+def fetch_schema():
+    for suffix in ("schema/?format=json", "schema/?format=openapi-json", "schema/"):
+        req = urllib.request.Request(API + suffix, headers={
+            "Authorization": "Token " + KEY,
+            "Accept": "application/json, application/vnd.oai.openapi+json, application/yaml",
+            "User-Agent": "mineral-label-generator/1.0",
+        })
+        with urllib.request.urlopen(req, timeout=30) as r:
+            body = r.read().decode("utf-8", "replace")
+        try:
+            return json.loads(body)
+        except ValueError:
+            # YAML: estrae solo le chiavi dei path (righe "  /v1/...:")
+            paths = re.findall(r"^  (/[^\s:]+):\s*$", body, re.M)
+            if paths:
+                return {"paths": {p: {} for p in paths}}
+    raise ValueError("formato schema sconosciuto")
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=HERE, **kw)
@@ -43,6 +63,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/__ping":
             return self.send_json(200, {"proxy": True, "key": bool(KEY)})
+        if self.path == "/api/__discover":
+            return self.discover()
         if self.path.startswith("/api/"):
             return self.proxy(self.path[len("/api/"):])
         return super().do_GET()
@@ -67,6 +89,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def discover(self):
+        """Legge lo schema OpenAPI di Mindat e restituisce gli endpoint che
+        potrebbero riguardare collezioni / esemplari / utenti."""
+        if not KEY:
+            return self.send_json(500, {"detail": "Chiave Mindat mancante"})
+        try:
+            schema = fetch_schema()
+        except Exception as e:
+            return self.send_json(502, {"detail": "Schema non leggibile: %s" % e})
+        paths = schema.get("paths", {})
+        hits = {}
+        for p, ops in paths.items():
+            if re.search(r"collect|specimen|minid|user|owner|item", p, re.I):
+                get = (ops or {}).get("get") or {}
+                hits[p] = [prm.get("name") for prm in get.get("parameters", []) if isinstance(prm, dict)]
+        return self.send_json(200, {"all": sorted(paths), "candidates": hits})
 
     def send_json(self, status, obj):
         body = json.dumps(obj).encode()

@@ -60,6 +60,11 @@ td.btns { white-space: nowrap; text-align: right; }
 td.btns button { padding: 2px 7px; font-size: 12px; }
 tr.editing { background: #fff8e3; }
 
+.bulk { margin: 10px 0 4px; padding: 10px 12px; background: #f7f5f1; border: 1px solid var(--line); border-radius: 8px; }
+.bulk summary { cursor: pointer; font-weight: 600; }
+textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 13px/1.4 ui-monospace, Menlo, monospace; margin-top: 3px; font-weight: 400; }
+.bulkstatus { margin-top: 8px; font-size: 13px; white-space: pre-wrap; max-height: 220px; overflow: auto; }
+.bulkstatus.err { color: var(--danger); }
 .settings { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; }
 .settings summary { cursor: pointer; font-weight: 600; }
 .settings .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 12px; }
