@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etichette minerali</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar no-print">
+  <h1>Etichette minerali</h1>
+  <span id="apiStatus" class="status">API: …</span>
+  <div class="spacer"></div>
+  <button id="btnPrint" class="primary">Stampa etichette selezionate</button>
+</header>
+
+<main class="layout no-print">
+  <section class="panel">
+    <h2 id="formTitle">Nuovo esemplare</h2>
+    <form id="specForm" autocomplete="off">
+      <input type="hidden" id="f_uid">
+
+      <label>Minerale
+        <div class="search">
+          <input id="f_name" placeholder="Cerca su Mindat (es. quarzo, fluorite…)" required>
+          <button type="button" id="btnSearchMin">Cerca</button>
+          <ul id="minResults" class="results" hidden></ul>
+        </div>
+      </label>
+
+      <div class="row">
+        <label>Mindat ID
+          <div class="search">
+            <input id="f_mid" inputmode="numeric" placeholder="es. 3337">
+            <button type="button" id="btnLoadId" title="Carica dati dal Mindat ID">Carica</button>
+          </div>
+        </label>
+        <label>N. catalogo
+          <input id="f_num" placeholder="es. 0123">
+        </label>
+      </div>
+
+      <label>Formula chimica <small>(_2_ = pedice, ^2+^ = apice)</small>
+        <input id="f_formula" placeholder="SiO_2_">
+      </label>
+
+      <label>Località
+        <div class="search">
+          <input id="f_loc" placeholder="Miniera, comune, provincia, paese">
+          <button type="button" id="btnSearchLoc">Cerca</button>
+          <ul id="locResults" class="results" hidden></ul>
+        </div>
+      </label>
+
+      <div class="row">
+        <label>Paese
+          <input id="f_country" placeholder="rilevato dalla località">
+        </label>
+        <label class="narrow">Bandiera
+          <div class="flagpick">
+            <img id="flagPreview" alt="" hidden>
+            <input id="f_cc" placeholder="it" maxlength="6" title="Codice ISO (it, fr, us, gb-eng…)">
+          </div>
+        </label>
+      </div>
+      <input type="hidden" id="f_locid">
+
+      <div class="row">
+        <label>QR punta a
+          <select id="f_qrmode">
+            <option value="mineral">Pagina minerale Mindat</option>
+            <option value="locality">Pagina località Mindat</option>
+            <option value="custom">URL / testo personalizzato</option>
+            <option value="none">Nessun QR</option>
+          </select>
+        </label>
+        <label>Note (piccole, opzionali)
+          <input id="f_notes" placeholder="es. 3×2 cm, raccolto 2024">
+        </label>
+      </div>
+      <label id="customQrWrap" hidden>QR personalizzato
+        <input id="f_qrcustom" placeholder="https://…">
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="btnSave">Aggiungi alla collezione</button>
+        <button type="button" id="btnReset">Svuota</button>
+      </div>
+    </form>
+
+    <h3>Anteprima</h3>
+    <div id="livePreview" class="preview"></div>
+  </section>
+
+  <section class="panel">
+    <div class="listhead">
+      <h2>Collezione <span id="count" class="muted"></span></h2>
+      <input id="filter" placeholder="Filtra…">
+    </div>
+    <div class="listtools">
+      <label class="inline"><input type="checkbox" id="selAll"> tutti</label>
+      <button id="btnExportCsv">Esporta CSV</button>
+      <label class="filebtn">Importa CSV<input type="file" id="importCsv" accept=".csv,text/csv" hidden></label>
+      <button id="btnDelSel" class="danger">Elimina selezionati</button>
+    </div>
+    <table id="list">
+      <thead><tr><th></th><th>N.</th><th>Minerale</th><th>Località</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <details class="settings" open>
+      <summary>Impostazioni etichetta e stampa</summary>
+      <div class="grid">
+        <label>Larghezza (mm)<input type="number" id="s_w" min="30" max="200"></label>
+        <label>Altezza (mm)<input type="number" id="s_h" min="15" max="150"></label>
+        <label>Testo base (pt)<input type="number" id="s_font" min="5" max="16" step="0.5"></label>
+        <label>Copie per esemplare<input type="number" id="s_copies" min="1" max="20"></label>
+        <label class="wide">Intestazione (nome collezione)<input id="s_header" placeholder="es. Collezione mineralogica …"></label>
+        <label>Carattere
+          <select id="s_family">
+            <option value="serif">Serif (classico)</option>
+            <option value="sans">Sans-serif</option>
+          </select>
+        </label>
+        <label>Margine pagina (mm)<input type="number" id="s_margin" min="0" max="30"></label>
+        <label class="inline"><input type="checkbox" id="s_border"> bordo / linee di taglio</label>
+        <label class="inline"><input type="checkbox" id="s_showmid"> mostra Mindat ID</label>
+        <label class="inline"><input type="checkbox" id="s_showflag"> mostra bandierina</label>
+        <label class="inline"><input type="checkbox" id="s_showcountry"> nome paese sotto la località</label>
+      </div>
+      <hr>
+      <label class="wide">Chiave API Mindat (solo se NON usi server.py; resta in questo browser)
+        <input id="s_key" type="password" placeholder="incolla la chiave">
+      </label>
+    </details>
+  </section>
+</main>
+
+<div id="sheet"></div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="countries.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
